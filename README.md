@@ -2,6 +2,8 @@
 
 A set of patterns, conventions, workflows and tooling for building and managing portable web stuff.
 
+Author: Louis O'Callaghan (https://louisocallaghan.com)
+
 
 ## Overview
 
@@ -19,13 +21,6 @@ You should be able to:
 - delete your data/files from the hosting provider
 - deploy it again somewhere else
 - try to avoid lock-in and enshitification
-
-
-### Who am I
-
-I am a musician and software developer. I've had some public websites and ran them personal servers, shared Linux hosting, shared hosting with "easy" wordpress management, Azure App Services, and like, Tumblr. Setting these up and migrating from one to another or maintaining multiple sites in different ways has been annoying. It makes it less fun and makes it harder to build new things.
-
-Daps is an idea to abstract deployment into essential workflows within a common environment that's as nonproprietary as practical. I built it with a lot of help from first Codex and now Claude. Those are extremely proprietary and I'm aware of the irony. Ideally Daps is easy to use without an LLM (but boy does it help). I want to use Daps to build new things and have the deployment pieces "solved."
 
 
 ## Technology
@@ -46,6 +41,30 @@ Daps enables 2 environments:
     - currently Daps targets OpenStack VPS instances, but we should be able to support other Unix hosting options
 
 
+## Projects
+
+The point of Daps is to provide the local and remote environments for your projects. A project is typically a web site or app that might have its own repository and is saved in its own folder.
+
+Your setup might look like this:
+
+```
+repositories/           # wherever you store your code projects 
+├── daps/               # clone of this repo
+├── mywpsite/           # a Wordpress project
+└── mycustomsite/       # a bespoke website you've made
+     ├── app/           # your website's frontend
+     └── api/           # your website's api
+```
+
+The `daps` folder contains daps. The `mywpsite` and `mycustomsite` folders are projects.
+
+Each project contains a small set of folders and files that enable it to be deployed and managed with Daps. Otherwise each project doesn't know about Daps, and you develop it however you need to.
+
+Daps includes a file `daps.yaml` in which you register the projects you want it to manage.
+
+Daps then provides workflows for managing project deployment. The workflows are described below.
+
+
 ## Governing principles
 
 The internet was meant to be decentralized, and is largely built using free and open source software and protocols. The technology for controlling your own internet stuff exists but isn't easy to use, while proprietary software services make things easy to set up but are not portable (and you become someone else's product).
@@ -54,14 +73,22 @@ FOSS > simplicity > flexibility
 
 composition > inheritance
 
-## Conventions (as of 2/8/2026)
 
-### terminology
+### Who am I
+
+I am a musician and software developer. I've had some public websites and ran them personal servers, shared Linux hosting, shared hosting with "easy" wordpress management, Azure App Services, and like, Tumblr. Setting these up and migrating from one to another or maintaining multiple sites in different ways has been annoying. It makes it less fun and makes it harder to build new things.
+
+Daps is an idea to abstract deployment into essential workflows within a common environment that's as nonproprietary as practical. I built it with a lot of help from first Codex and now Claude. Those are extremely proprietary and I'm aware of the irony. Ideally Daps is easy to use without an LLM (but boy does it help). I want to use Daps to build new things and have the deployment pieces "solved."
+
+
+## Conventions
+
+### Terminology
 - **local** vs **remote**: terms signaling location, where local is the local workstation (i.e. docker running locally), remote is at a hosting provider
 - **dev** vs **prod**: terms signaling the purpose of the deployment. AKA the "environment," though I want to call out what the environment is for vs where it lives. In practice "dev" will be synonymous with "local" and "prod" with "remote." There's no "staging" or "uat," given I'm going for simplicity, but supporting other remote environments could be a thing in the future.
 
 
-### practices
+### Practices
 - prefer keep local and remote paths the same when possible
     - e.g. for bind mounts like daps `docker` and projects' `_docker` folders, or Caddyfile inside a caddy folder instead of in the root
 - prefer not to copy files to central daps if possible
@@ -129,7 +156,7 @@ Configuration file for daps
     - e.g. `../../projectname/_docker:/srv/projects/projectname/_docker`
     - longer-term dapsman should generate absolute paths from daps.yaml project paths
 
-### project scripts
+### Project scripts
 - Project scripts for use with daps appear in a folder `_scripts` (the underscore alphabetizes them away from the main project files)
 - `build-docker-images.toolkit.sh` daps will look for this file for instructions for building container images for the project.
 
@@ -163,7 +190,7 @@ Configuration file for daps
     - contains caddy config to be imported by `Caddyfile`
 
 
-### hosting folder and files
+### Hosting folder and files
 - `hosting`
     - located in daps project root
     - contains files specific to a particular hosting provider, so as to separate out "custom" configuration/settings from "generic" scripts that act on them
@@ -200,11 +227,11 @@ Configuration file for daps
     - should be able to override instance name in the daps.yaml file
 
 
-#### remote VM
+#### Remote VM
 On the remote openstack instance or whichever VM we're running docker on, we will also have conventions.
 
 - folder locations
-    - `~/.ssh` - I think we need to copy the private key here?
+    - `/root/.ssh` - we copy the private key here? not sure actually
     - `/srv/daps/`
         - `caddy/Caddyfile` - copy the Caddyfile.prod here
         - `docker/` - copy daps shared and prod compose files
