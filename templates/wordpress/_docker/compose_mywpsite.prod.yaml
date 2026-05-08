@@ -1,0 +1,20 @@
+## DAPS WordPress Template — Prod Overrides
+##
+## Use with: docker compose -f _docker/compose_mywpsite.yaml -f _docker/compose_mywpsite.prod.yaml up -d
+##
+## SETUP: Replace "mywpsite.example.com" with your actual domain name.
+## The wp-content bind mount path must match the remote VM path set up during
+## dapsman remote build (default: /srv/projects/mywpsite/wp-content).
+
+services:
+  wordpress:
+    volumes:
+      # wp-content lives on the VM filesystem so it persists across deploys.
+      # SETUP: replace "mywpsite" with your project name.
+      - /srv/projects/mywpsite/wp-content:/var/www/html/wp-content
+    environment:
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'WP_HOME',    'https://mywpsite.example.com' );
+        define( 'WP_SITEURL', 'https://mywpsite.example.com' );
+        define( 'WP_REDIS_HOST', 'redis' );
+        define( 'WP_REDIS_PORT', 6379 );

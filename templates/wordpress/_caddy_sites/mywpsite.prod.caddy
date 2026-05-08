@@ -1,0 +1,12 @@
+# DAPS WordPress Template — Prod Caddy Config
+# This file is imported by the root DAPS Caddyfile on the remote VM.
+# Caddy will automatically obtain and renew a TLS certificate for your domain.
+#
+# SETUP: Replace "mywpsite.example.com" with your actual domain name.
+# Make sure your domain's DNS A record points to your server's IP address
+# before deploying, so Caddy can obtain a certificate.
+
+mywpsite.example.com {
+	encode gzip zstd
+	reverse_proxy wordpress:80
+}

@@ -1,0 +1,23 @@
+name: daps
+services:
+  toolkit:
+    image: daps_toolkit:latest
+    restart: unless-stopped
+    build:
+      context: ..
+      dockerfile: docker/toolkit.dockerfile
+    hostname: toolkit
+    command: ["sleep", "infinity"]
+    tty: true
+    stdin_open: true
+    volumes:
+      - ../secrets/ssh:/root/.ssh
+      - ..:/srv/daps
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - backend
+
+networks:
+  backend:
+    external: true
+    name: daps_net

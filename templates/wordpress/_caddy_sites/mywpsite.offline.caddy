@@ -1,0 +1,14 @@
+# DAPS WordPress Template — Offline Caddy Config (optional)
+# If this file exists, `dapsman prod offline` uploads it instead of generating a default response.
+# Use this to customise the offline page (branding, contact info, expected return time, etc.).
+#
+# IMPORTANT: Caddy's `respond` directive does not set Content-Type automatically.
+# Always include `header Content-Type "text/html; charset=utf-8"` when returning HTML,
+# otherwise browsers will display the markup as plain text.
+#
+# SETUP: Replace "mywpsite.example.com" with your actual domain name.
+
+mywpsite.example.com {
+	header Content-Type "text/html; charset=utf-8"
+	respond `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Temporarily Offline</title><style>body{font-family:sans-serif;text-align:center;padding:4rem;color:#333}h1{font-size:2rem;margin-bottom:1rem}p{color:#666}</style></head><body><h1>Temporarily Offline</h1><p>This site is temporarily offline. Please check back soon.</p></body></html>` 503
+}

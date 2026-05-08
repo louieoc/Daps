@@ -1,0 +1,98 @@
+## DAPS WordPress Template — Base Compose File
+##
+## This file is shared across dev and prod. It is always used together with
+## either compose_mywpsite.dev.yaml or compose_mywpsite.prod.yaml.
+##
+## SETUP: Replace every occurrence of "mywpsite" with your project name,
+## and replace "mywpsite_wp" (the DB name) accordingly.
+
+name: mywpsite
+
+volumes:
+  mywpsite-mysql-data:
+
+networks:
+  daps_net:
+    external: true
+
+## NOTE on path resolution in Docker Compose:
+## Both secret `file:` paths and volume bind mount paths are resolved relative to
+## the compose file's directory (_docker/). So `../_secrets/` and `../wp-content`
+## correctly point one level up to the project root.
+secrets:
+  db_password:
+    file: ../_secrets/db_password.txt
+  mysql_root_password:
+    file: ../_secrets/mysql_root_password.txt
+  auth_key:
+    file: ../_secrets/auth_key.txt
+  secure_auth_key:
+    file: ../_secrets/secure_auth_key.txt
+  logged_in_key:
+    file: ../_secrets/logged_in_key.txt
+  nonce_key:
+    file: ../_secrets/nonce_key.txt
+  auth_salt:
+    file: ../_secrets/auth_salt.txt
+  secure_auth_salt:
+    file: ../_secrets/secure_auth_salt.txt
+  logged_in_salt:
+    file: ../_secrets/logged_in_salt.txt
+  nonce_salt:
+    file: ../_secrets/nonce_salt.txt
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    volumes:
+      - mywpsite-mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+      MYSQL_DATABASE: mywpsite_wp
+      MYSQL_USER: wp_user
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+      - mysql_root_password
+    networks:
+      - daps_net
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - daps_net
+
+  wordpress:
+    image: mywpsite-wordpress
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wp_user
+      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/db_password
+      WORDPRESS_DB_NAME: mywpsite_wp
+      WORDPRESS_TABLE_PREFIX: wp_
+      WORDPRESS_AUTH_KEY_FILE: /run/secrets/auth_key
+      WORDPRESS_SECURE_AUTH_KEY_FILE: /run/secrets/secure_auth_key
+      WORDPRESS_LOGGED_IN_KEY_FILE: /run/secrets/logged_in_key
+      WORDPRESS_NONCE_KEY_FILE: /run/secrets/nonce_key
+      WORDPRESS_AUTH_SALT_FILE: /run/secrets/auth_salt
+      WORDPRESS_SECURE_AUTH_SALT_FILE: /run/secrets/secure_auth_salt
+      WORDPRESS_LOGGED_IN_SALT_FILE: /run/secrets/logged_in_salt
+      WORDPRESS_NONCE_SALT_FILE: /run/secrets/nonce_salt
+    secrets:
+      - db_password
+      - auth_key
+      - secure_auth_key
+      - logged_in_key
+      - nonce_key
+      - auth_salt
+      - secure_auth_salt
+      - logged_in_salt
+      - nonce_salt
+    networks:
+      - daps_net

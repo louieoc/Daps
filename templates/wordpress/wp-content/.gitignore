@@ -1,0 +1,7 @@
+# Ignore everything in wp-content except themes (where your customizations live).
+# Uploads, plugins, and caches are excluded — they are managed on the server
+# and restored via the backup/restore workflow.
+*
+!.gitignore
+!themes/
+!themes/**

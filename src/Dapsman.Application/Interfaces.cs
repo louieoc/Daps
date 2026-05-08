@@ -1,0 +1,135 @@
+using Dapsman.Domain;
+
+namespace Dapsman.Application;
+
+public interface IConfigLoader
+{
+	DapsConfig Load(string dapsYamlPath);
+}
+
+public interface ILocalPlanBuilder
+{
+	LocalBuildPlan BuildLocalPlan(LocalBuildOptions options);
+}
+
+public interface IPrerequisiteChecker
+{
+	void EnsureLocalBuildPrerequisites();
+}
+
+public interface ICaddySiteSync
+{
+	void SyncDevSites(CaddySyncPlan plan);
+}
+
+public interface IComposeExecutor
+{
+	void RunComposeUp(IReadOnlyList<string> composeFiles, bool buildImages, string workingDirectory);
+}
+
+public interface IRemotePlanBuilder
+{
+	RemoteBuildPlan BuildRemotePlan(DapsConfig config, RemoteBuildOptions options);
+}
+
+public interface IRemoteDeployPlanBuilder
+{
+	RemoteDeployPlan BuildRemoteDeployPlan(DapsConfig config, RemoteDeployOptions options);
+}
+
+public interface IRemoteDeployExecutor
+{
+	void ExecuteBuildImages(RemoteDeployPlan plan);
+	void Execute(RemoteDeployPlan plan);
+}
+
+public interface IBashRunner
+{
+	void RunScript(string scriptPath, string workingDirectory, string? arguments = null, bool interactive = false, IReadOnlyDictionary<string, string>? env = null);
+	void RunShell(string shellExpression, string workingDirectory, bool interactive = false);
+}
+
+public interface ISyncFromLocalPlanBuilder
+{
+	PlanResult<SyncFromLocalPlan> BuildPlan(DapsConfig config, SyncFromLocalOptions options);
+}
+
+public interface ISyncFromRemotePlanBuilder
+{
+	PlanResult<SyncFromRemotePlan> BuildPlan(DapsConfig config, SyncFromRemoteOptions options);
+}
+
+public interface IBackupPlanBuilder
+{
+	PlanResult<BackupPlan> BuildPlan(DapsConfig config, BackupOptions options);
+}
+
+public interface IOfflineStatusPlanBuilder
+{
+	PlanResult<OfflineStatusPlan> BuildPlan(DapsConfig config, OfflineStatusOptions options);
+}
+
+public interface IOfflineStatusExecutor
+{
+	void Execute(OfflineStatusPlan plan);
+}
+
+public interface IInitPlanBuilder
+{
+	InitPlan BuildInitPlan(InitOptions options);
+}
+
+public interface ICaddyRestartPlanBuilder
+{
+	CaddyRestartPlan BuildPlan();
+}
+
+public interface IProjectResolver
+{
+	/// <summary>
+	/// Return the named project or the default if none is named. The default applies if only one project is defined.
+	/// </summary>
+	/// <param name="projectName"></param>
+	/// <returns></returns>
+	DapsProject Resolve(string? projectName);
+
+	/// <summary>
+	/// Return the named projects or all projects is none are named.
+	/// </summary>
+	/// <param name="projectNames"></param>
+	/// <returns></returns>
+	IReadOnlyList<DapsProject> Resolve(IReadOnlyList<string>? projectNames);
+}
+
+public interface IHostingProviderResolver
+{
+	HostingProvider Resolve(string? providerName);
+}
+
+public interface IContainerResolver
+{
+	string Resolve();
+}
+
+public interface IContainerManager
+{
+	IReadOnlyList<string> GetContainerNames();
+}
+
+public interface IToolkitResolver
+{
+	ToolkitDefinition Resolve();
+	string ToToolkitPath(string hostPath);
+}
+
+public interface ICaddyResolver
+{
+	CaddyDefinition Resolve();
+	ProjectCaddyDefinition ResolveForProject(DapsProject project);
+}
+
+public interface IDockerResolver
+{
+	DockerDefinition Resolve();
+	ProjectDockerDefinition ResolveForProject(DapsProject project);
+}

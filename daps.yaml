@@ -1,0 +1,10 @@
+providers:
+#  dreamcompute: openstack
+#    openrc: ./hosting/dhc599287-openrc.sh
+  ramnode: openstack
+    openrc: ./hosting/ramnode_openrc
+projects:
+  jshirt:
+    path: ../j-shirt.com
+  dapster-wp:
+    path: ../dapster-wp

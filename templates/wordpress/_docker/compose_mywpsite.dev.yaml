@@ -1,0 +1,41 @@
+## DAPS WordPress Template — Dev Overrides
+##
+## Use with: docker compose -f _docker/compose_mywpsite.yaml -f _docker/compose_mywpsite.dev.yaml up
+##
+## Adds: PhpMyAdmin for database browsing, exposed ports for local access,
+## and a bind mount for wp-content so theme/plugin edits are reflected immediately.
+
+services:
+  db:
+    # Expose MySQL locally for tools like TablePlus or DBeaver
+    ports:
+      - "3306:3306"
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    depends_on:
+      - db
+    restart: always
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+    secrets:
+      - mysql_root_password
+    ports:
+      - "8082:80"
+    networks:
+      - daps_net
+
+  wordpress:
+    build:
+      context: ..
+      dockerfile: _docker/wordpress.dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      # Bind-mount wp-content for live editing of themes and plugins
+      - ../wp-content:/var/www/html/wp-content
+    environment:
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'WP_REDIS_HOST', 'redis' );
+        define( 'WP_REDIS_PORT', 6379 );

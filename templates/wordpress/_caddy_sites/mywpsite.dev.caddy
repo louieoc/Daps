@@ -1,0 +1,10 @@
+# DAPS WordPress Template — Dev Caddy Config
+# This file is imported by the root DAPS Caddyfile.
+#
+# SETUP: Replace "mywpsite.localhost" with your preferred local dev hostname,
+# then add that hostname to your system hosts file pointing to 127.0.0.1.
+
+mywpsite.localhost {
+	encode gzip zstd
+	reverse_proxy wordpress:80
+}

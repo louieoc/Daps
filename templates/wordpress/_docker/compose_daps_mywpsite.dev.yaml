@@ -1,0 +1,20 @@
+## DAPS Toolkit Extension — Dev Only
+##
+## Extends the toolkit service defined in daps/_docker/compose_daps.dev.yaml,
+## bind-mounting this project into the toolkit container so deployment scripts
+## can access project files.
+##
+## SETUP: Replace "mywpsite" (both in the volume path and the mount target)
+## with your project folder name.
+##
+## The host path "../../mywpsite" resolves relative to this file's location,
+## meaning it points to the project root (e.g. /home/you/mywpsite).
+## If your project folder has a different name, update both sides accordingly.
+##
+## NOTE: A future dapsman workflow may generate or patch this file automatically
+## based on the project name in daps.yaml.
+
+services:
+  toolkit:
+    volumes:
+      - ../../mywpsite:/srv/projects/mywpsite

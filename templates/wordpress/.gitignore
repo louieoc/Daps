@@ -1,0 +1,19 @@
+# Secrets — never commit these
+_secrets/
+
+# WordPress content — themes are tracked; uploads, plugins, and cache are not
+# (see wp-content/.gitignore for the rules that apply within that folder)
+wp-content/uploads/
+wp-content/plugins/
+wp-content/upgrade/
+wp-content/cache/
+
+# Local backups
+backups/
+
+# Docker image exports
+_docker/image-exports/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
