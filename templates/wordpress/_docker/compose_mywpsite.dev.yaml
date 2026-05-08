@@ -8,21 +8,22 @@
 services:
   db:
     # Expose MySQL locally for tools like TablePlus or DBeaver
+    # Bound to 127.0.0.1 so it is not reachable from other machines on the network
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
 
   phpmyadmin:
     image: phpmyadmin:latest
     depends_on:
       - db
-    restart: always
+    restart: unless-stopped
     environment:
       PMA_HOST: db
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
     secrets:
       - mysql_root_password
     ports:
-      - "8082:80"
+      - "127.0.0.1:8082:80"
     networks:
       - daps_net
 
@@ -31,7 +32,7 @@ services:
       context: ..
       dockerfile: _docker/wordpress.dockerfile
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
     volumes:
       # Bind-mount wp-content for live editing of themes and plugins
       - ../wp-content:/var/www/html/wp-content

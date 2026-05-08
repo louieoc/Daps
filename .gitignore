@@ -429,5 +429,9 @@ FodyWeavers.xsd
 /caddy_sites
 /secrets
 
+# Hosting provider credentials and instance config — never commit real values
+hosting/*
+!hosting/example_*
+
 .dapsman
 .claude
