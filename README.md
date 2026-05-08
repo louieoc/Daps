@@ -36,8 +36,10 @@ Daps enables 2 environments:
 1. the local docker which acts as a "dev" environment
     - a "toolkit" Linux container runs here and provides a common runtime environment for tools and remote deployment workflows
     - local Caddy container for managing reverse proxy for "mysite.localhost"
+	- one or more project containers
 2. a remote environment running docker that acts as "prod"
     - remote Caddy container for managing reverse proxy for domains
+	- one or more project containers
     - currently Daps targets OpenStack VPS instances, but we should be able to support other Unix hosting options
 
 
@@ -62,7 +64,9 @@ Each project contains a small set of folders and files that enable it to be depl
 
 Daps includes a file `daps.yaml` in which you register the projects you want it to manage.
 
-Daps then provides workflows for managing project deployment. The workflows are described below.
+Daps then provides workflows for managing project deployment, executed via a CLI called `dapsman`. The workflows are described below.
+
+
 
 
 ## Governing principles
