@@ -98,6 +98,16 @@ internal sealed class DapsmanRunner
 			return await RunRemoteBuild();
 		}
 
+		if (_parsed.IsProdTeardown)
+		{
+			return await RunProdTeardown();
+		}
+
+		if (_parsed.IsProdUnbuild)
+		{
+			return await RunProdUnbuild();
+		}
+
 		PrintUsage();
 		return 1;
 	}
@@ -533,6 +543,127 @@ internal sealed class DapsmanRunner
 		return Task.FromResult(0);
 	}
 
+	private Task<int> RunProdTeardown()
+	{
+		var projectName = _parsed.ProjectFilters.Count == 1 ? _parsed.ProjectFilters[0] : null;
+		if (string.IsNullOrEmpty(projectName))
+			throw new ArgumentException("--project <name> is required for prod teardown.");
+
+		var planBuilder = new ConventionTeardownPlanBuilder(
+			_parsed.ProviderName,
+			_toolkitResolver,
+			_projectResolver,
+			_workstationCaddyResolver,
+			_hostingResolver);
+
+		var service = new TeardownService(
+			_configLoader,
+			planBuilder,
+			new ToolkitTeardownExecutor(_toolkitBashRunner));
+
+		var options = new TeardownOptions
+		{
+			DryRun = _parsed.DryRun,
+			ProjectName = projectName,
+			ProviderName = _parsed.ProviderName,
+		};
+
+		var plan = service.CreatePlan(_parsed.ConfigPath, options);
+
+		Console.WriteLine("Step: validate");
+		Console.WriteLine("- prerequisites ok");
+		Console.WriteLine($"- project: {plan.ProjectName}");
+		Console.WriteLine($"- toolkit container: {plan.ToolkitContainerName}");
+		Console.WriteLine($"- remote: {plan.RemoteUser}@{plan.RemoteHost}");
+		Console.WriteLine($"- ssh key: {plan.SshKeyName}");
+		Console.WriteLine();
+		Console.WriteLine("Step: teardown");
+		if (plan.CaddySiteFileName is not null)
+			Console.WriteLine($"- replace caddy site '{plan.CaddySiteFileName}' with removed page and reload");
+		else
+			Console.WriteLine("- no prod caddy file found; caddy step skipped");
+		Console.WriteLine($"- docker compose down -v for project containers");
+		Console.WriteLine($"- delete {plan.RemoteProjectPath}");
+
+		if (!_parsed.DryRun)
+		{
+			Console.WriteLine();
+			Console.Write($"Are you sure you want to teardown '{plan.ProjectName}'? This will delete all containers, volumes, and remote project files. Type 'yes' to confirm: ");
+			var confirm = Console.ReadLine()?.Trim();
+			if (!string.Equals(confirm, "yes", StringComparison.OrdinalIgnoreCase))
+			{
+				Console.WriteLine("Teardown cancelled.");
+				return Task.FromResult(1);
+			}
+
+			Console.WriteLine();
+			Console.WriteLine("Step: teardown");
+			service.Execute(plan);
+			Console.WriteLine("- done");
+		}
+
+		return Task.FromResult(0);
+	}
+
+	private Task<int> RunProdUnbuild()
+	{
+		var planBuilder = new OpenStackUnbuildPlanBuilder(_toolkitResolver, _hostingResolver);
+
+		var service = new UnbuildService(
+			_configLoader,
+			planBuilder,
+			new ToolkitUnbuildExecutor(_toolkitBashRunner));
+
+		var options = new UnbuildOptions
+		{
+			DryRun = _parsed.DryRun,
+			ProviderName = _parsed.ProviderName,
+		};
+
+		var plan = service.CreatePlan(_parsed.ConfigPath, options);
+
+		Console.WriteLine("Step: validate");
+		Console.WriteLine("- prerequisites ok");
+		Console.WriteLine($"- toolkit container: {plan.ToolkitContainerName}");
+		Console.WriteLine($"- openrc: {plan.OpenRcContainerPath}");
+		Console.WriteLine($"- instance vars: {plan.InstanceVarsContainerPath}");
+		Console.WriteLine($"- default instance name: {plan.DefaultInstanceName}");
+		Console.WriteLine($"- default key name: {plan.DefaultKeyName}");
+		Console.WriteLine();
+		Console.WriteLine("Step: unbuild");
+		Console.WriteLine($"- delete OpenStack instance '{plan.DefaultInstanceName}' (or OS_INSTANCE_NAME from vars)");
+		Console.WriteLine($"- delete OpenStack keypair '{plan.DefaultKeyName}' (or OS_KEY_NAME from vars)");
+		Console.WriteLine($"- delete SSH key files: {plan.SshKeyToolkitPath}");
+		Console.WriteLine($"- delete instance vars file: {plan.InstanceVarsFilePath}");
+
+		if (!_parsed.DryRun)
+		{
+			Console.WriteLine();
+			Console.Write("Are you sure you want to delete the remote OpenStack environment? This cannot be undone. Type 'yes' to confirm: ");
+			var confirm1 = Console.ReadLine()?.Trim();
+			if (!string.Equals(confirm1, "yes", StringComparison.OrdinalIgnoreCase))
+			{
+				Console.WriteLine("Unbuild cancelled.");
+				return Task.FromResult(1);
+			}
+
+			Console.Write("Are you really, really sure? Type 'yes' again to proceed: ");
+			var confirm2 = Console.ReadLine()?.Trim();
+			if (!string.Equals(confirm2, "yes", StringComparison.OrdinalIgnoreCase))
+			{
+				Console.WriteLine("Unbuild cancelled.");
+				return Task.FromResult(1);
+			}
+
+			Console.WriteLine();
+			Console.WriteLine("Step: unbuild");
+			service.Execute(plan);
+			Console.WriteLine("- done");
+		}
+
+		return Task.FromResult(0);
+	}
+
 	private static void PrintUsage()
 	{
 		Console.WriteLine("Usage:");
@@ -547,6 +678,8 @@ internal sealed class DapsmanRunner
 		Console.WriteLine("  dapsman prod backup [--project <name>...] [--dry-run] [--provider <name>] [--config <path>]");
 		Console.WriteLine("  dapsman prod offline [--project <name>...] [--dry-run] [--provider <name>] [--config <path>]");
 		Console.WriteLine("  dapsman prod online [--project <name>...] [--dry-run] [--provider <name>] [--config <path>]");
+		Console.WriteLine("  dapsman prod teardown --project <name> [--dry-run] [--provider <name>] [--config <path>]");
+		Console.WriteLine("  dapsman prod unbuild [--dry-run] [--provider <name>] [--config <path>]");
 	}
 
 	private static void PrintInitPlan(InitPlan plan, InitOptions options)

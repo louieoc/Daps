@@ -11,6 +11,8 @@
 	public required bool IsProdBackup { get; init; }
 	public required bool IsProdOffline { get; init; }
 	public required bool IsProdOnline { get; init; }
+	public required bool IsProdTeardown { get; init; }
+	public required bool IsProdUnbuild { get; init; }
 	public required bool BuildImages { get; init; }
 	public required bool SkipBuildImages { get; init; }
 	public required bool DryRun { get; init; }
@@ -39,6 +41,8 @@
 		var isProdBackup = false;
 		var isProdOffline = false;
 		var isProdOnline = false;
+		var isProdTeardown = false;
+		var isProdUnbuild = false;
 		var buildImages = false;
 		var skipBuildImages = false;
 		var dryRun = false;
@@ -119,6 +123,16 @@
 						 string.Equals(action, "online", StringComparison.OrdinalIgnoreCase))
 				{
 					isProdOnline = true;
+				}
+				else if (string.Equals(group, "prod", StringComparison.OrdinalIgnoreCase) &&
+						 string.Equals(action, "teardown", StringComparison.OrdinalIgnoreCase))
+				{
+					isProdTeardown = true;
+				}
+				else if (string.Equals(group, "prod", StringComparison.OrdinalIgnoreCase) &&
+						 string.Equals(action, "unbuild", StringComparison.OrdinalIgnoreCase))
+				{
+					isProdUnbuild = true;
 				}
 			}
 		}
@@ -211,6 +225,8 @@
 			IsProdBackup = isProdBackup,
 			IsProdOffline = isProdOffline,
 			IsProdOnline = isProdOnline,
+			IsProdTeardown = isProdTeardown,
+			IsProdUnbuild = isProdUnbuild,
 			BuildImages = buildImages,
 			SkipBuildImages = skipBuildImages,
 			DryRun = dryRun,

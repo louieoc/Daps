@@ -84,6 +84,26 @@ public interface ICaddyRestartPlanBuilder
 	CaddyRestartPlan BuildPlan();
 }
 
+public interface ITeardownPlanBuilder
+{
+	TeardownPlan BuildPlan(DapsConfig config, TeardownOptions options);
+}
+
+public interface ITeardownExecutor
+{
+	void Execute(TeardownPlan plan);
+}
+
+public interface IUnbuildPlanBuilder
+{
+	UnbuildPlan BuildPlan(DapsConfig config, UnbuildOptions options);
+}
+
+public interface IUnbuildExecutor
+{
+	void Execute(UnbuildPlan plan);
+}
+
 public interface IProjectResolver
 {
 	/// <summary>

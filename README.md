@@ -1,4 +1,4 @@
-# Docker Assisted Portable Sovereignty (daps)
+# Docker Assisted Portable Sovereignty (Daps)
 
 A set of patterns, conventions, workflows and tooling for building and managing portable web stuff.
 
@@ -9,14 +9,14 @@ Author: Louis O'Callaghan (https://louisocallaghan.com)
 
 You are an individual artist, hobbyist, or small business. You own one or more websites. You don't want to be locked into a specific hosting provider. You want to own your data and take it with you when you leave.
 
-Stretch goal: you don't have or want a public website but you use products like Google Docs and don't want to depend as much on third parties (and you want to own your data). But managing FOSS (Free Open Source Software) alternatives is daunting. DAPS can make it easier.
+Stretch goal: you don't have or want a public website but you use products like Google Docs and don't want to depend as much on third parties (and you want to own your data). But managing FOSS (Free Open Source Software) alternatives is daunting. Daps can make it easier.
 
 You should be able to:
 - pick some web technology you want to use (e.g Wordpress, or a custom website)
 - develop it on your local computer
 - run and test it on your local computer (dev)
 - deploy it to a remote hosting provider (production aka prod)
-- backup any data and/or files captured at the hosting provider back to your local computer
+- create backups of any data and/or files captured at the hosting provider onto to your local computer
 - push changes and updates to prod
 - delete your data/files from the hosting provider
 - deploy it again somewhere else
@@ -82,7 +82,9 @@ composition > inheritance
 
 I am a musician and software developer. I've had some public websites and ran them personal servers, shared Linux hosting, shared hosting with "easy" wordpress management, Azure App Services, and like, Tumblr. Setting these up and migrating from one to another or maintaining multiple sites in different ways has been annoying. It makes it less fun and makes it harder to build new things.
 
-Daps is an idea to abstract deployment into essential workflows within a common environment that's as nonproprietary as practical. I built it with a lot of help from first Codex and now Claude. Those are extremely proprietary and I'm aware of the irony. Ideally Daps is easy to use without an LLM (but boy does it help). I want to use Daps to build new things and have the deployment pieces "solved."
+Daps is an idea to abstract deployment into essential workflows within a common environment that's as nonproprietary as practical. I built it with a lot of help from first Codex and now Claude. Those are extremely proprietary and I'm aware of the irony. Ideally Daps is easy to use without an LLM (but boy does it help).
+
+I want to use Daps to build new things and have the deployment pieces "solved."
 
 
 ## Conventions
@@ -244,6 +246,27 @@ On the remote openstack instance or whichever VM we're running docker on, we wil
         - `projectname/_docker/image-exports` - copy built docker image tars here
 
 
+## Toolkit
+
+After you run the `dapsman local build` workflow, you should have a toolkit container.
+
+The toolkit provides a common Linux environment including any tools needed for managing remote deployments, such as the OpenStack CLI, OpenSSH and rsync. If you create a project that needs special dependencies for deployment you can add them to `daps/docker/toolkit.dockerfile` and run `dapsman local build --build`
+
+You can log into the toolkit by running this:
+
+`docker exec -it daps-toolkit-1 bash -l`
+
+After you've created a remote environment by running `dapsman prod build`, you can log into the toolkit and then into the remote VM:
+
+`ssh -i .ssh/daps-key-<providername> <root or ubuntu>@<ip address>`
+
+e.g.
+
+`ssh -i .ssh/daps-key-ramnode root@111.222.333.444`
+
+At this point you'll be 3 terminal levels deep, once for your workstation, second for the toolkit then third for the remote VM -- wow
+
+
 ## Security Considerations
 
 DAPS is designed for trusted single-user environments (your personal workstation and a VPS you control). Some of its design choices involve trade-offs that are acceptable in that context but worth understanding.
@@ -339,3 +362,21 @@ Pulls content from the remote server to the local workstation. Runs `_scripts/sy
 dapsman prod backup [--project <name>...] [--dry-run] [--provider <name>] [--config <path>]
 ```
 Backs up remote data to the local workstation by running `_scripts/backup-remote.toolkit.sh` from the toolkit container. Projects without this script are skipped with a message. Backups are written to `_backups/from_prod/` inside the project directory. Omitting `--project` runs against all configured projects that support it.
+
+### `dapsman prod teardown`
+```
+dapsman prod teardown --project <name> [--dry-run] [--provider <name>] [--config <path>]
+```
+Deletes a project from the remote deployment. Requires specifying a project. Requires confirmation ("are you sure?") before executing the teardown. Tearing down a project does the following:
+
+- updates the caddy site file to return a "site has been removed" message (and restarts Caddy)
+- deletes all of the site's containers using `docker compose -f ... down -v` using the project's remote compose files
+- deletes the remote project folder
+
+### `dapsman prod unbuild`
+```
+dapsman prod unbuild [--dry-run] [--provider <name>] [--config <path>]
+```
+Deletes the OpenStack instance and SSH keypair from the remote host, the SSH key files from the toolkit, and the instance vars file from the workstation. Requires confirmation ("are you sure?") and re-confirmation ("really really sure?").
+
+
