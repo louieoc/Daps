@@ -7,6 +7,8 @@ Author: Louis O'Callaghan (https://louisocallaghan.com)
 
 ## Overview
 
+***This is still very new and being updated frequently***
+
 You are an individual artist, hobbyist, or small business. You own one or more websites. You don't want to be locked into a specific hosting provider. You want to own your data and take it with you when you leave.
 
 Stretch goal: you don't have or want a public website but you use products like Google Docs and don't want to depend as much on third parties (and you want to own your data). But managing FOSS (Free Open Source Software) alternatives is daunting. Daps can make it easier.
@@ -31,16 +33,36 @@ You have a computer, say a laptop. It shouldn't matter whether you're running Wi
 - docker desktop running locally
 - git
 - bash (git bash for Windows)
+- .NET 9 SDK
+
+### Setting up the `dapsman` command
+
+Add `<repo>/bin` to your PATH once after cloning. The `bin/` folder contains launcher scripts for each platform that delegate to `dotnet run`, so you always run from source without a separate build step.
+
+**Windows** — add `C:\path\to\daps\bin` to your user PATH via System Properties, or for the current session:
+```powershell
+$env:PATH += ";C:\path\to\daps\bin"
+```
+
+**Mac/Linux** — make the script executable, then add to PATH:
+```bash
+chmod +x /path/to/daps/bin/dapsman
+export PATH="/path/to/daps/bin:$PATH"  # add to ~/.zshrc or ~/.bashrc to persist
+```
+
+After that, `dapsman` works from any directory.
 
 Daps enables 2 environments:
 1. the local docker which acts as a "dev" environment
     - a "toolkit" Linux container runs here and provides a common runtime environment for tools and remote deployment workflows
     - local Caddy container for managing reverse proxy for "mysite.localhost"
 	- one or more project containers
+    - a backend network called `daps_net`
 2. a remote environment running docker that acts as "prod"
     - remote Caddy container for managing reverse proxy for domains
 	- one or more project containers
     - currently Daps targets OpenStack VPS instances, but we should be able to support other Unix hosting options
+    - a backend network called `daps_net`
 
 
 ## Projects

@@ -8,5 +8,5 @@
 
 mywpsite.example.com {
 	encode gzip zstd
-	reverse_proxy wordpress:80
+	reverse_proxy mywpsite:80
 }

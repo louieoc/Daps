@@ -12,6 +12,7 @@ volumes:
   mywpsite-mysql-data:
 
 networks:
+  mywpsite_net:
   daps_net:
     external: true
 
@@ -56,13 +57,13 @@ services:
       - db_password
       - mysql_root_password
     networks:
-      - daps_net
+      - mywpsite_net
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
     networks:
-      - daps_net
+      - mywpsite_net
 
   wordpress:
     image: mywpsite-wordpress
@@ -95,4 +96,7 @@ services:
       - logged_in_salt
       - nonce_salt
     networks:
-      - daps_net
+      mywpsite_net:
+      daps_net:
+        aliases:
+          - mywpsite

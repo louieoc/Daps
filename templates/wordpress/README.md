@@ -154,4 +154,23 @@ mywpsite/
 | redis | — | Redis 7 object cache |
 | phpmyadmin | 8082 | Database browser (dev only) |
 
+---
+
+## Running multiple WordPress projects
+
+Multiple WordPress projects can run alongside each other on the same DAPS instance. The template is designed for this:
+
+- `db` and `redis` are on an internal project network (`mywpsite_net`) and are not visible to other projects.
+- Caddy routes to the WordPress container via a project-specific alias (`mywpsite`) on `daps_net`, not the generic service name `wordpress`, so there is no DNS collision.
+
+The one thing you must change manually for a second project is the **dev host port bindings** in `_docker/compose_mywpsite.dev.yaml`, since each project uses fixed ports and only one can bind a given host port at a time:
+
+| Service | Default port | Change to (example) |
+|---|---|---|
+| wordpress | 8080 | 8081 |
+| db | 3306 | 3307 |
+| phpmyadmin | 8082 | 8083 |
+
+These ports are only used for direct local access (e.g. connecting a DB tool to MySQL). Traffic through `https://mywpsite.localhost` goes via Caddy and is unaffected.
+
 
