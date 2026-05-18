@@ -35,22 +35,6 @@ You have a computer, say a laptop. It shouldn't matter whether you're running Wi
 - bash (git bash for Windows)
 - .NET 9 SDK
 
-### Setting up the `dapsman` command
-
-Add `<repo>/bin` to your PATH once after cloning. The `bin/` folder contains launcher scripts for each platform that delegate to `dotnet run`, so you always run from source without a separate build step.
-
-**Windows** — add `C:\path\to\daps\bin` to your user PATH via System Properties, or for the current session:
-```powershell
-$env:PATH += ";C:\path\to\daps\bin"
-```
-
-**Mac/Linux** — make the script executable, then add to PATH:
-```bash
-chmod +x /path/to/daps/bin/dapsman
-export PATH="/path/to/daps/bin:$PATH"  # add to ~/.zshrc or ~/.bashrc to persist
-```
-
-After that, `dapsman` works from any directory.
 
 Daps enables 2 environments:
 1. the local docker which acts as a "dev" environment
@@ -61,7 +45,7 @@ Daps enables 2 environments:
 2. a remote environment running docker that acts as "prod"
     - remote Caddy container for managing reverse proxy for domains
 	- one or more project containers
-    - currently Daps targets OpenStack VPS instances, but we should be able to support other Unix hosting options
+    - currently Daps targets [OpenStack](https://www.openstack.org/) VPS instances, but we should be able to support other Unix hosting options
     - a backend network called `daps_net`
 
 
@@ -88,6 +72,56 @@ Daps includes a file `daps.yaml` in which you register the projects you want it 
 
 Daps then provides workflows for managing project deployment, executed via a CLI called `dapsman`. The workflows are described below.
 
+
+## Visualization
+
+These diagrams go some way in describing how Daps, Daps-enabled projects, Docker, and OpenStack relate to each other using the Wordpress template example.
+
+### Local
+
+![local architecture](docs/Daps%20architecture-Local.drawio.png "local architecture diagram")
+
+Note that all of the mywpsite containers are bound to ports on the host workstation (e.g. localhost:8080 binds to `mywpsite-wordpress-1:80`), so you can address them directly from the workstation. The hosts file acts as DNS, routing `mywpsite.localhost` to localhost, and then Caddy routes that name to the `mywpsite-wordpress-1` container.
+
+### Remote
+
+![remote architecture](docs/Daps%20architecture-Remote.drawio.png "remote architecture diagram")
+
+Note that none of the mywpsite containers are bound to ports on the VM because they only need internal routing from Caddy -- they are isolated from the VM and the internet. Caddy is bound to the host instance ports 80 and 443, and then DNS (e.g. mywpsite.com) is routed to the host instance IP address. Caddy then routes mywpsite.com traffic to the `mywpsite-wordpress-1` container.
+
+
+## Setup
+
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+1. Install [Git](https://git-scm.com/install/)
+1. TODO Install .NET 9 SDK
+1. Clone daps
+
+### For production
+
+Daps currently only supports one remote host at a time, and only OpenStack providers.
+
+1. find an OpenStack hosting provider. Daps only support OpenStack, for now. I've run Daps against [DreamCompute](https://www.dreamhost.com/cloud/computing/) and [RamNode](https://ramnode.com/products/cloud-vps) so far.
+1. open an account and download the OpenRC file from your provider into the `daps/hosting` folder
+
+
+
+### Setting up the `dapsman` command
+
+Add `<repo>/bin` to your PATH once after cloning. The `bin/` folder contains launcher scripts for each platform that delegate to `dotnet run`, so you always run from source without a separate build step.
+
+**Windows** — add `C:\path\to\daps\bin` to your user PATH via System Properties, or for the current session:
+```powershell
+$env:PATH += ";C:\path\to\daps\bin"
+```
+
+**Mac/Linux** — make the script executable, then add to PATH:
+```bash
+chmod +x /path/to/daps/bin/dapsman
+export PATH="/path/to/daps/bin:$PATH"  # add to ~/.zshrc or ~/.bashrc to persist
+```
+
+After that, `dapsman` works from any directory.
 
 
 
