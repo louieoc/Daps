@@ -1,0 +1,18 @@
+# DAPS Grist Template — Prod Caddy Config
+# This file is imported by the root DAPS Caddyfile on the remote VM.
+# Caddy will automatically obtain and renew a TLS certificate for your domain.
+#
+# SETUP:
+#   1. Replace "mygrist.example.com" with your actual domain name.
+#   2. Replace "admin" with your chosen username.
+#   3. Replace the hash with one generated for your password:
+#      docker run --rm caddy:latest caddy hash-password --plaintext 'yourpassword'
+#   4. Make sure your domain's DNS A record points to your server's IP address.
+
+mygrist.example.com {
+	encode gzip zstd
+	basicauth {
+		admin $2a$14$REPLACEME_RUN_CADDY_HASH_PASSWORD_TO_GENERATE_THIS_HASH
+	}
+	reverse_proxy mygrist:8484
+}

@@ -1,0 +1,8 @@
+_secrets/
+persist/
+_backups/
+_docker/image-exports/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db

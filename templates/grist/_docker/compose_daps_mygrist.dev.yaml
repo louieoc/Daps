@@ -1,0 +1,13 @@
+## DAPS Toolkit Extension — Dev Only
+##
+## Extends the toolkit service defined in daps/_docker/compose_daps.dev.yaml,
+## bind-mounting this project into the toolkit container so deployment scripts
+## can access project files.
+##
+## SETUP: Replace "mygrist" (both in the volume path and the mount target)
+## with your project folder name.
+
+services:
+  toolkit:
+    volumes:
+      - ../../mygrist:/srv/projects/mygrist

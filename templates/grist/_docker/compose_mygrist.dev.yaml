@@ -1,0 +1,14 @@
+## DAPS Grist Template — Dev Overrides
+##
+## Use with: docker compose -f _docker/compose_mygrist.yaml -f _docker/compose_mygrist.dev.yaml up
+##
+## Adds: exposed port for local access and a bind mount for the data directory.
+
+services:
+  grist:
+    ports:
+      # Bound to 127.0.0.1 so it is not reachable from other machines on the network
+      - "127.0.0.1:8484:8484"
+    volumes:
+      # Bind-mount persist/ so data is accessible on the workstation
+      - ../persist:/persist
