@@ -7,11 +7,6 @@ public sealed class DevCaddySiteSync : ICaddySiteSync
 {
     public void SyncDevSites(CaddySyncPlan plan)
     {
-        if (Directory.Exists(plan.RuntimeSitesPath))
-        {
-            Directory.Delete(plan.RuntimeSitesPath, recursive: true);
-        }
-
         Directory.CreateDirectory(plan.RuntimeSitesPath);
 
         foreach (var file in plan.FilesToCopy)
@@ -21,8 +16,12 @@ public sealed class DevCaddySiteSync : ICaddySiteSync
 
         if (plan.ShouldCreatePlaceholder)
         {
-            var content = "# placeholder file to keep Caddy import glob non-empty\n";
-            File.WriteAllText(plan.PlaceholderFilePath, content);
+            var hasAnyCaddyFiles = Directory.EnumerateFiles(plan.RuntimeSitesPath, "*.caddy").Any();
+            if (!hasAnyCaddyFiles)
+            {
+                var content = "# placeholder file to keep Caddy import glob non-empty\n";
+                File.WriteAllText(plan.PlaceholderFilePath, content);
+            }
         }
     }
 }

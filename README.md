@@ -94,8 +94,10 @@ Note that none of the mywpsite containers are bound to ports on the VM because t
 
 1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 1. Install [Git](https://git-scm.com/install/)
-1. TODO Install .NET 9 SDK
-1. Clone daps
+1. Install [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+1. Clone daps (currently on [Codeberg](https://codeberg.org/louieoc/Daps))
+
+TODO - finish
 
 ### For production
 
@@ -104,6 +106,7 @@ Daps currently only supports one remote host at a time, and only OpenStack provi
 1. find an OpenStack hosting provider. Daps only support OpenStack, for now. I've run Daps against [DreamCompute](https://www.dreamhost.com/cloud/computing/) and [RamNode](https://ramnode.com/products/cloud-vps) so far.
 1. open an account and download the OpenRC file from your provider into the `daps/hosting` folder
 
+TODO - finish
 
 
 ### Setting up the `dapsman` command
