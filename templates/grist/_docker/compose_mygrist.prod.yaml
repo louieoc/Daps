@@ -1,0 +1,16 @@
+## DAPS Grist Template — Prod Overrides
+##
+## Use with: docker compose -f _docker/compose_mygrist.yaml -f _docker/compose_mygrist.prod.yaml up -d
+##
+## SETUP: Replace "mygrist" in the volume path with your project name.
+##        Replace "admin@example.com" with your email address.
+
+services:
+  grist:
+    volumes:
+      # persist/ lives on the VM filesystem so it survives redeployment.
+      # SETUP: replace "mygrist" with your project name.
+      - /srv/projects/mygrist/persist:/persist
+    # environment:
+    #   SETUP: to use a different email in prod, uncomment and set:
+    #   GRIST_DEFAULT_EMAIL: you@example.com
