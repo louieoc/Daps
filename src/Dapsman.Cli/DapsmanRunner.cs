@@ -130,7 +130,9 @@ internal sealed class DapsmanRunner
 		};
 
 		var plan = service.CreatePlan(_parsed.ConfigPath, options);
-		PrintLocalBuildPlan(plan, options);
+		var caddyRestartPlanBuilder = new ConventionLocalCaddyRestartPlanBuilder(_config, _workstationCaddyResolver);
+		var caddyRestartPlan = caddyRestartPlanBuilder.BuildPlan();
+		PrintLocalBuildPlan(plan, options, caddyRestartPlan);
 
 		if (!options.DryRun)
 		{
@@ -172,6 +174,11 @@ internal sealed class DapsmanRunner
 					Console.WriteLine($"- {projectPlan.ProjectName}: done");
 				}
 			}
+
+			Console.WriteLine();
+			Console.WriteLine("Step: caddy-reload");
+			new CaddyRestartService(caddyRestartPlanBuilder, _workstationBashRunner).Execute(caddyRestartPlan);
+			Console.WriteLine("- done");
 		}
 
 		return Task.FromResult(0);
@@ -698,7 +705,7 @@ internal sealed class DapsmanRunner
 		Console.WriteLine($"- register in daps.yaml: {plan.ProjectName}: path: {plan.DapsYamlProjectRelativePath}");
 	}
 
-	private static void PrintLocalBuildPlan(LocalBuildPlan plan, LocalBuildOptions options)
+	private static void PrintLocalBuildPlan(LocalBuildPlan plan, LocalBuildOptions options, CaddyRestartPlan caddyRestartPlan)
 	{
 		Console.WriteLine("Step: validate");
 		Console.WriteLine("- prerequisites ok");
@@ -755,6 +762,10 @@ internal sealed class DapsmanRunner
 				Console.WriteLine($"- {projectPlan.ProjectName}: {projectCommand}");
 			}
 		}
+
+		Console.WriteLine();
+		Console.WriteLine("Step: caddy-reload");
+		Console.WriteLine($"- {caddyRestartPlan.ReloadCommand}");
 
 		Console.WriteLine();
 		Console.WriteLine("Summary:");
