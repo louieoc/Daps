@@ -433,5 +433,6 @@ FodyWeavers.xsd
 hosting/*
 !hosting/example_*
 
+daps.yaml
 .dapsman
 .claude

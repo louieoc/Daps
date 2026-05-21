@@ -96,6 +96,7 @@ Note that none of the mywpsite containers are bound to ports on the VM because t
 1. Install [Git](https://git-scm.com/install/)
 1. Install [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
 1. Clone daps (currently on [Codeberg](https://codeberg.org/louieoc/Daps))
+1. Copy `daps.yaml.example` to `daps.yaml` — this is your personal config file and is gitignored
 
 TODO - finish
 
