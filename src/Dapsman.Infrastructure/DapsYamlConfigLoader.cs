@@ -22,7 +22,26 @@ public sealed class DapsYamlConfigLoader : IConfigLoader
 		string? section = null;
 		string? currentProviderName = null;
 		string? currentProviderType = null;
-		string? currentProjectName = null;
+
+		string? pendingProjectName = null;
+		string? pendingProjectPath = null;
+		var pendingProjectDisabled = false;
+
+		void FlushPendingProject()
+		{
+			if (pendingProjectName is not null && pendingProjectPath is not null)
+			{
+				projects.Add(new ProjectDefinition
+				{
+					Name = pendingProjectName,
+					Path = pendingProjectPath,
+					Disabled = pendingProjectDisabled,
+				});
+			}
+			pendingProjectName = null;
+			pendingProjectPath = null;
+			pendingProjectDisabled = false;
+		}
 
 		foreach (var rawLine in File.ReadLines(fullDapsYamlPath))
 		{
@@ -37,7 +56,7 @@ public sealed class DapsYamlConfigLoader : IConfigLoader
 
 			if (indent == 0)
 			{
-				currentProjectName = null;
+				FlushPendingProject();
 				currentProviderName = null;
 				currentProviderType = null;
 
@@ -78,23 +97,22 @@ public sealed class DapsYamlConfigLoader : IConfigLoader
 			{
 				if (indent == 2 && trimmed.EndsWith(':'))
 				{
-					currentProjectName = trimmed.TrimEnd(':').Trim();
+					FlushPendingProject();
+					pendingProjectName = trimmed.TrimEnd(':').Trim();
 					continue;
 				}
 
-				if (indent == 4 && currentProjectName is not null && ConfigUtils.TryParseKeyValue(trimmed, out var key, out var value))
+				if (indent == 4 && pendingProjectName is not null && ConfigUtils.TryParseKeyValue(trimmed, out var key, out var value))
 				{
 					if (key == "path")
-					{
-						projects.Add(new ProjectDefinition
-						{
-							Name = currentProjectName,
-							Path = ConfigUtils.ResolvePath(dapsRoot, value),
-						});
-					}
+						pendingProjectPath = ConfigUtils.ResolvePath(dapsRoot, value);
+					else if (key == "disabled")
+						pendingProjectDisabled = string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
 				}
 			}
 		}
+
+		FlushPendingProject();
 
 		return new DapsConfig
 		{
