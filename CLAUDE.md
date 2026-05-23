@@ -8,7 +8,7 @@ DAPS comprises a CLI for executing workflows, host definitions for targeting hos
 
 The CLI is called **Dapsman**, written in C# (.NET 9). Keep it in C#.
 
-It's ok to refer to it as Daps (capitalized instead of all caps). It is meant to be open source once it's ready to share, hosted on Codeberg and/or Github.
+It's ok to refer to it as Daps (capitalized instead of all caps). It is open source, hosted on Codeberg right now, maybe Github later.
 
 ## Environments
 
@@ -219,3 +219,13 @@ Notes on security trade-offs in the current design. DAPS is a local dev tool for
 - Caddy config path in container: `/etc/caddy/Caddyfile`
 - Remote and toolkit project root: `/srv/projects/<name>/`
 - Remote and toolkit DAPS root: `/srv/daps/`
+
+## Docker Compose Conventions
+
+These apply to all project compose files (templates and real projects):
+
+- **Dev host ports must be bound to `127.0.0.1`** — e.g. `"127.0.0.1:8080:80"`, not `"8080:80"`. Prevents exposure to other machines on the local network.
+- **`restart: unless-stopped`** — use this on all services, not `always` (which restarts even on deliberate `docker stop`) and not omitted (which means no restart on reboot).
+- **Caddy reverse proxy uses a project-specific DNS alias, not the generic service name** — each project's web-facing service registers an alias on `daps_net` matching the project name (e.g. `mywpsite`), and the `.caddy` file uses `reverse_proxy mywpsite:80`. Using the raw service name (e.g. `wordpress`) would cause DNS collisions when multiple projects share `daps_net`.
+- **Internal services (db, redis, cache) go on a project-internal network only** — they don't need to be on `daps_net` since only the web-facing service needs Caddy access. This prevents service name collisions and reduces the shared network surface. Name the internal network `<projectname>_net`.
+- **Prod compose files do not expose host ports** — Caddy routes to containers via `daps_net`; host port bindings are not needed in prod and would expose services directly to the internet.
