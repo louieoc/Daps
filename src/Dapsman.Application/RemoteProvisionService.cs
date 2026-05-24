@@ -2,17 +2,17 @@ using Dapsman.Domain;
 
 namespace Dapsman.Application;
 
-public sealed class RemoteBuildService
+public sealed class RemoteProvisionService
 {
     private readonly IPrerequisiteChecker _prerequisiteChecker;
     private readonly IConfigLoader _configLoader;
-    private readonly IRemotePlanBuilder _remotePlanBuilder;
+    private readonly IRemoteProvisionPlanBuilder _remotePlanBuilder;
     private readonly IBashRunner _bashRunner;
 
-    public RemoteBuildService(
+    public RemoteProvisionService(
         IPrerequisiteChecker prerequisiteChecker,
         IConfigLoader configLoader,
-        IRemotePlanBuilder remotePlanBuilder,
+        IRemoteProvisionPlanBuilder remotePlanBuilder,
         IBashRunner bashRunner)
     {
         _prerequisiteChecker = prerequisiteChecker;
@@ -21,14 +21,14 @@ public sealed class RemoteBuildService
         _bashRunner = bashRunner;
     }
 
-    public RemoteBuildPlan CreatePlan(string dapsYamlPath, RemoteBuildOptions options)
+    public RemoteProvisionPlan CreatePlan(string dapsYamlPath, RemoteProvisionOptions options)
     {
         _prerequisiteChecker.EnsureLocalBuildPrerequisites();
         var config = _configLoader.Load(dapsYamlPath);
         return _remotePlanBuilder.BuildRemotePlan(config, options);
     }
 
-    public void Execute(RemoteBuildPlan plan)
+    public void Execute(RemoteProvisionPlan plan)
     {
         _bashRunner.RunShell(plan.ToolkitCommand, Environment.CurrentDirectory, interactive: true);
     }

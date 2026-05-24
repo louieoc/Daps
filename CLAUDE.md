@@ -36,7 +36,7 @@ The toolkit container (`daps-toolkit-1`) is an Ubuntu 22.04 container with OpenS
 
 Regarding projects that are meant ultimately to be accessible on the public internet, they must be deployed to a remote host. The remote docker environment is referred to as "prod."
 
-The `prod build` workflow sets up Docker on the remote host.
+The `prod provision` workflow sets up Docker on the remote host.
 
 The `prod deploy` workflow copies projects to containers on the remote Docker.
 
@@ -171,7 +171,7 @@ Secret files in `_secrets/` are bind-mounted into containers. They must be `chmo
 dapsman init --template <name> --name <project-name> [--path <dest>] [--dry-run]
 dapsman local build [--build] [--dry-run] [--project <name>...] [--config <path>]
 dapsman local caddy restart [--dry-run] [--config <path>]
-dapsman prod build [--dry-run] [--provider <name>] [--toolkit-container <name>] ...
+dapsman prod provision [--dry-run] [--provider <name>] [--toolkit-container <name>] ...
 dapsman prod deploy [--dry-run] [--project <name>...] [--provider <name>] ...
 dapsman prod caddy restart [--dry-run] [--provider <name>] [--toolkit-container <name>]
 ```

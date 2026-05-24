@@ -2,7 +2,7 @@ using Dapsman.Domain;
 
 namespace Dapsman.Application.Tests;
 
-public sealed class RemoteBuildServiceTests
+public sealed class RemoteProvisionServiceTests
 {
 	[Fact]
 	public void CreatePlan_DelegatesToDependencies()
@@ -11,9 +11,9 @@ public sealed class RemoteBuildServiceTests
 		var loader = new FakeLoader();
 		var planner = new FakePlanner();
 		var runner = new FakeBashRunner();
-		var service = new RemoteBuildService(checker, loader, planner, runner);
+		var service = new RemoteProvisionService(checker, loader, planner, runner);
 
-		var plan = service.CreatePlan("daps.yaml", new RemoteBuildOptions { DryRun = true });
+		var plan = service.CreatePlan("daps.yaml", new RemoteProvisionOptions { DryRun = true });
 
 		Assert.True(checker.Called);
 		Assert.True(loader.Called);
@@ -28,9 +28,9 @@ public sealed class RemoteBuildServiceTests
 		var loader = new FakeLoader();
 		var planner = new FakePlanner();
 		var runner = new FakeBashRunner();
-		var service = new RemoteBuildService(checker, loader, planner, runner);
+		var service = new RemoteProvisionService(checker, loader, planner, runner);
 
-		var plan = planner.BuildRemotePlan(new DapsConfig { DapsRootPath = ".", FullYamlPath = Path.Combine(".", "daps.yaml"), Projects = Array.Empty<ProjectDefinition>() }, new RemoteBuildOptions());
+		var plan = planner.BuildRemotePlan(new DapsConfig { DapsRootPath = ".", FullYamlPath = Path.Combine(".", "daps.yaml"), Projects = Array.Empty<ProjectDefinition>() }, new RemoteProvisionOptions());
 		service.Execute(plan);
 
 		Assert.True(runner.ShellCalls.Any());
@@ -62,14 +62,14 @@ public sealed class RemoteBuildServiceTests
 		}
 	}
 
-	private sealed class FakePlanner : IRemotePlanBuilder
+	private sealed class FakePlanner : IRemoteProvisionPlanBuilder
 	{
 		public bool Called { get; private set; }
 
-		public RemoteBuildPlan BuildRemotePlan(DapsConfig config, RemoteBuildOptions options)
+		public RemoteProvisionPlan BuildRemotePlan(DapsConfig config, RemoteProvisionOptions options)
 		{
 			Called = true;
-			return new RemoteBuildPlan
+			return new RemoteProvisionPlan
 			{
 				ProviderName = "dream",
 				DefaultKeyName = "daps-key-dream",

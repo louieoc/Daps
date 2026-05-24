@@ -6,14 +6,14 @@ namespace Dapsman.Infrastructure;
 /// <summary>
 /// This plan is for creating a remote openstack instance and installing docker on it
 /// </summary>
-public sealed class OpenStackRemoteBuildPlanBuilder : IRemotePlanBuilder
+public sealed class OpenStackRemoteProvisionPlanBuilder : IRemoteProvisionPlanBuilder
 {
 	public const string OpenStackCreateInstanceScript = "openstack-create-instance.sh";
 
 	private readonly IToolkitResolver _toolkitResolver;
 	private readonly IHostingProviderResolver _providerResolver;
 
-	public OpenStackRemoteBuildPlanBuilder(
+	public OpenStackRemoteProvisionPlanBuilder(
 		IToolkitResolver toolkitResolver,
 		IHostingProviderResolver providerResolver)
 	{
@@ -21,7 +21,7 @@ public sealed class OpenStackRemoteBuildPlanBuilder : IRemotePlanBuilder
 		_providerResolver = providerResolver;
 	}
 
-	public RemoteBuildPlan BuildRemotePlan(DapsConfig config, RemoteBuildOptions options)
+	public RemoteProvisionPlan BuildRemotePlan(DapsConfig config, RemoteProvisionOptions options)
 	{
 		var hostingProvider = _providerResolver.Resolve(options.ProviderName);
 		var provider = hostingProvider.ConfigDefinition as OpenstackProviderDefinition
@@ -54,7 +54,7 @@ public sealed class OpenStackRemoteBuildPlanBuilder : IRemotePlanBuilder
 			setVarsInContainer,
 			createScriptInContainer);
 
-		return new RemoteBuildPlan
+		return new RemoteProvisionPlan
 		{
 			ProviderName = provider.Name,
 			DefaultKeyName = defaultKeyName,

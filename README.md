@@ -170,7 +170,7 @@ Currently Daps supports only one remote host at a time, and only OpenStack provi
     1. capture the values for the next step
 1. create an instance variables file
     1. TODO: describe this
-1. run `dapsman prod build`
+1. run `dapsman prod provision`
 1. at this point you may opt to verify the remote host was provisioned correctly by SSHing to it. See the [Toolkit and SSH to remote host](#toolkit-and-ssh-to-remote-host) section below.
 
 
@@ -365,7 +365,7 @@ You can log into the toolkit by running this:
 
 `docker exec -it daps-toolkit-1 bash -l`
 
-After you've created a remote environment by running `dapsman prod build`, you can log into the toolkit and then into the remote VM:
+After you've created a remote environment by running `dapsman prod provision`, you can log into the toolkit and then into the remote VM:
 
 `ssh -i .ssh/daps-key-<providername> <root or ubuntu>@<ip address>`
 
@@ -416,7 +416,7 @@ Creates a new project from a template. Copies the template directory to the dest
 ```
 dapsman local build [--build] [--dry-run] [--project <name>...] [--config <path>]
 ```
-Brings up the local dev Docker environment. This combines, for the local environment, what are handled separately for prod as "build" and "deploy" workflows. Steps: syncs project caddy site files to `caddy_sites/`, runs each project's prerequisite scripts (e.g. `prerequisites.sh`, `prerequisites.dev.sh`), composes DAPS services (Caddy, toolkit), then composes each project's containers. `--build` forces Docker image rebuilds. Omitting `--project` runs all configured projects (except those with `disabled: true` in `daps.yaml`).
+Brings up the local dev Docker environment. This combines, for the local environment, what are handled separately for prod as "provision" and "deploy" workflows. Steps: syncs project caddy site files to `caddy_sites/`, runs each project's prerequisite scripts (e.g. `prerequisites.sh`, `prerequisites.dev.sh`), composes DAPS services (Caddy, toolkit), then composes each project's containers. `--build` forces Docker image rebuilds. Omitting `--project` runs all configured projects (except those with `disabled: true` in `daps.yaml`).
 
 ### `dapsman local caddy restart`
 ```
@@ -424,9 +424,9 @@ dapsman local caddy restart [--dry-run] [--config <path>]
 ```
 Reloads Caddy's configuration on the local Docker instance (`docker exec daps-caddy-1 caddy reload`). Useful after changing site files without doing a full local build.
 
-### `dapsman prod build`
+### `dapsman prod provision`
 ```
-dapsman prod build [--dry-run] [--provider <name>] [--set-vars-script <path>] [--create-script <path>] [--config <path>]
+dapsman prod provision [--dry-run] [--provider <name>] [--set-vars-script <path>] [--create-script <path>] [--config <path>]
 ```
 Provisions a new remote OpenStack instance from the toolkit container. Creates an SSH keypair if one doesn't exist, uploads the public key to OpenStack, and runs the instance creation script (`scripts/openstack-create-instance.sh`). Run this once when setting up a new hosting environment.
 
@@ -482,9 +482,9 @@ Deletes a project from the remote deployment. Requires specifying a project. Req
 - deletes all of the site's containers using `docker compose -f ... down -v` using the project's remote compose files
 - deletes the remote project folder
 
-### `dapsman prod unbuild`
+### `dapsman prod unprovision`
 ```
-dapsman prod unbuild [--dry-run] [--provider <name>] [--config <path>]
+dapsman prod unprovision [--dry-run] [--provider <name>] [--config <path>]
 ```
 Deletes the OpenStack instance and SSH keypair from the remote host, the SSH key files from the toolkit, and the instance vars file from the workstation. Requires confirmation ("are you sure?") and re-confirmation ("really really sure?").
 

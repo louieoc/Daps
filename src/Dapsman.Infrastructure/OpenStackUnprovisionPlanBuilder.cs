@@ -3,14 +3,14 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class OpenStackUnbuildPlanBuilder : IUnbuildPlanBuilder
+public sealed class OpenStackUnprovisionPlanBuilder : IUnprovisionPlanBuilder
 {
 	public const string DefaultInstanceName = "daps-prod";
 
 	private readonly IToolkitResolver _toolkitResolver;
 	private readonly IHostingProviderResolver _providerResolver;
 
-	public OpenStackUnbuildPlanBuilder(
+	public OpenStackUnprovisionPlanBuilder(
 		IToolkitResolver toolkitResolver,
 		IHostingProviderResolver providerResolver)
 	{
@@ -18,7 +18,7 @@ public sealed class OpenStackUnbuildPlanBuilder : IUnbuildPlanBuilder
 		_providerResolver = providerResolver;
 	}
 
-	public UnbuildPlan BuildPlan(DapsConfig config, UnbuildOptions options)
+	public UnprovisionPlan BuildPlan(DapsConfig config, UnprovisionOptions options)
 	{
 		var hostingProvider = _providerResolver.Resolve(options.ProviderName);
 		var provider = hostingProvider.ConfigDefinition as OpenstackProviderDefinition
@@ -30,7 +30,7 @@ public sealed class OpenStackUnbuildPlanBuilder : IUnbuildPlanBuilder
 		var openRcContainerPath = _toolkitResolver.ToToolkitPath(provider.OpenRcPath);
 		var instanceVarsContainerPath = _toolkitResolver.ToToolkitPath(providerOptions.InstanceVarsFilePath);
 
-		return new UnbuildPlan
+		return new UnprovisionPlan
 		{
 			DapsRootPath = config.DapsRootPath,
 			ToolkitContainerName = toolkitDef.ContainerName,
