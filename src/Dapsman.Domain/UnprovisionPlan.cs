@@ -1,6 +1,6 @@
 namespace Dapsman.Domain;
 
-public sealed class UnbuildPlan
+public sealed class UnprovisionPlan
 {
 	public required string DapsRootPath { get; init; }
 	public required string ToolkitContainerName { get; init; }
@@ -20,6 +20,6 @@ public sealed class UnbuildPlan
 	/// <summary>Absolute path to the SSH key inside the toolkit, e.g. /root/.ssh/daps-key-ramnode.</summary>
 	public required string SshKeyToolkitPath { get; init; }
 
-	/// <summary>Workstation path to the instance vars file to delete after unbuild.</summary>
+	/// <summary>Workstation path to the instance vars file to delete after unprovision.</summary>
 	public required string InstanceVarsFilePath { get; init; }
 }

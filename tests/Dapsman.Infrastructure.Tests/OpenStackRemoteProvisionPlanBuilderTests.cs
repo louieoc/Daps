@@ -3,7 +3,7 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure.Tests;
 
-public sealed class OpenStackRemoteBuildPlanBuilderTests
+public sealed class OpenStackRemoteProvisionPlanBuilderTests
 {
 	[Fact]
 	public void BuildRemotePlan_UsesConfiguredScriptsAndMapsToToolkitPaths()
@@ -42,8 +42,8 @@ public sealed class OpenStackRemoteBuildPlanBuilderTests
 			Options = new OpenStackProviderOptions { InstanceVarsFilePath = setVars },
 		});
 		var toolkitResolver = new ToolkitResolver(config, containerManager);
-		var planner = new OpenStackRemoteBuildPlanBuilder(toolkitResolver, providerResolver);
-		var plan = planner.BuildRemotePlan(config, new RemoteBuildOptions
+		var planner = new OpenStackRemoteProvisionPlanBuilder(toolkitResolver, providerResolver);
+		var plan = planner.BuildRemotePlan(config, new RemoteProvisionOptions
 		{
 			ProviderName = "dream",
 			SetVarsScriptPath = "./hosting/openstack_dream_instance_vars.sh",

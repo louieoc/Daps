@@ -3,16 +3,16 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class ToolkitUnbuildExecutor : IUnbuildExecutor
+public sealed class ToolkitUnprovisionExecutor : IUnprovisionExecutor
 {
 	private readonly IBashRunner _toolkitBashRunner;
 
-	public ToolkitUnbuildExecutor(IBashRunner toolkitBashRunner)
+	public ToolkitUnprovisionExecutor(IBashRunner toolkitBashRunner)
 	{
 		_toolkitBashRunner = toolkitBashRunner;
 	}
 
-	public void Execute(UnbuildPlan plan)
+	public void Execute(UnprovisionPlan plan)
 	{
 		var staging = CreateStaging(plan);
 		try
@@ -30,21 +30,21 @@ public sealed class ToolkitUnbuildExecutor : IUnbuildExecutor
 			File.Delete(plan.InstanceVarsFilePath);
 	}
 
-	private static StagingPaths CreateStaging(UnbuildPlan plan)
+	private static StagingPaths CreateStaging(UnprovisionPlan plan)
 	{
 		var id = Guid.NewGuid().ToString("N");
-		var hostPath = Path.Combine(plan.DapsRootPath, ".dapsman", "unbuild", id);
+		var hostPath = Path.Combine(plan.DapsRootPath, ".dapsman", "unprovision", id);
 		Directory.CreateDirectory(hostPath);
 
 		return new StagingPaths
 		{
 			HostPath = hostPath,
-			ScriptHostPath = Path.Combine(hostPath, "unbuild.sh"),
-			ScriptToolkitPath = $"/srv/daps/.dapsman/unbuild/{id}/unbuild.sh",
+			ScriptHostPath = Path.Combine(hostPath, "unprovision.sh"),
+			ScriptToolkitPath = $"/srv/daps/.dapsman/unprovision/{id}/unprovision.sh",
 		};
 	}
 
-	private static string BuildScript(UnbuildPlan plan)
+	private static string BuildScript(UnprovisionPlan plan)
 	{
 		var openRc = EscapeBash(plan.OpenRcContainerPath);
 		var instanceVars = EscapeBash(plan.InstanceVarsContainerPath);

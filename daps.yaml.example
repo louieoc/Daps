@@ -1,0 +1,8 @@
+providers:
+  myprovider: openstack
+    openrc: ./hosting/myprovider_openrc
+
+projects:
+  myproject:
+    path: ../myproject
+    #disabled: true # note the ability to disable a project which ignores it, like commenting it out in here

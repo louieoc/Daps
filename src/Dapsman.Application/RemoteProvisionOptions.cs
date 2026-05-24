@@ -1,6 +1,6 @@
 namespace Dapsman.Application;
 
-public sealed class RemoteBuildOptions
+public sealed class RemoteProvisionOptions
 {
 	public bool DryRun { get; init; }
 	public string? ProviderName { get; init; }

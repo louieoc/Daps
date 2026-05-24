@@ -4,7 +4,7 @@
 	public required bool IsLocalBuild { get; init; }
 	public required bool IsLocalCaddyRestart { get; init; }
 	public required bool IsProdCaddyRestart { get; init; }
-	public required bool IsProdBuild { get; init; }
+	public required bool IsProdProvision { get; init; }
 	public required bool IsProdDeploy { get; init; }
 	public required bool IsProdSyncFromLocal { get; init; }
 	public required bool IsLocalSyncFromProd { get; init; }
@@ -12,7 +12,7 @@
 	public required bool IsProdOffline { get; init; }
 	public required bool IsProdOnline { get; init; }
 	public required bool IsProdTeardown { get; init; }
-	public required bool IsProdUnbuild { get; init; }
+	public required bool IsProdUnprovision { get; init; }
 	public required bool BuildImages { get; init; }
 	public required bool SkipBuildImages { get; init; }
 	public required bool DryRun { get; init; }
@@ -34,7 +34,7 @@
 		var isLocalBuild = false;
 		var isLocalCaddyRestart = false;
 		var isProdCaddyRestart = false;
-		var isProdBuild = false;
+		var isProdProvision = false;
 		var isProdDeploy = false;
 		var isProdSyncFromLocal = false;
 		var isLocalSyncFromProd = false;
@@ -42,7 +42,7 @@
 		var isProdOffline = false;
 		var isProdOnline = false;
 		var isProdTeardown = false;
-		var isProdUnbuild = false;
+		var isProdUnprovision = false;
 		var buildImages = false;
 		var skipBuildImages = false;
 		var dryRun = false;
@@ -90,9 +90,9 @@
 					isProdCaddyRestart = true;
 				}
 				else if (string.Equals(group, "prod", StringComparison.OrdinalIgnoreCase) &&
-						 string.Equals(action, "build", StringComparison.OrdinalIgnoreCase))
+						 string.Equals(action, "provision", StringComparison.OrdinalIgnoreCase))
 				{
-					isProdBuild = true;
+					isProdProvision = true;
 				}
 				else if (string.Equals(group, "prod", StringComparison.OrdinalIgnoreCase) &&
 						 string.Equals(action, "deploy", StringComparison.OrdinalIgnoreCase))
@@ -130,9 +130,9 @@
 					isProdTeardown = true;
 				}
 				else if (string.Equals(group, "prod", StringComparison.OrdinalIgnoreCase) &&
-						 string.Equals(action, "unbuild", StringComparison.OrdinalIgnoreCase))
+						 string.Equals(action, "unprovision", StringComparison.OrdinalIgnoreCase))
 				{
-					isProdUnbuild = true;
+					isProdUnprovision = true;
 				}
 			}
 		}
@@ -218,7 +218,7 @@
 			IsLocalBuild = isLocalBuild,
 			IsLocalCaddyRestart = isLocalCaddyRestart,
 			IsProdCaddyRestart = isProdCaddyRestart,
-			IsProdBuild = isProdBuild,
+			IsProdProvision = isProdProvision,
 			IsProdDeploy = isProdDeploy,
 			IsProdSyncFromLocal = isProdSyncFromLocal,
 			IsLocalSyncFromProd = isLocalSyncFromProd,
@@ -226,7 +226,7 @@
 			IsProdOffline = isProdOffline,
 			IsProdOnline = isProdOnline,
 			IsProdTeardown = isProdTeardown,
-			IsProdUnbuild = isProdUnbuild,
+			IsProdUnprovision = isProdUnprovision,
 			BuildImages = buildImages,
 			SkipBuildImages = skipBuildImages,
 			DryRun = dryRun,

@@ -27,9 +27,9 @@ public interface IComposeExecutor
 	void RunComposeUp(IReadOnlyList<string> composeFiles, bool buildImages, string workingDirectory);
 }
 
-public interface IRemotePlanBuilder
+public interface IRemoteProvisionPlanBuilder
 {
-	RemoteBuildPlan BuildRemotePlan(DapsConfig config, RemoteBuildOptions options);
+	RemoteProvisionPlan BuildRemotePlan(DapsConfig config, RemoteProvisionOptions options);
 }
 
 public interface IRemoteDeployPlanBuilder
@@ -94,14 +94,14 @@ public interface ITeardownExecutor
 	void Execute(TeardownPlan plan);
 }
 
-public interface IUnbuildPlanBuilder
+public interface IUnprovisionPlanBuilder
 {
-	UnbuildPlan BuildPlan(DapsConfig config, UnbuildOptions options);
+	UnprovisionPlan BuildPlan(DapsConfig config, UnprovisionOptions options);
 }
 
-public interface IUnbuildExecutor
+public interface IUnprovisionExecutor
 {
-	void Execute(UnbuildPlan plan);
+	void Execute(UnprovisionPlan plan);
 }
 
 public interface IProjectResolver

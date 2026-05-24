@@ -93,9 +93,9 @@ internal sealed class DapsmanRunner
 			return await RunRemoteDeploy();
 		}
 
-		if (_parsed.IsProdBuild)
+		if (_parsed.IsProdProvision)
 		{
-			return await RunRemoteBuild();
+			return await RunRemoteProvision();
 		}
 
 		if (_parsed.IsProdTeardown)
@@ -103,9 +103,9 @@ internal sealed class DapsmanRunner
 			return await RunProdTeardown();
 		}
 
-		if (_parsed.IsProdUnbuild)
+		if (_parsed.IsProdUnprovision)
 		{
-			return await RunProdUnbuild();
+			return await RunProdUnprovision();
 		}
 
 		PrintUsage();
@@ -130,7 +130,9 @@ internal sealed class DapsmanRunner
 		};
 
 		var plan = service.CreatePlan(_parsed.ConfigPath, options);
-		PrintLocalBuildPlan(plan, options);
+		var caddyRestartPlanBuilder = new ConventionLocalCaddyRestartPlanBuilder(_config, _workstationCaddyResolver);
+		var caddyRestartPlan = caddyRestartPlanBuilder.BuildPlan();
+		PrintLocalBuildPlan(plan, options, caddyRestartPlan);
 
 		if (!options.DryRun)
 		{
@@ -172,22 +174,27 @@ internal sealed class DapsmanRunner
 					Console.WriteLine($"- {projectPlan.ProjectName}: done");
 				}
 			}
+
+			Console.WriteLine();
+			Console.WriteLine("Step: caddy-reload");
+			new CaddyRestartService(caddyRestartPlanBuilder, _workstationBashRunner).Execute(caddyRestartPlan);
+			Console.WriteLine("- done");
 		}
 
 		return Task.FromResult(0);
 	}
 
-	private Task<int> RunRemoteBuild()
+	private Task<int> RunRemoteProvision()
 	{
-		var openStackPlanBuilder = new OpenStackRemoteBuildPlanBuilder(_toolkitResolver, _hostingResolver);
+		var openStackPlanBuilder = new OpenStackRemoteProvisionPlanBuilder(_toolkitResolver, _hostingResolver);
 
-		var service = new RemoteBuildService(
+		var service = new RemoteProvisionService(
 			_localPrerequisiteChecker,
 			_configLoader,
 			openStackPlanBuilder,
 			_toolkitBashRunner);
 
-		var options = new RemoteBuildOptions
+		var options = new RemoteProvisionOptions
 		{
 			DryRun = _parsed.DryRun,
 			ProviderName = _parsed.ProviderName,
@@ -196,7 +203,7 @@ internal sealed class DapsmanRunner
 		};
 
 		var plan = service.CreatePlan(_parsed.ConfigPath, options);
-		PrintRemoteBuildPlan(plan);
+		PrintRemoteProvisionPlan(plan);
 
 		if (!options.DryRun)
 		{
@@ -605,16 +612,16 @@ internal sealed class DapsmanRunner
 		return Task.FromResult(0);
 	}
 
-	private Task<int> RunProdUnbuild()
+	private Task<int> RunProdUnprovision()
 	{
-		var planBuilder = new OpenStackUnbuildPlanBuilder(_toolkitResolver, _hostingResolver);
+		var planBuilder = new OpenStackUnprovisionPlanBuilder(_toolkitResolver, _hostingResolver);
 
-		var service = new UnbuildService(
+		var service = new UnprovisionService(
 			_configLoader,
 			planBuilder,
-			new ToolkitUnbuildExecutor(_toolkitBashRunner));
+			new ToolkitUnprovisionExecutor(_toolkitBashRunner));
 
-		var options = new UnbuildOptions
+		var options = new UnprovisionOptions
 		{
 			DryRun = _parsed.DryRun,
 			ProviderName = _parsed.ProviderName,
@@ -630,7 +637,7 @@ internal sealed class DapsmanRunner
 		Console.WriteLine($"- default instance name: {plan.DefaultInstanceName}");
 		Console.WriteLine($"- default key name: {plan.DefaultKeyName}");
 		Console.WriteLine();
-		Console.WriteLine("Step: unbuild");
+		Console.WriteLine("Step: unprovision");
 		Console.WriteLine($"- delete OpenStack instance '{plan.DefaultInstanceName}' (or OS_INSTANCE_NAME from vars)");
 		Console.WriteLine($"- delete OpenStack keypair '{plan.DefaultKeyName}' (or OS_KEY_NAME from vars)");
 		Console.WriteLine($"- delete SSH key files: {plan.SshKeyToolkitPath}");
@@ -643,7 +650,7 @@ internal sealed class DapsmanRunner
 			var confirm1 = Console.ReadLine()?.Trim();
 			if (!string.Equals(confirm1, "yes", StringComparison.OrdinalIgnoreCase))
 			{
-				Console.WriteLine("Unbuild cancelled.");
+				Console.WriteLine("Unprovision cancelled.");
 				return Task.FromResult(1);
 			}
 
@@ -651,12 +658,12 @@ internal sealed class DapsmanRunner
 			var confirm2 = Console.ReadLine()?.Trim();
 			if (!string.Equals(confirm2, "yes", StringComparison.OrdinalIgnoreCase))
 			{
-				Console.WriteLine("Unbuild cancelled.");
+				Console.WriteLine("Unprovision cancelled.");
 				return Task.FromResult(1);
 			}
 
 			Console.WriteLine();
-			Console.WriteLine("Step: unbuild");
+			Console.WriteLine("Step: unprovision");
 			service.Execute(plan);
 			Console.WriteLine("- done");
 		}
@@ -671,7 +678,7 @@ internal sealed class DapsmanRunner
 		Console.WriteLine("  dapsman local build [--build] [--dry-run] [--project <name>...] [--config <path>]");
 		Console.WriteLine("  dapsman local caddy restart [--dry-run] [--config <path>]");
 		Console.WriteLine("  dapsman prod caddy restart [--dry-run] [--provider <name>] [--config <path>]");
-		Console.WriteLine("  dapsman prod build [--dry-run] [--provider <name>] [--set-vars-script <path>] [--create-script <path>] [--config <path>]");
+		Console.WriteLine("  dapsman prod provision [--dry-run] [--provider <name>] [--set-vars-script <path>] [--create-script <path>] [--config <path>]");
 		Console.WriteLine("  dapsman prod deploy [--dry-run] [--project <name>...] [--provider <name>] [--set-vars-script <path>] [--skip-build-images] [--config <path>]");
 		Console.WriteLine("  dapsman prod sync-from-local --project <name> [--dry-run] [--provider <name>] [--config <path>]");
 		Console.WriteLine("  dapsman local sync-from-prod --project <name> [--dry-run] [--provider <name>] [--config <path>]");
@@ -679,7 +686,7 @@ internal sealed class DapsmanRunner
 		Console.WriteLine("  dapsman prod offline [--project <name>...] [--dry-run] [--provider <name>] [--config <path>]");
 		Console.WriteLine("  dapsman prod online [--project <name>...] [--dry-run] [--provider <name>] [--config <path>]");
 		Console.WriteLine("  dapsman prod teardown --project <name> [--dry-run] [--provider <name>] [--config <path>]");
-		Console.WriteLine("  dapsman prod unbuild [--dry-run] [--provider <name>] [--config <path>]");
+		Console.WriteLine("  dapsman prod unprovision [--dry-run] [--provider <name>] [--config <path>]");
 	}
 
 	private static void PrintInitPlan(InitPlan plan, InitOptions options)
@@ -698,7 +705,7 @@ internal sealed class DapsmanRunner
 		Console.WriteLine($"- register in daps.yaml: {plan.ProjectName}: path: {plan.DapsYamlProjectRelativePath}");
 	}
 
-	private static void PrintLocalBuildPlan(LocalBuildPlan plan, LocalBuildOptions options)
+	private static void PrintLocalBuildPlan(LocalBuildPlan plan, LocalBuildOptions options, CaddyRestartPlan caddyRestartPlan)
 	{
 		Console.WriteLine("Step: validate");
 		Console.WriteLine("- prerequisites ok");
@@ -757,6 +764,10 @@ internal sealed class DapsmanRunner
 		}
 
 		Console.WriteLine();
+		Console.WriteLine("Step: caddy-reload");
+		Console.WriteLine($"- {caddyRestartPlan.ReloadCommand}");
+
+		Console.WriteLine();
 		Console.WriteLine("Summary:");
 		Console.WriteLine($"- projects configured: {(plan.HasProjectsConfigured ? "yes" : "no")}");
 		Console.WriteLine($"- project compose runs: {plan.ProjectComposePlans.Count}");
@@ -770,7 +781,7 @@ internal sealed class DapsmanRunner
 		}
 	}
 
-	private static void PrintRemoteBuildPlan(RemoteBuildPlan plan)
+	private static void PrintRemoteProvisionPlan(RemoteProvisionPlan plan)
 	{
 		Console.WriteLine("Step: validate");
 		Console.WriteLine("- prerequisites ok");

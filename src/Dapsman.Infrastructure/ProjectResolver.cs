@@ -16,14 +16,24 @@ public class ProjectResolver : IProjectResolver
 	public DapsProject Resolve(string? projectName)
 	{
 		var projectDefinition = ResolveProjectDefinition(_config, projectName);
+		if (projectDefinition.Disabled)
+			throw new InvalidOperationException($"Project '{projectDefinition.Name}' is disabled in daps.yaml.");
+
 		return GetDapsProject(projectDefinition);
 	}
 
 	public IReadOnlyList<DapsProject> Resolve(IReadOnlyList<string>? projectNames)
 	{
 		var projectDefinitions = SelectProjects(_config.Projects, projectNames);
+		if (projectNames is { Count: > 0 })
+		{
+			// make sure none of the named projects is disabled
+			var disabled = projectDefinitions.FirstOrDefault(p => p.Disabled);
+			if (disabled is not null)
+				throw new InvalidOperationException($"Project '{disabled.Name}' is disabled in daps.yaml.");
+		}
 		var projects = new List<DapsProject>();
-		foreach (var p in projectDefinitions)
+		foreach (var p in projectDefinitions.Where(p => !p.Disabled))
 		{
 			projects.Add(GetDapsProject(p));
 		}
