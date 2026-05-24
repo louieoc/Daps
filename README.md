@@ -11,7 +11,7 @@ Author: Louis O'Callaghan (https://louisocallaghan.com)
 
 You are an individual artist, hobbyist, or small business. You own one or more websites. You don't want to be locked into a specific hosting provider. You want to own your data and take it with you when you leave.
 
-Stretch goal: you don't have or want a public website but you use products like Google Docs and don't want to depend as much on third parties (and you want to own your data). But managing FOSS (Free Open Source Software) alternatives is daunting. Daps can make it easier.
+Alternative scenario: you don't have or want a public website but you use products like Google Docs and don't want to depend as much on third parties (and you want to own your data). But managing FOSS (Free Open Source Software) alternatives is daunting. Daps could make it easier.
 
 You should be able to:
 - pick some web technology you want to use (e.g Wordpress, or a custom website)
@@ -40,11 +40,11 @@ Daps enables 2 environments:
 1. the local docker which acts as a "dev" environment
     - a "toolkit" Linux container runs here and provides a common runtime environment for tools and remote deployment workflows
     - local Caddy container for managing reverse proxy for "mysite.localhost"
-	- one or more project containers
+    - one or more project containers
     - a backend network called `daps_net`
 2. a remote environment running docker that acts as "prod"
     - remote Caddy container for managing reverse proxy for domains
-	- one or more project containers
+    - one or more project containers
     - currently Daps targets [OpenStack](https://www.openstack.org/) VPS instances, but we should be able to support other Unix hosting options
     - a backend network called `daps_net`
 
@@ -97,17 +97,8 @@ Note that none of the mywpsite containers are bound to ports on the VM because t
 1. Install [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
 1. Clone daps (currently on [Codeberg](https://codeberg.org/louieoc/Daps))
 1. Copy `daps.yaml.example` to `daps.yaml` — this is your personal config file and is gitignored
-
-TODO - finish
-
-### For production
-
-Daps currently only supports one remote host at a time, and only OpenStack providers.
-
-1. find an OpenStack hosting provider. Daps only support OpenStack, for now. I've run Daps against [DreamCompute](https://www.dreamhost.com/cloud/computing/) and [RamNode](https://ramnode.com/products/cloud-vps) so far.
-1. open an account and download the OpenRC file from your provider into the `daps/hosting` folder
-
-TODO - finish
+1. Set up the `dapsman` command (instructions below)
+1. Set up a project (instructions below)
 
 
 ### Setting up the `dapsman` command
@@ -128,6 +119,67 @@ export PATH="/path/to/daps/bin:$PATH"  # add to ~/.zshrc or ~/.bashrc to persist
 After that, `dapsman` works from any directory.
 
 
+### Initializing a project from a template
+
+Daps has 2 templates currently, Wordpress (`daps/templates/wordpress`) and Grist (`daps/templates/grist`) -- note both have readmes as well, worth looking at.
+
+In this example I'll create the Wordpress site at `wp.dapster.org`.
+Assume that the setup steps above have been completed and Daps is cloned at `C:\repos\daps`.
+
+1. run init: `dapsman init --template wordpress --name dapster-wp`
+    - This creates a folder at `C:\repos\dapster-wp`
+1. edit caddy site files
+    - Open `C\repos\dapster-wp\_caddy_sites\dapster-wp.prod.caddy` and `dapster-wp.offline.caddy`
+    - replace text of `dapster-wp.example.com` with the actual domain, e.g. `wp.dapster.org`
+1. edit docker files
+    - Open `C\repos\dapster-wp\_docker\compose_dapster-wp.prod.yaml`
+    - set `WP_HOME` and `WP_SITEURL` URLs to `https://wp.dapster.org`
+1. run local build: `dapsman local build`
+    - dapsman will try to update your local `hosts` file to add this entry, but if you're not running as administrator you will need to do it manually: `127.0.0.1 dapster-wp.localhost`
+    - you may need to run `dapsman local caddy restart` depending on whether you're adding a project to an existing setup
+1. visit `https://dapster-wp.localhost` and set up your local Wordpress installation (e.g. themes, plugins, posts, etc.) -- if you want.
+    - You could also skip to deploying it to production if you don't care about setting it up locally first.
+
+For production:
+
+1. assuming the remote host has been provisioned already (see below), run `dapsman prod deploy --project dapster-wp`
+1. assuming this is 
+
+
+### Initializing a project without a template
+
+TODO
+
+
+## Deploying to production
+
+Deploying to prod is accomplished with 2 workflows: provisioning a host, and deploying one or more projects to it.
+
+### Provisioning a host
+
+When you're ready to go live to the public with your projects, you need to set up remote hosting.
+
+Currently Daps supports only one remote host at a time, and only OpenStack providers.
+
+1. find an OpenStack hosting provider. Daps only support OpenStack, for now. I've run Daps against [DreamCompute](https://www.dreamhost.com/cloud/computing/) and [RamNode](https://ramnode.com/products/cloud-vps) so far.
+1. open an account and download the OpenRC file from your provider into the `daps/hosting` folder
+1. add a provider entry in the `daps.yaml` file
+    1. TODO: describe this
+1. pick the OpenStack instance size and operating system
+    1. TODO: there are a couple of ways to do this, and we should describe them here
+    1. capture the values for the next step
+1. create an instance variables file
+    1. TODO: describe this
+1. run `dapsman prod build`
+1. at this point you may opt to verify the remote host was provisioned correctly by SSHing to it. See the [Toolkit and SSH to remote host](#toolkit-and-ssh-to-remote-host) section below.
+
+
+### Deploying projects
+
+1. run deploy: `dapsman prod deploy --project <project name>` (or omit the project name to deploy everything)
+
+For some projects, that's it. For the Wordpress template, if you customized your local instance, run `dapsman prod sync-from-local --project dapster-wp`
+
 
 ## Governing principles
 
@@ -140,9 +192,9 @@ composition > inheritance
 
 ### Who am I
 
-I am a musician and software developer. I've had some public websites and ran them personal servers, shared Linux hosting, shared hosting with "easy" wordpress management, Azure App Services, and like, Tumblr. Setting these up and migrating from one to another or maintaining multiple sites in different ways has been annoying. It makes it less fun and makes it harder to build new things.
+I am a musician and software developer. I've had some public websites and ran them on personal servers, shared Linux hosting, shared hosting with "easy" wordpress management, Azure App Services, and like, Tumblr. Setting these up and migrating from one to another or maintaining multiple sites in different ways has been annoying. It makes it less fun and makes it harder to want to build new things.
 
-Daps is an idea to abstract deployment into essential workflows within a common environment that's as nonproprietary as practical. I built it with a lot of help from first Codex and now Claude. Those are extremely proprietary and I'm aware of the irony. Ideally Daps is easy to use without an LLM (but boy does it help).
+Daps is an idea to abstract deployment, site management and migration into essential workflows within a common environment that's as nonproprietary as practical. I built it with a lot of help from first Codex and now Claude. Those are extremely proprietary and I'm aware of the irony. Ideally Daps is easy to use without an LLM (but boy does it help).
 
 I want to use Daps to build new things and have the deployment pieces "solved."
 
@@ -198,7 +250,6 @@ Configuration file for daps
     - in project folder, inside folder named `_docker`
     - underscore is to alphabetize it "out of the way" of the project source
     - during compose, should be read from this location (i.e. not copied elsewhere first)
-    - relative paths within it need special attention to 
 
 ### Docker folders
 - `docker`
@@ -212,7 +263,6 @@ Configuration file for daps
 - for local deployment, docker runs on your local workstation
 - for remote deployment, docker runs on the remote VM (e.g. Openstack instance)
 - for building images, docker runs on the local workstation to save on compute costs, assuming you're charged for those on the remote VM
-
 
 ### A note on docker paths
 - Write project compose files assuming paths are relative to the compose file directory (`_docker`).
@@ -297,7 +347,6 @@ Configuration file for daps
 On the remote openstack instance or whichever VM we're running docker on, we will also have conventions.
 
 - folder locations
-    - `/root/.ssh` - we copy the private key here? not sure actually
     - `/srv/daps/`
         - `caddy/Caddyfile` - copy the Caddyfile.prod here
         - `docker/` - copy daps shared and prod compose files
@@ -306,7 +355,7 @@ On the remote openstack instance or whichever VM we're running docker on, we wil
         - `projectname/_docker/image-exports` - copy built docker image tars here
 
 
-## Toolkit
+## Toolkit and SSH to remote host
 
 After you run the `dapsman local build` workflow, you should have a toolkit container.
 
@@ -324,7 +373,7 @@ e.g.
 
 `ssh -i .ssh/daps-key-ramnode root@111.222.333.444`
 
-At this point you'll be 3 terminal levels deep, once for your workstation, second for the toolkit then third for the remote VM -- wow
+At this point you'll be 3 terminal levels deep: once for your workstation, second for the toolkit then third for the remote VM -- wow
 
 
 ## Security Considerations
@@ -367,7 +416,7 @@ Creates a new project from a template. Copies the template directory to the dest
 ```
 dapsman local build [--build] [--dry-run] [--project <name>...] [--config <path>]
 ```
-Brings up the local dev Docker environment. Steps: syncs project caddy site files to `caddy_sites/`, runs each project's prerequisite scripts (e.g. `prerequisites.sh`, `prerequisites.dev.sh`), composes DAPS services (Caddy, toolkit), then composes each project's containers. `--build` forces Docker image rebuilds. Omitting `--project` runs all configured projects.
+Brings up the local dev Docker environment. This combines, for the local environment, what are handled separately for prod as "build" and "deploy" workflows. Steps: syncs project caddy site files to `caddy_sites/`, runs each project's prerequisite scripts (e.g. `prerequisites.sh`, `prerequisites.dev.sh`), composes DAPS services (Caddy, toolkit), then composes each project's containers. `--build` forces Docker image rebuilds. Omitting `--project` runs all configured projects (except those with `disabled: true` in `daps.yaml`).
 
 ### `dapsman local caddy restart`
 ```
