@@ -14,4 +14,9 @@ public sealed class FakeBashRunner : IBashRunner
 	{
 		ShellCalls.Add((shellExpression, workingDirectory, interactive));
 	}
+
+	public string CaptureScript(string scriptPath, string workingDirectory, IReadOnlyDictionary<string, string>? env = null)
+	{
+		throw new NotImplementedException();
+	}
 }

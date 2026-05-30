@@ -3,6 +3,10 @@
 	public required bool IsInit { get; init; }
 	public required bool IsLocalBuild { get; init; }
 	public required bool IsLocalCaddyRestart { get; init; }
+	public required bool IsLocalRestore { get; init; }
+	public required bool ListRestorePoints { get; init; }
+	public string? SelectedRestorePoint { get; init; }
+	public string? ProdUrl { get; init; }
 	public required bool IsProdCaddyRestart { get; init; }
 	public required bool IsProdProvision { get; init; }
 	public required bool IsProdDeploy { get; init; }
@@ -33,6 +37,10 @@
 		var isInit = false;
 		var isLocalBuild = false;
 		var isLocalCaddyRestart = false;
+		var isLocalRestore = false;
+		var listRestorePoints = false;
+		string? selectedRestorePoint = null;
+		string? prodUrl = null;
 		var isProdCaddyRestart = false;
 		var isProdProvision = false;
 		var isProdDeploy = false;
@@ -80,6 +88,11 @@
 				{
 					tokens.Dequeue(); // consume "restart"
 					isLocalCaddyRestart = true;
+				}
+				else if (string.Equals(group, "local", StringComparison.OrdinalIgnoreCase) &&
+						 string.Equals(action, "restore", StringComparison.OrdinalIgnoreCase))
+				{
+					isLocalRestore = true;
 				}
 				else if (string.Equals(group, "prod", StringComparison.OrdinalIgnoreCase) &&
 						 string.Equals(action, "caddy", StringComparison.OrdinalIgnoreCase) &&
@@ -147,6 +160,19 @@
 					break;
 				case "--dry-run":
 					dryRun = true;
+					break;
+				case "--list-restore-points":
+					listRestorePoints = true;
+					break;
+				case "--restore-point":
+					if (tokens.Count == 0)
+						throw new ArgumentException("Missing value for --restore-point.");
+					selectedRestorePoint = tokens.Dequeue();
+					break;
+				case "--prod-url":
+					if (tokens.Count == 0)
+						throw new ArgumentException("Missing value for --prod-url.");
+					prodUrl = tokens.Dequeue();
 					break;
 				case "--skip-build-images":
 					skipBuildImages = true;
@@ -217,6 +243,10 @@
 			IsInit = isInit,
 			IsLocalBuild = isLocalBuild,
 			IsLocalCaddyRestart = isLocalCaddyRestart,
+			IsLocalRestore = isLocalRestore,
+			ListRestorePoints = listRestorePoints,
+			SelectedRestorePoint = selectedRestorePoint,
+			ProdUrl = prodUrl,
 			IsProdCaddyRestart = isProdCaddyRestart,
 			IsProdProvision = isProdProvision,
 			IsProdDeploy = isProdDeploy,

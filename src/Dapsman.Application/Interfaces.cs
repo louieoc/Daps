@@ -47,6 +47,9 @@ public interface IBashRunner
 {
 	void RunScript(string scriptPath, string workingDirectory, string? arguments = null, bool interactive = false, IReadOnlyDictionary<string, string>? env = null);
 	void RunShell(string shellExpression, string workingDirectory, bool interactive = false);
+
+	/// <summary>Runs a script and returns its stdout. Stderr is not captured (still shown to user).</summary>
+	string CaptureScript(string scriptPath, string workingDirectory, IReadOnlyDictionary<string, string>? env = null);
 }
 
 public interface ISyncFromLocalPlanBuilder
@@ -102,6 +105,21 @@ public interface IUnprovisionPlanBuilder
 public interface IUnprovisionExecutor
 {
 	void Execute(UnprovisionPlan plan);
+}
+
+public interface IRestorePointsDiscoverer
+{
+	IReadOnlyList<RestorePoint> Discover(DapsProject project);
+}
+
+public interface IRestorePlanBuilder
+{
+	PlanResult<RestorePlan> BuildPlan(DapsProject project, RestoreOptions options);
+}
+
+public interface IRestoreExecutor
+{
+	void Execute(RestorePlan plan);
 }
 
 public interface IProjectResolver

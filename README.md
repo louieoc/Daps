@@ -472,6 +472,14 @@ dapsman prod backup [--project <name>...] [--dry-run] [--provider <name>] [--con
 ```
 Backs up remote data to the local workstation by running `_scripts/backup-remote.toolkit.sh` from the toolkit container. Projects without this script are skipped with a message. Backups are written to `_backups/from_prod/` inside the project directory. Omitting `--project` runs against all configured projects that support it.
 
+### `dapsman local restore`
+```
+dapsman local restore --project <name> [--restore-point <n|timestamp>] [--prod-url <url>] [--list-restore-points] [--dry-run] [--config <path>]
+```
+Restores a backup to the local dev environment. Runs `_scripts/restore-local.toolkit.sh` from the toolkit container, using backup files previously pulled to `_backups/from_prod/` by `dapsman prod backup`. Projects without this script are skipped with a message. Requires `--project`.
+
+`--list-restore-points` discovers and prints available restore points without performing a restore. `--restore-point` selects a specific restore point by 1-based index (e.g. `--restore-point 1` for the most recent) or by timestamp string (e.g. `--restore-point 20260420_202738`); defaults to the most recent complete restore point. `--prod-url` overrides the production URL for URL replacement in the database; if omitted the script derives it from the project's prod compose file. Requires confirmation before executing.
+
 ### `dapsman prod teardown`
 ```
 dapsman prod teardown --project <name> [--dry-run] [--provider <name>] [--config <path>]

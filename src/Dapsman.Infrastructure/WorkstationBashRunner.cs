@@ -57,6 +57,36 @@ public sealed class WorkstationBashRunner : IBashRunner
         }
     }
 
+    public string CaptureScript(string scriptPath, string workingDirectory, IReadOnlyDictionary<string, string>? env = null)
+    {
+        var bashExecutable = ResolveBashExecutable();
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = bashExecutable,
+            Arguments = $"\"{scriptPath}\"",
+            WorkingDirectory = workingDirectory,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = false,
+            CreateNoWindow = false,
+        };
+
+        if (env is not null)
+            foreach (var (key, value) in env)
+                startInfo.Environment[key] = value;
+
+        using var process = Process.Start(startInfo);
+        if (process is null)
+            throw new InvalidOperationException("Failed to start bash process.");
+
+        var output = process.StandardOutput.ReadToEnd();
+        process.WaitForExit();
+        if (process.ExitCode != 0)
+            throw new InvalidOperationException($"Bash process failed with exit code {process.ExitCode}.");
+
+        return output;
+    }
+
     public static string ResolveBashExecutable()
     {
         if (CanRun("bash"))

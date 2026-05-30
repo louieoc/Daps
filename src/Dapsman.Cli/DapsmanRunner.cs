@@ -58,6 +58,16 @@ internal sealed class DapsmanRunner
 			return await RunSyncFromRemote();
 		}
 
+		if (_parsed.IsLocalRestore && _parsed.ListRestorePoints)
+		{
+			return await RunLocalListRestorePoints();
+		}
+
+		if (_parsed.IsLocalRestore)
+		{
+			return await RunLocalRestore();
+		}
+
 		if (_parsed.IsProdBackup)
 		{
 			return await RunProdBackup();
@@ -501,6 +511,92 @@ internal sealed class DapsmanRunner
 		return Task.FromResult(0);
 	}
 
+	private Task<int> RunLocalListRestorePoints()
+	{
+		var projectName = _parsed.ProjectFilters.Count == 1 ? _parsed.ProjectFilters[0] : null;
+		var project = _projectResolver.Resolve(projectName);
+
+		var discoverer = new ConventionRestorePointsDiscoverer(_toolkitBashRunner);
+		var points = discoverer.Discover(project);
+
+		if (points.Count == 0)
+		{
+			Console.WriteLine($"No backups found in {Path.Combine(project.WorkstationBackupsPath, "from_prod")}.");
+			return Task.FromResult(0);
+		}
+
+		foreach (var p in points)
+		{
+			var incomplete = p.IsComplete ? "" : "  (incomplete)";
+			Console.WriteLine($"{p.Index}. {p.DisplayLabel}{incomplete}");
+		}
+
+		return Task.FromResult(0);
+	}
+
+	private Task<int> RunLocalRestore()
+	{
+		var projectName = _parsed.ProjectFilters.Count == 1 ? _parsed.ProjectFilters[0] : null;
+		var project = _projectResolver.Resolve(projectName);
+
+		var discoverer = new ConventionRestorePointsDiscoverer(_toolkitBashRunner);
+		var planBuilder = new ConventionLocalRestorePlanBuilder(_toolkitResolver, discoverer);
+		var service = new RestoreService(planBuilder, new ToolkitLocalRestoreExecutor(_toolkitBashRunner));
+
+		var options = new RestoreOptions
+		{
+			SelectedRestorePoint = _parsed.SelectedRestorePoint,
+			ProdUrl = _parsed.ProdUrl,
+		};
+
+		var result = service.CreatePlan(project, options);
+
+		if (!result.IsSupported)
+		{
+			foreach (var reason in result.Warnings)
+				Console.WriteLine($"skipped: {reason}");
+
+			return Task.FromResult(0);
+		}
+
+		var plan = result.Plan!;
+		var rp = plan.RestorePoint;
+		Console.WriteLine("Step: validate");
+		Console.WriteLine($"- project: {plan.ProjectName}");
+		Console.WriteLine($"- restore point: {rp.DisplayLabel} (index {rp.Index})");
+		Console.WriteLine($"- sql: _backups/from_prod/{plan.ProjectName}_{rp.Env}_{rp.Timestamp}.sql");
+		Console.WriteLine($"- wp-content: _backups/from_prod/{plan.ProjectName}_{rp.Env}_wp-content_{rp.Timestamp}.tar.gz");
+		Console.WriteLine($"- prod url: {(string.IsNullOrEmpty(plan.ProdUrl) ? "(derived from caddy file)" : plan.ProdUrl)}");
+		Console.WriteLine($"- toolkit container: {plan.ToolkitContainerName}");
+		Console.WriteLine();
+		Console.WriteLine("Step: restore");
+		Console.WriteLine("- import SQL into local database");
+		Console.WriteLine("- extract wp-content archive");
+		Console.WriteLine("- wp search-replace prod-url -> dev-url");
+		Console.WriteLine("- wp cache flush");
+		foreach (var (key, value) in plan.EnvVars)
+			Console.WriteLine($"  {key}={value}");
+
+		if (!_parsed.DryRun)
+		{
+			Console.WriteLine();
+			Console.Write("WARNING: This will overwrite the local database and wp-content. Type 'yes' to confirm: ");
+			var confirm = Console.ReadLine()?.Trim();
+			if (!string.Equals(confirm, "yes", StringComparison.OrdinalIgnoreCase))
+			{
+				Console.WriteLine("Restore cancelled.");
+				return Task.FromResult(1);
+			}
+
+			Console.WriteLine();
+			Console.WriteLine("Step: restore");
+			service.Execute(plan);
+			Console.WriteLine("- done");
+		}
+
+		return Task.FromResult(0);
+	}
+
 	private Task<int> RunSyncFromLocal()
 	{
 		var options = new SyncFromLocalOptions
@@ -682,6 +778,7 @@ internal sealed class DapsmanRunner
 		Console.WriteLine("  dapsman prod deploy [--dry-run] [--project <name>...] [--provider <name>] [--set-vars-script <path>] [--skip-build-images] [--config <path>]");
 		Console.WriteLine("  dapsman prod sync-from-local --project <name> [--dry-run] [--provider <name>] [--config <path>]");
 		Console.WriteLine("  dapsman local sync-from-prod --project <name> [--dry-run] [--provider <name>] [--config <path>]");
+		Console.WriteLine("  dapsman local restore --project <name> [--dry-run] [--list-restore-points] [--restore-point <n|timestamp>] [--prod-url <url>] [--config <path>]");
 		Console.WriteLine("  dapsman prod backup [--project <name>...] [--dry-run] [--provider <name>] [--config <path>]");
 		Console.WriteLine("  dapsman prod offline [--project <name>...] [--dry-run] [--provider <name>] [--config <path>]");
 		Console.WriteLine("  dapsman prod online [--project <name>...] [--dry-run] [--provider <name>] [--config <path>]");
