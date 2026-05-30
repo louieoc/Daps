@@ -79,13 +79,13 @@ These diagrams go some way in describing how Daps, Daps-enabled projects, Docker
 
 ### Local
 
-![local architecture](docs/Daps%20architecture-Local.drawio.png "local architecture diagram")
+![local architecture](docs/Daps%20architecture-Local.drawio-800.png "local architecture diagram")
 
 Note that all of the mywpsite containers are bound to ports on the host workstation (e.g. localhost:8080 binds to `mywpsite-wordpress-1:80`), so you can address them directly from the workstation. The hosts file acts as DNS, routing `mywpsite.localhost` to localhost, and then Caddy routes that name to the `mywpsite-wordpress-1` container.
 
 ### Remote
 
-![remote architecture](docs/Daps%20architecture-Remote.drawio.png "remote architecture diagram")
+![remote architecture](docs/Daps%20architecture-Remote.drawio-800.png "remote architecture diagram")
 
 Note that none of the mywpsite containers are bound to ports on the VM because they only need internal routing from Caddy -- they are isolated from the VM and the internet. Caddy is bound to the host instance ports 80 and 443, and then DNS (e.g. mywpsite.com) is routed to the host instance IP address. Caddy then routes mywpsite.com traffic to the `mywpsite-wordpress-1` container.
 

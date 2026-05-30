@@ -177,7 +177,7 @@
         </mxCell>
         <mxCell id="jJLFuf06GJdjek5lFKzZ-4" connectable="0" parent="jJLFuf06GJdjek5lFKzZ-3" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="e.g. mywpsite.com" vertex="1">
           <mxGeometry relative="1" x="0.2121" y="-2" as="geometry">
-            <mxPoint x="-1" as="offset" />
+            <mxPoint x="87" y="-75" as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="Dq3tXFE50lWGmQBi_gb--0" edge="1" parent="orHkav7KE-1MxQI6BmRa-1" style="endArrow=classic;html=1;rounded=0;" value="">
