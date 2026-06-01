@@ -68,6 +68,11 @@ internal sealed class DapsmanRunner
 			return await RunLocalRestore();
 		}
 
+		if (_parsed.IsLocalTeardown)
+		{
+			return await RunLocalTeardown();
+		}
+
 		if (_parsed.IsProdBackup)
 		{
 			return await RunProdBackup();
@@ -590,6 +595,64 @@ internal sealed class DapsmanRunner
 
 			Console.WriteLine();
 			Console.WriteLine("Step: restore");
+			service.Execute(plan);
+			Console.WriteLine("- done");
+		}
+
+		return Task.FromResult(0);
+	}
+
+	private Task<int> RunLocalTeardown()
+	{
+		var projectName = _parsed.ProjectFilters.Count == 1 ? _parsed.ProjectFilters[0] : null;
+		if (string.IsNullOrEmpty(projectName))
+			throw new ArgumentException("--project <name> is required for local teardown.");
+
+		var planBuilder = new ConventionLocalTeardownPlanBuilder(
+			_projectResolver,
+			_dockerResolver,
+			_workstationCaddyResolver);
+
+		var service = new LocalTeardownService(
+			_configLoader,
+			planBuilder,
+			new WorkstationLocalTeardownExecutor(_workstationBashRunner));
+
+		var plan = service.CreatePlan(_parsed.ConfigPath, new LocalTeardownOptions { ProjectName = projectName });
+
+		Console.WriteLine("Step: stop containers");
+		if (plan.ComposeFiles.Count > 0)
+			foreach (var f in plan.ComposeFiles)
+				Console.WriteLine($"- {f}");
+		else
+			Console.WriteLine("- no compose files found");
+		Console.WriteLine("  docker compose down -v");
+		Console.WriteLine();
+		Console.WriteLine("Step: delete caddy site files");
+		if (plan.CaddySiteFilesToDelete.Count > 0)
+			foreach (var f in plan.CaddySiteFilesToDelete)
+				Console.WriteLine($"- {f}");
+		else
+			Console.WriteLine("- no caddy site files");
+		Console.WriteLine();
+		Console.WriteLine("Step: reload Caddy");
+		Console.WriteLine($"- docker exec {plan.CaddyContainerName} caddy reload");
+		Console.WriteLine();
+		Console.WriteLine("Step: delete project folder");
+		Console.WriteLine($"- {plan.ProjectPath}");
+
+		if (!_parsed.DryRun)
+		{
+			Console.WriteLine();
+			Console.Write($"This will delete all containers, volumes, caddy site files, and the project folder for '{plan.ProjectName}', including backups. Type 'yes' to confirm: ");
+			var confirm = Console.ReadLine()?.Trim();
+			if (!string.Equals(confirm, "yes", StringComparison.OrdinalIgnoreCase))
+			{
+				Console.WriteLine("Teardown cancelled.");
+				return Task.FromResult(1);
+			}
+
+			Console.WriteLine();
 			service.Execute(plan);
 			Console.WriteLine("- done");
 		}

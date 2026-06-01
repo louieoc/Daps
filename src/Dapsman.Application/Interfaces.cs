@@ -107,6 +107,16 @@ public interface IUnprovisionExecutor
 	void Execute(UnprovisionPlan plan);
 }
 
+public interface ILocalTeardownPlanBuilder
+{
+	LocalTeardownPlan BuildPlan(DapsConfig config, LocalTeardownOptions options);
+}
+
+public interface ILocalTeardownExecutor
+{
+	void Execute(LocalTeardownPlan plan);
+}
+
 public interface IRestorePointsDiscoverer
 {
 	IReadOnlyList<RestorePoint> Discover(DapsProject project);

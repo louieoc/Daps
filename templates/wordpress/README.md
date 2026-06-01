@@ -97,6 +97,8 @@ docker compose -f _docker/compose_mywpsite.yaml -f _docker/compose_mywpsite.dev.
 Your site will be available at `https://mywpsite.localhost` (via Caddy) or `http://localhost:8080` (direct).
 PhpMyAdmin is available at `http://localhost:8082`.
 
+Note that it can take a few minutes for the db server to finish booting up. If you see "Error establishing a database connection" right after running the local build the first time, this could be why. If it persists beyond a few minutes, however, then something else is wrong.
+
 ### 4. Complete the WordPress setup wizard
 
 Open your site in a browser. WordPress will walk you through choosing a title, admin username, and password.

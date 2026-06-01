@@ -8,7 +8,7 @@ public class ProjectCaddyDefinition : Resolved
 	public required string ProjectSitesPath { get; init; }
 
 	/// <summary>
-	/// Workstation paths to local (e.g. dev) caddy site files for the project
+	/// Workstation paths to local (e.g. dev) caddy site files for the project, in the project folder
 	/// </summary>
 	public required IReadOnlyList<string> WorkstationLocalSiteFilePaths { get; init; }
 

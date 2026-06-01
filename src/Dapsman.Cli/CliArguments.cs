@@ -4,6 +4,7 @@
 	public required bool IsLocalBuild { get; init; }
 	public required bool IsLocalCaddyRestart { get; init; }
 	public required bool IsLocalRestore { get; init; }
+	public required bool IsLocalTeardown { get; init; }
 	public required bool ListRestorePoints { get; init; }
 	public string? SelectedRestorePoint { get; init; }
 	public string? ProdUrl { get; init; }
@@ -38,6 +39,7 @@
 		var isLocalBuild = false;
 		var isLocalCaddyRestart = false;
 		var isLocalRestore = false;
+		var isLocalTeardown = false;
 		var listRestorePoints = false;
 		string? selectedRestorePoint = null;
 		string? prodUrl = null;
@@ -93,6 +95,11 @@
 						 string.Equals(action, "restore", StringComparison.OrdinalIgnoreCase))
 				{
 					isLocalRestore = true;
+				}
+				else if (string.Equals(group, "local", StringComparison.OrdinalIgnoreCase) &&
+						 string.Equals(action, "teardown", StringComparison.OrdinalIgnoreCase))
+				{
+					isLocalTeardown = true;
 				}
 				else if (string.Equals(group, "prod", StringComparison.OrdinalIgnoreCase) &&
 						 string.Equals(action, "caddy", StringComparison.OrdinalIgnoreCase) &&
@@ -244,6 +251,7 @@
 			IsLocalBuild = isLocalBuild,
 			IsLocalCaddyRestart = isLocalCaddyRestart,
 			IsLocalRestore = isLocalRestore,
+			IsLocalTeardown = isLocalTeardown,
 			ListRestorePoints = listRestorePoints,
 			SelectedRestorePoint = selectedRestorePoint,
 			ProdUrl = prodUrl,

@@ -220,6 +220,21 @@ Notes on security trade-offs in the current design. DAPS is a local dev tool for
 - Remote and toolkit project root: `/srv/projects/<name>/`
 - Remote and toolkit DAPS root: `/srv/daps/`
 
+## README Accuracy
+
+The `README.md` "Dapsman Workflows" section documents every workflow. When adding a new workflow or changing an existing one (flags, behaviour, steps), update the README to match. Keep entries concise and consistent with the surrounding style.
+
+## Workflow Planning Docs
+
+Each Dapsman workflow may have a planning document in `./docs/planning-<workflow>.md` (e.g. `planning-local-restore.md`, `planning-local-teardown.md`). These capture the design rationale, constraints, and implementation plan for that workflow.
+
+**When working on a workflow:**
+- Check `./docs/planning-*.md` for an existing planning doc before making changes.
+- If one exists, read it for context and update it to reflect any design decisions or changes made during implementation.
+- If one does not exist, create it before or during implementation to capture the why, the approach, and any key constraints or trade-offs discovered.
+
+The docs are living references, not frozen specs — keep them accurate as the implementation evolves.
+
 ## Docker Compose Conventions
 
 These apply to all project compose files (templates and real projects):

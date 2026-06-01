@@ -480,6 +480,16 @@ Restores a backup to the local dev environment. Runs `_scripts/restore-local.too
 
 `--list-restore-points` discovers and prints available restore points without performing a restore. `--restore-point` selects a specific restore point by 1-based index (e.g. `--restore-point 1` for the most recent) or by timestamp string (e.g. `--restore-point 20260420_202738`); defaults to the most recent complete restore point. `--prod-url` overrides the production URL for URL replacement in the database; if omitted the script derives it from the project's prod compose file. Requires confirmation before executing.
 
+### `dapsman local teardown`
+```
+dapsman local teardown --project <name> [--dry-run] [--config <path>]
+```
+Tears down a project's local dev environment. Requires `--project`. Requires confirmation before executing. Steps:
+
+- stops all project containers and deletes their volumes (`docker compose down -v`) — the `-v` flag is essential to avoid stale volumes causing broken rebuilds on re-init
+- deletes the project's caddy site file from `daps/caddy_sites/` and reloads Caddy
+- deletes the project folder from the workstation
+
 ### `dapsman prod teardown`
 ```
 dapsman prod teardown --project <name> [--dry-run] [--provider <name>] [--config <path>]
