@@ -19,7 +19,6 @@
 	public required bool IsProdTeardown { get; init; }
 	public required bool IsProdUnprovision { get; init; }
 	public required bool BuildImages { get; init; }
-	public required bool SkipBuildImages { get; init; }
 	public required bool DryRun { get; init; }
 	public required string ConfigPath { get; init; }
 	public required IReadOnlyList<string> ProjectFilters { get; init; }
@@ -54,7 +53,6 @@
 		var isProdTeardown = false;
 		var isProdUnprovision = false;
 		var buildImages = false;
-		var skipBuildImages = false;
 		var dryRun = false;
 		var configPath = Path.Combine(Environment.CurrentDirectory, "daps.yaml");
 		string? templateName = null;
@@ -181,9 +179,6 @@
 						throw new ArgumentException("Missing value for --prod-url.");
 					prodUrl = tokens.Dequeue();
 					break;
-				case "--skip-build-images":
-					skipBuildImages = true;
-					break;
 				case "--project":
 					if (tokens.Count == 0)
 					{
@@ -266,7 +261,6 @@
 			IsProdTeardown = isProdTeardown,
 			IsProdUnprovision = isProdUnprovision,
 			BuildImages = buildImages,
-			SkipBuildImages = skipBuildImages,
 			DryRun = dryRun,
 			ConfigPath = configPath,
 			ProjectFilters = projectFilters,

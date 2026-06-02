@@ -432,9 +432,14 @@ Provisions a new remote OpenStack instance from the toolkit container. Creates a
 
 ### `dapsman prod deploy`
 ```
-dapsman prod deploy [--dry-run] [--project <name>...] [--provider <name>] [--set-vars-script <path>] [--skip-build-images] [--config <path>]
+dapsman prod deploy [--dry-run] [--project <name>...] [--provider <name>] [--build] [--set-vars-script <path>] [--config <path>]
 ```
-Deploys projects to the remote server. Steps: builds Docker image tarballs on the workstation (unless `--skip-build-images`), uploads Caddyfile, caddy site files, compose files, image tarballs, and project scripts to the remote via SCP from the toolkit, then starts containers on the remote via SSH. Omitting `--project` deploys all configured projects.
+Deploys projects to the remote server. Steps: builds Docker image tarballs via `build-docker-images.toolkit.sh` (if needed), uploads Caddyfile, caddy site files, compose files, image tarballs, and project scripts to the remote via SCP from the toolkit, starts containers on the remote via SSH, then reloads Caddy. Omitting `--project` deploys all configured projects.
+
+Image build behaviour:
+- **No existing tar** — build runs automatically (first deploy or after `dapsman local teardown`).
+- **Tar exists, no flag** — build is skipped; the existing tar is reused. Use this for deploys where the Dockerfile hasn't changed.
+- **`--build`** — forces a rebuild even if a tar already exists. Use after changing the Dockerfile.
 
 ### `dapsman prod caddy restart`
 ```

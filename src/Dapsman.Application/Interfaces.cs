@@ -39,7 +39,7 @@ public interface IRemoteDeployPlanBuilder
 
 public interface IRemoteDeployExecutor
 {
-	void ExecuteBuildImages(RemoteDeployPlan plan);
+	void ExecuteBuildImages(IReadOnlyList<BuildImageCommandPlan> commands, string dapsRootPath);
 	void Execute(RemoteDeployPlan plan);
 }
 

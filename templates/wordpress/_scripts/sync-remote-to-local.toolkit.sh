@@ -35,7 +35,7 @@ fi
 
 dev_domain=$(grep -v '^\s*#' "$dev_caddy" | grep -v '^\s*$' | head -1 | awk '{print $1}')
 prod_domain=$(grep -v '^\s*#' "$prod_caddy" | grep -v '^\s*$' | head -1 | awk '{print $1}')
-dev_url="http://${dev_domain}"
+dev_url="https://${dev_domain}"
 prod_url="https://${prod_domain}"
 
 echo "Syncing ${DAPS_PROJECT}: remote (${prod_url}) -> local (${dev_url})"
