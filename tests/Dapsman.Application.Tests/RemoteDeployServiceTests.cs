@@ -36,7 +36,7 @@ public sealed partial class RemoteDeployServiceTests
 				DapsRootPath = ".",
 				FullYamlPath = Path.Combine(".", "daps.yaml"),
 			}, new RemoteDeployOptions());
-        service.ExecuteBuildImageScripts(plan);
+        service.ExecuteBuildImageScripts(plan.BuildImageCommands, plan.DapsRootPath);
 
         Assert.True(executor.BuildImagesCalled);
     }
@@ -84,11 +84,13 @@ public sealed partial class RemoteDeployServiceTests
                     {
                         ProjectName = "a",
                         ToolkitScriptPath = "/srv/projects/a/_scripts/build-docker-images.toolkit.sh",
+                        HasExistingExports = false,
                     },
                     new BuildImageCommandPlan
                     {
                         ProjectName = "b",
                         ToolkitScriptPath = "/srv/projects/b/_scripts/build-docker-images.toolkit.sh",
+                        HasExistingExports = true,
                     },
                 },
                 CaddyfileSourcePath = "caddy/Caddyfile",
@@ -106,7 +108,7 @@ public sealed partial class RemoteDeployServiceTests
         public bool BuildImagesCalled { get; private set; }
         public bool Called { get; private set; }
 
-        public void ExecuteBuildImages(RemoteDeployPlan plan) => BuildImagesCalled = true;
+        public void ExecuteBuildImages(IReadOnlyList<BuildImageCommandPlan> commands, string dapsRootPath) => BuildImagesCalled = true;
 
         public void Execute(RemoteDeployPlan plan)
         {

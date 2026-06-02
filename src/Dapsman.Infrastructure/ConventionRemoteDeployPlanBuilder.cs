@@ -47,15 +47,25 @@ public sealed class ConventionRemoteDeployPlanBuilder : IRemoteDeployPlanBuilder
 
 		foreach (var project in selectedProjects)
 		{
+			// collect docker compose files and images (resolved first so HasExistingExports is available for build commands)
+			var projectDocker = _dockerResolver.ResolveForProject(project);
+			var composeSelection = new ProdComposeSelection(projectDocker.ProdProjectComposeFiles!);
+			var imageExportsPath = projectDocker.ImageExportsFolder ?? string.Empty;
+			var imageExports = projectDocker.ImageExports;
+			if (!Directory.Exists(imageExportsPath))
+			{
+				warnings.Add($"Project '{project.Definition.Name}' is missing image export directory '{imageExportsPath}'.");
+			}
+
 			// collect build image commands
 			var buildScriptPath = Path.Combine(project.WorkstationScriptsPath, BuildDockerImages);
 			if (File.Exists(buildScriptPath))
 			{
-				var toolkitScriptPath = $"{project.ToolkitScriptsPath}/{BuildDockerImages}";
 				buildImageCommands.Add(new BuildImageCommandPlan
 				{
 					ProjectName = project.Definition.Name,
-					ToolkitScriptPath = toolkitScriptPath,
+					ToolkitScriptPath = $"{project.ToolkitScriptsPath}/{BuildDockerImages}",
+					HasExistingExports = imageExports.Count > 0,
 				});
 			}
 			else
@@ -76,16 +86,6 @@ public sealed class ConventionRemoteDeployPlanBuilder : IRemoteDeployPlanBuilder
 						DestinationFileName = Path.GetFileName(sourcePath),
 					});
 				}
-			}
-
-			// collect docker compose files and images
-			var projectDocker = _dockerResolver.ResolveForProject(project);
-			var composeSelection = new ProdComposeSelection(projectDocker.ProdProjectComposeFiles!);
-			var imageExportsPath = projectDocker.ImageExportsFolder ?? string.Empty;
-			var imageExports = projectDocker.ImageExports;
-			if (!Directory.Exists(imageExportsPath))
-			{
-				warnings.Add($"Project '{project.Definition.Name}' is missing image export directory '{imageExportsPath}'.");
 			}
 
 			// collect remote scripts

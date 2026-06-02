@@ -252,28 +252,38 @@ internal sealed class DapsmanRunner
 		var options = new RemoteDeployOptions
 		{
 			DryRun = _parsed.DryRun,
-			SkipBuildImages = _parsed.SkipBuildImages,
+			BuildImages = _parsed.BuildImages,
 			ProviderName = _parsed.ProviderName,
 			SetVarsScriptPath = _parsed.SetVarsScriptPath,
 			ProjectFilters = _parsed.ProjectFilters,
 		};
 
+		var caddyRestartPlanBuilder = new ConventionRemoteCaddyRestartPlanBuilder(
+			_config, options.ProviderName, _toolkitResolver, _remoteCaddyResolver, _hostingResolver);
+		var caddyRestartPlan = caddyRestartPlanBuilder.BuildPlan();
+
 		var plan = service.CreatePlan(_parsed.ConfigPath, options);
-		PrintRemoteDeployPlan(plan, options);
+		PrintRemoteDeployPlan(plan, options, caddyRestartPlan);
 
 		if (!options.DryRun)
 		{
-			if (!options.SkipBuildImages && plan.BuildImageCommands.Count > 0)
+			var commandsToRun = SelectBuildCommands(plan, options);
+			if (commandsToRun.Count > 0)
 			{
 				Console.WriteLine();
 				Console.WriteLine("Step: build-images");
-				service.ExecuteBuildImageScripts(plan);
+				service.ExecuteBuildImageScripts(commandsToRun, plan.DapsRootPath);
 				Console.WriteLine("- done");
 			}
 
 			Console.WriteLine();
 			Console.WriteLine("Step: deploy-remote");
 			service.Execute(plan);
+			Console.WriteLine("- done");
+
+			Console.WriteLine();
+			Console.WriteLine("Step: caddy-reload");
+			new CaddyRestartService(caddyRestartPlanBuilder, _toolkitBashRunner).Execute(caddyRestartPlan);
 			Console.WriteLine("- done");
 		}
 
@@ -838,7 +848,7 @@ internal sealed class DapsmanRunner
 		Console.WriteLine("  dapsman local caddy restart [--dry-run] [--config <path>]");
 		Console.WriteLine("  dapsman prod caddy restart [--dry-run] [--provider <name>] [--config <path>]");
 		Console.WriteLine("  dapsman prod provision [--dry-run] [--provider <name>] [--set-vars-script <path>] [--create-script <path>] [--config <path>]");
-		Console.WriteLine("  dapsman prod deploy [--dry-run] [--project <name>...] [--provider <name>] [--set-vars-script <path>] [--skip-build-images] [--config <path>]");
+		Console.WriteLine("  dapsman prod deploy [--dry-run] [--project <name>...] [--provider <name>] [--build] [--set-vars-script <path>] [--config <path>]");
 		Console.WriteLine("  dapsman prod sync-from-local --project <name> [--dry-run] [--provider <name>] [--config <path>]");
 		Console.WriteLine("  dapsman local sync-from-prod --project <name> [--dry-run] [--provider <name>] [--config <path>]");
 		Console.WriteLine("  dapsman local restore --project <name> [--dry-run] [--list-restore-points] [--restore-point <n|timestamp>] [--prod-url <url>] [--config <path>]");
@@ -958,7 +968,14 @@ internal sealed class DapsmanRunner
 		Console.WriteLine($"- script-chain: {plan.ToolkitCommand}");
 	}
 
-	private static void PrintRemoteDeployPlan(RemoteDeployPlan plan, RemoteDeployOptions options)
+	private static IReadOnlyList<BuildImageCommandPlan> SelectBuildCommands(RemoteDeployPlan plan, RemoteDeployOptions options)
+	{
+		return plan.BuildImageCommands
+			.Where(c => options.BuildImages || !c.HasExistingExports)
+			.ToList();
+	}
+
+	private static void PrintRemoteDeployPlan(RemoteDeployPlan plan, RemoteDeployOptions options, CaddyRestartPlan caddyRestartPlan)
 	{
 		Console.WriteLine("Step: validate");
 		Console.WriteLine("- prerequisites ok");
@@ -970,11 +987,7 @@ internal sealed class DapsmanRunner
 
 		Console.WriteLine();
 		Console.WriteLine("Step: build-images");
-		if (options.SkipBuildImages)
-		{
-			Console.WriteLine("- skipped (--skip-build-images)");
-		}
-		else if (plan.BuildImageCommands.Count == 0)
+		if (plan.BuildImageCommands.Count == 0)
 		{
 			Console.WriteLine("- no project image build scripts found");
 		}
@@ -982,7 +995,14 @@ internal sealed class DapsmanRunner
 		{
 			foreach (var command in plan.BuildImageCommands)
 			{
-				Console.WriteLine($"- {command.ProjectName}: toolkit bash \"{command.ToolkitScriptPath}\"");
+				string disposition;
+				if (options.BuildImages)
+					disposition = "will build (--build)";
+				else if (!command.HasExistingExports)
+					disposition = "will build (no existing tar)";
+				else
+					disposition = "skipped (tar exists; use --build to rebuild)";
+				Console.WriteLine($"- {command.ProjectName}: {disposition}");
 			}
 		}
 
@@ -1059,6 +1079,10 @@ internal sealed class DapsmanRunner
 			Console.WriteLine($"- {projectPlan.ProjectName}: docker load each file in /srv/projects/{projectPlan.ProjectName}/_docker/image-exports");
 			Console.WriteLine($"- {projectPlan.ProjectName}: compose up project (prod/shared files)");
 		}
+
+		Console.WriteLine();
+		Console.WriteLine("Step: caddy-reload");
+		Console.WriteLine($"- {caddyRestartPlan.ReloadCommand}");
 
 		Console.WriteLine();
 		Console.WriteLine("Summary:");

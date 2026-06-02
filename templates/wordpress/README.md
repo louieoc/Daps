@@ -103,7 +103,22 @@ Note that it can take a few minutes for the db server to finish booting up. If y
 
 Open your site in a browser. WordPress will walk you through choosing a title, admin username, and password.
 
-### 5. Install the Redis Object Cache plugin
+### 5. Reset the local admin password (if needed)
+
+After a database restore the admin password may not match what you expect (e.g. it may still be the production password, or the hash may not verify correctly in the new environment -- honestly we -- me and Claude -- don't know why but it happens). Reset it via wp-cli from inside the toolkit container:
+
+```bash
+# open a shell in the toolkit container
+docker exec -it daps-toolkit-1 bash -l
+
+# list users to find the username
+docker exec mywpsite-wordpress-1 wp user list --allow-root
+
+# reset the password
+docker exec mywpsite-wordpress-1 wp user update <username> --user_pass=<newpassword> --allow-root
+```
+
+### 6. Install the Redis Object Cache plugin
 
 In WP Admin, go to **Plugins > Add New**, search for **Redis Object Cache**, install and activate it. Then go to **Settings > Redis** and click **Enable Object Cache**.
 

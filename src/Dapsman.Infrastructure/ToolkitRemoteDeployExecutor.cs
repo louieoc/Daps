@@ -13,11 +13,11 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
         _bashRunner = bashRunner;
     }
 
-    public void ExecuteBuildImages(RemoteDeployPlan plan)
+    public void ExecuteBuildImages(IReadOnlyList<BuildImageCommandPlan> commands, string dapsRootPath)
     {
-        foreach (var command in plan.BuildImageCommands)
+        foreach (var command in commands)
         {
-            _bashRunner.RunScript(command.ToolkitScriptPath, plan.DapsRootPath);
+            _bashRunner.RunScript(command.ToolkitScriptPath, dapsRootPath);
         }
     }
 

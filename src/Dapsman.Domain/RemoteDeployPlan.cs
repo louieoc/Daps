@@ -31,6 +31,12 @@ public sealed class BuildImageCommandPlan
 {
 	public required string ProjectName { get; init; }
 	public required string ToolkitScriptPath { get; init; }
+	/// <summary>
+	/// True when tar files already exist in the project's image-exports folder.
+	/// False means a build is required before deploy; true means --build can be
+	/// used to force a rebuild but the existing tar will be used otherwise.
+	/// </summary>
+	public required bool HasExistingExports { get; init; }
 }
 
 public sealed class CaddyUploadPlan
