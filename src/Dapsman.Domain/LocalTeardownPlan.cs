@@ -13,4 +13,5 @@ public sealed class LocalTeardownPlan
 
 	public required string CaddyContainerName { get; init; }
 	public required string CaddyConfigPath { get; init; }
+	public required string DapsYamlPath { get; init; }
 }

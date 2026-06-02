@@ -38,6 +38,7 @@ public sealed class ConventionLocalTeardownPlanBuilder : ILocalTeardownPlanBuild
 			CaddySiteFilesToDelete = caddySiteFilesToDelete,
 			CaddyContainerName = caddyDef.ContainerName,
 			CaddyConfigPath = caddyDef.ContainerConfigPath,
+			DapsYamlPath = config.FullYamlPath,
 		};
 	}
 }

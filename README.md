@@ -408,7 +408,7 @@ All commands support `--dry-run`, which prints the plan without executing anythi
 
 ### `dapsman init`
 ```
-dapsman init --template <name> --name <project-name> [--path <destination>] [--dry-run] [--config <path>]
+dapsman init --template <name> --name <project-name>|--project <name> [--path <destination>] [--dry-run] [--config <path>]
 ```
 Creates a new project from a template. Copies the template directory to the destination (defaults to a sibling of the daps folder), runs `_scripts/init-template.toolkit.sh <project-name>` inside the copy if present (template-specific placeholder replacement lives there, not in dapsman), and registers the project in `daps.yaml`.
 
@@ -436,7 +436,7 @@ dapsman prod deploy [--dry-run] [--project <name>...] [--provider <name>] [--bui
 ```
 Deploys projects to the remote server. Steps: builds Docker image tarballs via `build-docker-images.toolkit.sh` (if needed), uploads Caddyfile, caddy site files, compose files, image tarballs, and project scripts to the remote via SCP from the toolkit, starts containers on the remote via SSH, then reloads Caddy. Omitting `--project` deploys all configured projects.
 
-Image build behaviour:
+Image build behavior:
 - **No existing tar** — build runs automatically (first deploy or after `dapsman local teardown`).
 - **Tar exists, no flag** — build is skipped; the existing tar is reused. Use this for deploys where the Dockerfile hasn't changed.
 - **`--build`** — forces a rebuild even if a tar already exists. Use after changing the Dockerfile.

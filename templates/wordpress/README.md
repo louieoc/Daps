@@ -1,6 +1,6 @@
 # DAPS WordPress Template
 
-A template for running a self-hosted WordPress site in containers managed by [DAPS](https://github.com/your-org/daps).
+A template for running a self-hosted WordPress site in containers managed by [DAPS](https://codeberg.org/louieoc/Daps).
 
 Includes Redis object caching and PhpMyAdmin (local dev only).
 

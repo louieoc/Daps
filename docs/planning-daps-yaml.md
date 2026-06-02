@@ -14,7 +14,7 @@ TODO
 
 ### Stale Caddy File Cleanup
 
-#### Current behaviour
+#### Current behavior
 
 `dapsman prod deploy` includes a stale cleanup step that deletes `.prod.caddy` files from `/srv/daps/caddy_sites/` on the remote server if they are not present in any configured project's `_caddy_sites/` directory. The intent was garbage collection: if a project is fully removed from `daps.yaml`, its caddy file eventually disappears from prod.
 
