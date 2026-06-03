@@ -29,7 +29,7 @@ public sealed class DapsYamlEditorTests
 		new DapsYamlEditor().AddProject(path, "newsite", "../newsite");
 		var yaml = File.ReadAllText(path);
 		Assert.Contains("  newsite:", yaml);
-		Assert.Contains("    path: ../newsite\n", yaml); // TODO
+		Assert.Contains("    path: ../newsite\r\n", yaml);
 		Assert.Contains("  existing:", yaml);
 	}
 

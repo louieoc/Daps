@@ -11,12 +11,13 @@ public sealed class DapsYamlEditor : IDapsYamlEditor
 		if (yaml.Contains($"  {projectName}:"))
 			throw new InvalidOperationException($"Project '{projectName}' is already registered in {yamlPath}.");
 
-		var entry = $"\n  {projectName}:\n    path: {relativePath}\n";
+		var nl = yaml.Contains("\r\n") ? "\r\n" : "\n";
+		var entry = $"{nl}  {projectName}:{nl}    path: {relativePath}{nl}";
 
 		if (yaml.Contains("projects:"))
 			File.AppendAllText(yamlPath, entry);
 		else
-			File.AppendAllText(yamlPath, $"\nprojects:{entry}");
+			File.AppendAllText(yamlPath, $"{nl}projects:{entry}");
 	}
 
 	public void RemoveProject(string yamlPath, string projectName)
