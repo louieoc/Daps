@@ -8,7 +8,7 @@ public sealed class InitServiceTests
     public void CreatePlan_DelegatesToPlanBuilder()
     {
         var builder = new FakePlanBuilder("daps.yaml");
-        var service = new InitService(builder, new FakeBashRunner());
+        var service = new InitService(builder, new FakeBashRunner(), new FakeDapsYamlEditor());
 
         var plan = service.CreatePlan(new InitOptions
         {
@@ -44,7 +44,7 @@ public sealed class InitServiceTests
             InitScriptPath = null,
         };
 
-        new InitService(new FakePlanBuilder(dapsYaml), new FakeBashRunner()).Execute(plan);
+        new InitService(new FakePlanBuilder(dapsYaml), new FakeBashRunner(), new FakeDapsYamlEditor()).Execute(plan);
 
         Assert.True(File.Exists(Path.Combine(destDir, "README.md")));
         Assert.True(File.Exists(Path.Combine(destDir, "sub", "file.txt")));
@@ -70,7 +70,7 @@ public sealed class InitServiceTests
         };
 
         Assert.Throws<InvalidOperationException>(() =>
-            new InitService(new FakePlanBuilder(dapsYaml), new FakeBashRunner()).Execute(plan));
+            new InitService(new FakePlanBuilder(dapsYaml), new FakeBashRunner(), new FakeDapsYamlEditor()).Execute(plan));
     }
 
     [Fact]
@@ -99,7 +99,7 @@ public sealed class InitServiceTests
             InitScriptPath = initScript,
         };
 
-        new InitService(new FakePlanBuilder(dapsYaml), runner).Execute(plan);
+        new InitService(new FakePlanBuilder(dapsYaml), runner, new FakeDapsYamlEditor()).Execute(plan);
 
         Assert.Single(runner.ScriptCalls);
         Assert.Equal("mysite", runner.ScriptCalls[0].Arguments);
@@ -108,7 +108,7 @@ public sealed class InitServiceTests
     }
 
     [Fact]
-    public void Execute_RegistersProjectInDapsYaml()
+    public void Execute_CallsAddProjectOnEditor()
     {
         var templateDir = CreateTempDirectory();
         var destDir = Path.Combine(Path.GetTempPath(), "dapsman-tests", Guid.NewGuid().ToString("N"));
@@ -126,37 +126,12 @@ public sealed class InitServiceTests
             InitScriptPath = null,
         };
 
-        new InitService(new FakePlanBuilder(dapsYaml), new FakeBashRunner()).Execute(plan);
+        var editor = new FakeDapsYamlEditor();
+        new InitService(new FakePlanBuilder(dapsYaml), new FakeBashRunner(), editor).Execute(plan);
 
-        var yaml = File.ReadAllText(dapsYaml);
-        Assert.Contains("mysite:", yaml);
-        Assert.Contains("../mysite", yaml);
-        Assert.Contains("existing:", yaml); // original entry preserved
-    }
-
-    [Fact]
-    public void Execute_ThrowsIfProjectAlreadyRegisteredInDapsYaml()
-    {
-        var templateDir = CreateTempDirectory();
-        var destDir = Path.Combine(Path.GetTempPath(), "dapsman-tests", Guid.NewGuid().ToString("N"));
-        var dapsYaml = Path.Combine(CreateTempDirectory(), "daps.yaml");
-        File.WriteAllText(dapsYaml, "projects:\n  mysite:\n    path: ../mysite\n");
-
-        var plan = new InitPlan
-        {
-            TemplateName = "wordpress",
-            TemplatePath = templateDir,
-            ProjectName = "mysite",
-            DestinationPath = destDir,
-            DapsYamlPath = dapsYaml,
-            DapsYamlProjectRelativePath = "../mysite",
-            InitScriptPath = null,
-        };
-
-        var ex = Assert.Throws<InvalidOperationException>(() =>
-            new InitService(new FakePlanBuilder(dapsYaml), new FakeBashRunner()).Execute(plan));
-
-        Assert.Contains("already registered", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(editor.AddCalls);
+        Assert.Equal("mysite", editor.AddCalls[0].ProjectName);
+        Assert.Equal("../mysite", editor.AddCalls[0].RelativePath);
     }
 
     private static string CreateTempDirectory()

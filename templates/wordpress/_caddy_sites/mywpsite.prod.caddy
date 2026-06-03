@@ -5,8 +5,15 @@
 # SETUP: Replace "mywpsite.example.com" with your actual domain name.
 # Make sure your domain's DNS A record points to your server's IP address
 # before deploying, so Caddy can obtain a certificate.
+#
+# www: If you want www.yourdomain.com to work, add a DNS A record for it too,
+# then add a redirect block below. Caddy will obtain a separate certificate for it.
 
 mywpsite.example.com {
 	encode gzip zstd
 	reverse_proxy mywpsite:80
 }
+
+# www.mywpsite.example.com {
+# 	redir https://mywpsite.example.com{uri} permanent
+# }

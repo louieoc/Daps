@@ -22,19 +22,19 @@ Run the prod Caddy reload automatically as the final step of `prod deploy`, mirr
 2. deploy-remote (SCP uploads + remote docker compose via toolkit)
 3. caddy-reload (SSH caddy reload via toolkit — new step)
 
-### Dry-run behaviour
+### Dry-run behavior
 
 The `caddy-reload` step is included in the dry-run plan output (shows the reload command) but not executed, consistent with all other steps.
 
 ### Constraints / trade-offs
 
 - Requires `--provider` to be resolvable at plan time (same requirement as `prod caddy restart`). This was already true of `prod deploy` so no new constraint.
-- If Caddy is not running on the remote (e.g. first-ever deploy), the reload will fail. This is acceptable — first deploy is expected to be a manual bootstrapping step where the operator verifies state. (Same behaviour as running `prod caddy restart` manually today.)
+- If Caddy is not running on the remote (e.g. first-ever deploy), the reload will fail. This is acceptable — first deploy is expected to be a manual bootstrapping step where the operator verifies state. (Same behavior as running `prod caddy restart` manually today.)
 - `prod caddy restart` remains a standalone command for cases where only the Caddy config needs refreshing without a full deploy.
 
 ---
 
-## Image Build Behaviour
+## Image Build Behavior
 
 ### `--build` flag
 

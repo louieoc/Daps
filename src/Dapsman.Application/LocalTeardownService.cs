@@ -5,7 +5,8 @@ namespace Dapsman.Application;
 public sealed class LocalTeardownService(
 	IConfigLoader configLoader,
 	ILocalTeardownPlanBuilder planBuilder,
-	ILocalTeardownExecutor executor)
+	ILocalTeardownExecutor executor,
+	IDapsYamlEditor yamlEditor)
 {
 	public LocalTeardownPlan CreatePlan(string dapsYamlPath, LocalTeardownOptions options)
 	{
@@ -13,5 +14,9 @@ public sealed class LocalTeardownService(
 		return planBuilder.BuildPlan(config, options);
 	}
 
-	public void Execute(LocalTeardownPlan plan) => executor.Execute(plan);
+	public void Execute(LocalTeardownPlan plan)
+	{
+		executor.Execute(plan);
+		yamlEditor.RemoveProject(plan.DapsYamlPath, plan.ProjectName);
+	}
 }

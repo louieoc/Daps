@@ -4,7 +4,8 @@ namespace Dapsman.Application;
 
 public sealed class InitService(
 	IInitPlanBuilder planBuilder,
-	IBashRunner bashRunner)
+	IBashRunner bashRunner,
+	IDapsYamlEditor yamlEditor)
 {
 	public InitPlan CreatePlan(InitOptions options)
 	{
@@ -23,7 +24,7 @@ public sealed class InitService(
 			bashRunner.RunScript(scriptInDestination, plan.DestinationPath, plan.ProjectName);
 		}
 
-		RegisterInDapsYaml(plan);
+		yamlEditor.AddProject(plan.DapsYamlPath, plan.ProjectName, plan.DapsYamlProjectRelativePath);
 	}
 
 	private static void CopyTemplateDirectory(string sourcePath, string destinationPath)
@@ -44,29 +45,6 @@ public sealed class InitService(
 			var targetFile = Path.Combine(destinationPath, relative);
 			Directory.CreateDirectory(Path.GetDirectoryName(targetFile)!);
 			File.Copy(sourceFile, targetFile);
-		}
-	}
-
-	private static void RegisterInDapsYaml(InitPlan plan)
-	{
-		var yaml = File.Exists(plan.DapsYamlPath) ? File.ReadAllText(plan.DapsYamlPath) : string.Empty;
-
-		// Guard: if this project name is already registered, don't write a duplicate entry.
-		// We check for the YAML key pattern to avoid false matches on path values or comments.
-		if (yaml.Contains($"  {plan.ProjectName}:"))
-			throw new InvalidOperationException($"Project '{plan.ProjectName}' is already registered in {plan.DapsYamlPath}.");
-
-		// Append the new project entry. We use a simple text append rather than full yaml
-		// parsing to avoid a dependency on a yaml library for this one write path.
-		var entry = $"\n  {plan.ProjectName}:\n    path: {plan.DapsYamlProjectRelativePath}\n";
-
-		if (yaml.Contains("projects:"))
-		{
-			File.AppendAllText(plan.DapsYamlPath, entry);
-		}
-		else
-		{
-			File.AppendAllText(plan.DapsYamlPath, $"\nprojects:{entry}");
 		}
 	}
 }

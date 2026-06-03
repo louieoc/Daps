@@ -19,6 +19,9 @@ public sealed class ConventionInitPlanBuilder : IInitPlanBuilder
 		var dapsRoot = _config.DapsRootPath
 			?? throw new InvalidOperationException("Cannot determine DAPS root from config path.");
 
+		if (_config.Projects.Any(p => string.Equals(p.Name, options.ProjectName, StringComparison.OrdinalIgnoreCase)))
+			throw new InvalidOperationException($"Project '{options.ProjectName}' is already registered in daps.yaml. Choose a different name or remove the existing entry first.");
+
 		var templatePath = Path.GetFullPath(Path.Combine(dapsRoot, "templates", options.TemplateName));
 		if (!Directory.Exists(templatePath))
 			throw new InvalidOperationException($"Template not found: {templatePath}");

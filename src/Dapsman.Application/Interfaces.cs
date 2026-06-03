@@ -132,6 +132,12 @@ public interface IRestoreExecutor
 	void Execute(RestorePlan plan);
 }
 
+public interface IDapsYamlEditor
+{
+	void AddProject(string yamlPath, string projectName, string relativePath);
+	void RemoveProject(string yamlPath, string projectName);
+}
+
 public interface IProjectResolver
 {
 	/// <summary>

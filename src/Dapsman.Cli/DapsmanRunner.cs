@@ -294,17 +294,20 @@ internal sealed class DapsmanRunner
 	{
 		if (string.IsNullOrEmpty(_parsed.TemplateName))
 			throw new ArgumentException("--template <name> is required for init.");
-		if (string.IsNullOrEmpty(_parsed.ProjectName))
-			throw new ArgumentException("--name <project-name> is required for init.");
+		var projectName = _parsed.ProjectName
+			?? (_parsed.ProjectFilters.Count == 1 ? _parsed.ProjectFilters[0] : null);
+		if (string.IsNullOrEmpty(projectName))
+			throw new ArgumentException("--name <project-name> (or --project <name>) is required for init.");
 
 		var service = new InitService(
 			new ConventionInitPlanBuilder(_config),
-			_workstationBashRunner);
+			_workstationBashRunner,
+			new DapsYamlEditor());
 
 		var options = new InitOptions
 		{
 			TemplateName = _parsed.TemplateName,
-			ProjectName = _parsed.ProjectName,
+			ProjectName = projectName,
 			DestinationPath = _parsed.DestinationPath,
 			DryRun = _parsed.DryRun,
 		};
@@ -626,7 +629,8 @@ internal sealed class DapsmanRunner
 		var service = new LocalTeardownService(
 			_configLoader,
 			planBuilder,
-			new WorkstationLocalTeardownExecutor(_workstationBashRunner));
+			new WorkstationLocalTeardownExecutor(_workstationBashRunner),
+			new DapsYamlEditor());
 
 		var plan = service.CreatePlan(_parsed.ConfigPath, new LocalTeardownOptions { ProjectName = projectName });
 
@@ -650,11 +654,14 @@ internal sealed class DapsmanRunner
 		Console.WriteLine();
 		Console.WriteLine("Step: delete project folder");
 		Console.WriteLine($"- {plan.ProjectPath}");
+		Console.WriteLine();
+		Console.WriteLine("Step: deregister from daps.yaml");
+		Console.WriteLine($"- remove '{plan.ProjectName}' from {plan.DapsYamlPath}");
 
 		if (!_parsed.DryRun)
 		{
 			Console.WriteLine();
-			Console.Write($"This will delete all containers, volumes, caddy site files, and the project folder for '{plan.ProjectName}', including backups. Type 'yes' to confirm: ");
+			Console.Write($"This will delete all containers, volumes, caddy site files, and the project folder for '{plan.ProjectName}', including backups, and remove it from daps.yaml. Type 'yes' to confirm: ");
 			var confirm = Console.ReadLine()?.Trim();
 			if (!string.Equals(confirm, "yes", StringComparison.OrdinalIgnoreCase))
 			{
@@ -843,7 +850,7 @@ internal sealed class DapsmanRunner
 	private static void PrintUsage()
 	{
 		Console.WriteLine("Usage:");
-		Console.WriteLine("  dapsman init --template <name> --name <project-name> [--path <destination>] [--dry-run] [--config <path>]");
+		Console.WriteLine("  dapsman init --template <name> --name <project-name>|--project <name> [--path <destination>] [--dry-run] [--config <path>]");
 		Console.WriteLine("  dapsman local build [--build] [--dry-run] [--project <name>...] [--config <path>]");
 		Console.WriteLine("  dapsman local caddy restart [--dry-run] [--config <path>]");
 		Console.WriteLine("  dapsman prod caddy restart [--dry-run] [--provider <name>] [--config <path>]");

@@ -20,3 +20,15 @@ public sealed class FakeBashRunner : IBashRunner
 		throw new NotImplementedException();
 	}
 }
+
+public sealed class FakeDapsYamlEditor : IDapsYamlEditor
+{
+	public List<(string YamlPath, string ProjectName, string RelativePath)> AddCalls { get; } = [];
+	public List<(string YamlPath, string ProjectName)> RemoveCalls { get; } = [];
+
+	public void AddProject(string yamlPath, string projectName, string relativePath)
+		=> AddCalls.Add((yamlPath, projectName, relativePath));
+
+	public void RemoveProject(string yamlPath, string projectName)
+		=> RemoveCalls.Add((yamlPath, projectName));
+}

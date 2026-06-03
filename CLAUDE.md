@@ -88,7 +88,7 @@ OpenStack requires users to select OS images and make other choices when creatin
 
 Scripts in `_scripts/` follow an environment suffix convention:
 
-| Suffix | Behaviour |
+| Suffix | Behavior |
 |--------|-----------|
 | `*.dev.sh` | Local/workstation only. Run by `dapsman local build` (e.g. `prerequisites.dev.sh`). Never uploaded to remote. |
 | `*.toolkit.sh` | Run from the toolkit container only. Never uploaded to remote. Never auto-run by Dapsman. |
@@ -222,7 +222,7 @@ Notes on security trade-offs in the current design. DAPS is a local dev tool for
 
 ## README Accuracy
 
-The `README.md` "Dapsman Workflows" section documents every workflow. When adding a new workflow or changing an existing one (flags, behaviour, steps), update the README to match. Keep entries concise and consistent with the surrounding style.
+The `README.md` "Dapsman Workflows" section documents every workflow. When adding a new workflow or changing an existing one (flags, behavior, steps), update the README to match. Keep entries concise and consistent with the surrounding style.
 
 ## Workflow Planning Docs
 
