@@ -65,6 +65,12 @@ myproject:
 
 The path is relative to `daps.yaml`. This makes the project immediately usable with `local build`, `prod deploy`, etc. without any manual config editing.
 
+### Duplicate name guard
+
+`ConventionInitPlanBuilder` checks `_config.Projects` for a name collision before building the plan — before any files are copied or scripts run. If the name is already registered, init exits with a clear error message. This is a plan-time check, not an execution-time check, so nothing is left in a partially-created state.
+
+The `DapsYamlEditor.AddProject` method also guards against duplicates as a safety net, but the plan builder is the authoritative check.
+
 ---
 
 ## Dry-Run Behavior
