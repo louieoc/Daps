@@ -14,9 +14,28 @@ public sealed class WorkstationBashRunner : IBashRunner
 
     public void RunShell(string shellExpression, string workingDirectory, bool interactive = false)
     {
-        // MSYS_NO_PATHCONV=1 prevents Git Bash from mangling Unix-style paths
-        // (e.g. /etc/caddy/Caddyfile) inside shell expressions into Windows paths.
-        RunBash($"-c \"{shellExpression}\"", workingDirectory, noPathConversion: true);
+        var bashExecutable = ResolveBashExecutable();
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = bashExecutable,
+            WorkingDirectory = workingDirectory,
+            UseShellExecute = false,
+            RedirectStandardOutput = false,
+            RedirectStandardError = false,
+            CreateNoWindow = false,
+        };
+        // ArgumentList lets the OS handle quoting of each argument, so the shell expression
+        // is passed intact regardless of embedded double quotes or Windows backslash paths.
+        startInfo.ArgumentList.Add("-c");
+        startInfo.ArgumentList.Add(shellExpression);
+        // MSYS_NO_PATHCONV=1 prevents Git Bash from mangling Unix-style paths inside the expression.
+        startInfo.Environment["MSYS_NO_PATHCONV"] = "1";
+
+        using var process = Process.Start(startInfo)
+            ?? throw new InvalidOperationException("Failed to start bash process.");
+        process.WaitForExit();
+        if (process.ExitCode != 0)
+            throw new InvalidOperationException($"Bash process failed with exit code {process.ExitCode}.");
     }
 
     private static void RunBash(string args, string workingDirectory, bool noPathConversion, IReadOnlyDictionary<string, string>? env = null)

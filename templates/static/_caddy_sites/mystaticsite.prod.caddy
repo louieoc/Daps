@@ -1,0 +1,19 @@
+# DAPS Static Site Template — Prod Caddy Config
+# This file is imported by the root DAPS Caddyfile on the remote VM.
+# Caddy will automatically obtain and renew a TLS certificate for your domain.
+#
+# SETUP: Replace "mystaticsite.example.com" with your actual domain name.
+# Make sure your domain's DNS A record points to your server's IP address
+# before deploying, so Caddy can obtain a certificate.
+#
+# www: If you want www.yourdomain.com to work, add a DNS A record for it too,
+# then uncomment the redirect block below.
+
+mystaticsite.example.com {
+	encode gzip zstd
+	reverse_proxy mystaticsite:80
+}
+
+# www.mystaticsite.example.com {
+# 	redir https://mystaticsite.example.com{uri} permanent
+# }

@@ -1,0 +1,4 @@
+services:
+  nginx:
+    volumes:
+      - /srv/projects/mystaticsite/public:/usr/share/nginx/html:ro
