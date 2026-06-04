@@ -9,4 +9,5 @@ public sealed class InitPlan
     public required string DapsYamlPath { get; init; }
     public required string DapsYamlProjectRelativePath { get; init; }
     public string? InitScriptPath { get; init; }
+    public string? ProdUrl { get; init; }
 }

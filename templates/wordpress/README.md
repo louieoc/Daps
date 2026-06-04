@@ -15,10 +15,10 @@ This template uses `mywpsite` as a placeholder throughout. There are two ways to
 From the DAPS root folder:
 
 ```bash
-dapsman init --template wordpress --name yourprojectname
+dapsman init --template wordpress --name yourprojectname --prod-url yourdomain.com
 ```
 
-This copies the template, replaces all `mywpsite` placeholders with your project name (in file contents and filenames), removes any inherited secrets, and registers the project in `daps.yaml` automatically.
+This copies the template, replaces all `mywpsite` placeholders with your project name (in file contents and filenames), removes any inherited secrets, writes your production domain into `_caddy_sites/yourprojectname.prod.caddy`, and registers the project in `daps.yaml` automatically. `--prod-url` is optional — if omitted, edit the caddy file manually before deploying.
 
 ### Option B: Manual setup
 

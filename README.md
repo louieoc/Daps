@@ -418,9 +418,9 @@ All commands support `--dry-run`, which prints the plan without executing anythi
 
 ### `dapsman init`
 ```
-dapsman init --template <name> --name <project-name>|--project <name> [--path <destination>] [--dry-run] [--config <path>]
+dapsman init --template <name> --name <project-name>|--project <name> [--prod-url <domain>] [--path <destination>] [--dry-run] [--config <path>]
 ```
-Creates a new project from a template. Copies the template directory to the destination (defaults to a sibling of the daps folder), runs `_scripts/init-template.toolkit.sh <project-name>` inside the copy if present (template-specific placeholder replacement lives there, not in dapsman), and registers the project in `daps.yaml`.
+Creates a new project from a template. Copies the template directory to the destination (defaults to a sibling of the daps folder), runs `_scripts/init-template.toolkit.sh <project-name>` inside the copy if present (template-specific placeholder replacement lives there, not in dapsman), and registers the project in `daps.yaml`. If `--prod-url` is given (e.g. `--prod-url mysite.com`), the production domain is written into `_caddy_sites/*.prod.caddy` automatically, saving a manual edit step.
 
 ### `dapsman local build`
 ```
