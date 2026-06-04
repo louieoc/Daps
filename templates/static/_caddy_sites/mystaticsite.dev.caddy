@@ -1,0 +1,3 @@
+mystaticsite.localhost {
+	reverse_proxy mystaticsite:80
+}

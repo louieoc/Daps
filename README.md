@@ -190,13 +190,23 @@ FOSS > simplicity > flexibility
 composition > inheritance
 
 
-### Who am I
+## About the authors
 
-I am a musician and software developer. I've had some public websites and ran them on personal servers, shared Linux hosting, shared hosting with "easy" wordpress management, Azure App Services, and like, Tumblr. Setting these up and migrating from one to another or maintaining multiple sites in different ways has been annoying. It makes it less fun and makes it harder to want to build new things.
+### Louis
+
+I am a musician and software developer. I've had some public websites and run them on personal servers, shared Linux hosting, shared hosting with "easy" wordpress management, Azure App Services, and like, Tumblr. Setting these up and migrating from one to another or maintaining multiple sites in different ways has been annoying. It makes it less fun and makes it harder to want to build new things.
 
 Daps is an idea to abstract deployment, site management and migration into essential workflows within a common environment that's as nonproprietary as practical. I built it with a lot of help from first Codex and now Claude. Those are extremely proprietary and I'm aware of the irony. Ideally Daps is easy to use without an LLM (but boy does it help).
 
 I want to use Daps to build new things and have the deployment pieces "solved."
+
+### Codex
+
+An LLM by OpenAI, was used early on in Daps development (January-March 2026 or so).
+
+### Claude
+
+An LLM by Anthropic. Louis is like its lead, writing and architecting some code himself but mostly planning with and delegating to Claude, then reviewing the results before checking them into the repository.
 
 
 ## Conventions

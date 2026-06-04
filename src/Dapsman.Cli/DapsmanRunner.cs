@@ -285,6 +285,14 @@ internal sealed class DapsmanRunner
 			Console.WriteLine("Step: caddy-reload");
 			new CaddyRestartService(caddyRestartPlanBuilder, _toolkitBashRunner).Execute(caddyRestartPlan);
 			Console.WriteLine("- done");
+
+			foreach (var projectPlan in plan.ProjectPlans.Where(p => p.PostDeployScriptPath is not null))
+			{
+				Console.WriteLine();
+				Console.WriteLine($"Step: post-deploy-hook ({projectPlan.ProjectName})");
+				_toolkitBashRunner.RunScript(projectPlan.PostDeployScriptPath!, projectPlan.PostDeployScriptPath!);
+				Console.WriteLine("- done");
+			}
 		}
 
 		return Task.FromResult(0);
@@ -1090,6 +1098,13 @@ internal sealed class DapsmanRunner
 		Console.WriteLine();
 		Console.WriteLine("Step: caddy-reload");
 		Console.WriteLine($"- {caddyRestartPlan.ReloadCommand}");
+
+		foreach (var projectPlan in plan.ProjectPlans.Where(p => p.PostDeployScriptPath is not null))
+		{
+			Console.WriteLine();
+			Console.WriteLine($"Step: post-deploy-hook ({projectPlan.ProjectName})");
+			Console.WriteLine($"- {projectPlan.PostDeployScriptPath}");
+		}
 
 		Console.WriteLine();
 		Console.WriteLine("Summary:");

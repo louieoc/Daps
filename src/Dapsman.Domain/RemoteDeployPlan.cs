@@ -69,6 +69,12 @@ public sealed class RemoteProjectDeployPlan
 		new[] { "prerequisites.sh", "prerequisites.prod.sh" }
 			.Where(name => RemoteScriptFilesToUpload.Any(f =>
 				string.Equals(Path.GetFileName(f), name, StringComparison.OrdinalIgnoreCase)));
+
+	/// <summary>
+	/// Toolkit-relative path to post-remote-deploy.toolkit.sh, if present in the project's _scripts/ folder.
+	/// When set, this script is run inside the toolkit container after containers are up and Caddy is reloaded.
+	/// </summary>
+	public string? PostDeployScriptPath { get; init; }
 }
 
 public sealed class ProjectUploadFilePlan

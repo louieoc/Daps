@@ -1,0 +1,14 @@
+name: mystaticsite
+
+services:
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    networks:
+      daps_net:
+        aliases:
+          - mystaticsite
+
+networks:
+  daps_net:
+    external: true

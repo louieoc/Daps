@@ -1,0 +1,4 @@
+services:
+  toolkit:
+    volumes:
+      - ../../mystaticsite:/srv/projects/mystaticsite

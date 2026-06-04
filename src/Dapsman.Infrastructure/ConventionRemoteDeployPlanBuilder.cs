@@ -6,6 +6,7 @@ namespace Dapsman.Infrastructure;
 public sealed class ConventionRemoteDeployPlanBuilder : IRemoteDeployPlanBuilder
 {
 	private const string BuildDockerImages = "build-docker-images.toolkit.sh";
+	private const string PostRemoteDeploy = "post-remote-deploy.toolkit.sh";
 
 	private readonly IHostingProviderResolver _providerResolver;
 	private readonly IToolkitResolver _toolkitResolver;
@@ -91,6 +92,12 @@ public sealed class ConventionRemoteDeployPlanBuilder : IRemoteDeployPlanBuilder
 			// collect remote scripts
 			var remoteScripts = project.ScriptsToUploadToRemote;
 
+			// detect post-deploy hook
+			var postDeployScriptWorkstationPath = Path.Combine(project.WorkstationScriptsPath, PostRemoteDeploy);
+			var postDeployScriptPath = File.Exists(postDeployScriptWorkstationPath)
+				? $"{project.ToolkitScriptsPath}/{PostRemoteDeploy}"
+				: null;
+
 			projectPlans.Add(new RemoteProjectDeployPlan
 			{
 				ProjectName = project.Definition.Name,
@@ -99,7 +106,8 @@ public sealed class ConventionRemoteDeployPlanBuilder : IRemoteDeployPlanBuilder
 				ImageExportsSourcePath = imageExportsPath,
 				ImageExportFilesToUpload = imageExports,
 				UploadFiles = ParseProjectUploadManifest(project),
-				RemoteScriptFilesToUpload = remoteScripts
+				RemoteScriptFilesToUpload = remoteScripts,
+				PostDeployScriptPath = postDeployScriptPath,
 			});
 		}
 
