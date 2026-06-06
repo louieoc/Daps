@@ -9,28 +9,31 @@ public sealed class ConventionRestorePointsDiscoverer : IRestorePointsDiscoverer
 {
 	public const string ListRestorePointsScript = "list-restore-points.toolkit.sh";
 
-	private readonly IBashRunner _toolkitBashRunner;
+	private readonly IBashRunner _workstationBashRunner;
 
-	public ConventionRestorePointsDiscoverer(IBashRunner toolkitBashRunner)
+	public ConventionRestorePointsDiscoverer(IBashRunner workstationBashRunner)
 	{
-		_toolkitBashRunner = toolkitBashRunner;
+		_workstationBashRunner = workstationBashRunner;
 	}
 
 	public IReadOnlyList<RestorePoint> Discover(DapsProject project)
 	{
 		var scriptHostPath = Path.Combine(project.WorkstationScriptsPath, ListRestorePointsScript);
-		if (!File.Exists(scriptHostPath) || project.ToolkitPath is null)
+		if (!File.Exists(scriptHostPath))
 			return [];
+
+		var backupsPath = Path.Combine(project.WorkstationBackupsPath, "from_prod")
+			.Replace('\\', '/');
 
 		var env = new Dictionary<string, string>
 		{
 			["DAPS_PROJECT"] = project.Definition.Name,
-			["DAPS_BACKUPS_PATH"] = $"{project.ToolkitBackupsPath}/from_prod",
+			["DAPS_BACKUPS_PATH"] = backupsPath,
 		};
 
-		var json = _toolkitBashRunner.CaptureScript(
-			$"{project.ToolkitScriptsPath}/{ListRestorePointsScript}",
-			workingDirectory: "/",
+		var json = _workstationBashRunner.CaptureScript(
+			scriptHostPath,
+			workingDirectory: project.Definition.Path,
 			env: env);
 
 		return ParseJson(json.Trim());
@@ -38,8 +41,6 @@ public sealed class ConventionRestorePointsDiscoverer : IRestorePointsDiscoverer
 
 	private static IReadOnlyList<RestorePoint> ParseJson(string json)
 	{
-		// Login shell (-lc) in the toolkit container may emit startup text before the script's JSON.
-		// Strip anything before the first '[' so profile output doesn't break the parse.
 		var start = json.IndexOf('[');
 		if (start > 0)
 			json = json[start..];

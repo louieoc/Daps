@@ -525,7 +525,7 @@ internal sealed class DapsmanRunner
 		var projectName = _parsed.ProjectFilters.Count == 1 ? _parsed.ProjectFilters[0] : null;
 		var project = _projectResolver.Resolve(projectName);
 
-		var discoverer = new ConventionRestorePointsDiscoverer(_toolkitBashRunner);
+		var discoverer = new ConventionRestorePointsDiscoverer(_workstationBashRunner);
 		var points = discoverer.Discover(project);
 
 		if (points.Count == 0)
@@ -548,7 +548,7 @@ internal sealed class DapsmanRunner
 		var projectName = _parsed.ProjectFilters.Count == 1 ? _parsed.ProjectFilters[0] : null;
 		var project = _projectResolver.Resolve(projectName);
 
-		var discoverer = new ConventionRestorePointsDiscoverer(_toolkitBashRunner);
+		var discoverer = new ConventionRestorePointsDiscoverer(_workstationBashRunner);
 		var planBuilder = new ConventionLocalRestorePlanBuilder(_toolkitResolver, discoverer);
 		var service = new RestoreService(planBuilder, new ToolkitLocalRestoreExecutor(_toolkitBashRunner));
 
