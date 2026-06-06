@@ -17,7 +17,7 @@ public sealed class ConventionInitPlanBuilder : IInitPlanBuilder
 	public InitPlan BuildInitPlan(InitOptions options)
 	{
 		var dapsRoot = _config.DapsRootPath
-			?? throw new InvalidOperationException("Cannot determine DAPS root from config path.");
+			?? throw new InvalidOperationException("Cannot determine Daps root from config path.");
 
 		if (_config.Projects.Any(p => string.Equals(p.Name, options.ProjectName, StringComparison.OrdinalIgnoreCase)))
 			throw new InvalidOperationException($"Project '{options.ProjectName}' is already registered in daps.yaml. Choose a different name or remove the existing entry first.");
@@ -29,6 +29,12 @@ public sealed class ConventionInitPlanBuilder : IInitPlanBuilder
 		var destinationPath = options.DestinationPath is not null
 			? Path.GetFullPath(options.DestinationPath)
 			: Path.GetFullPath(Path.Combine(dapsRoot, "..", options.ProjectName));
+
+		if (options.Overlay && !Directory.Exists(destinationPath))
+			throw new InvalidOperationException($"Overlay mode requires the destination directory to already exist: {destinationPath}");
+
+		if (!options.Overlay && Directory.Exists(destinationPath))
+			throw new InvalidOperationException($"Destination already exists: {destinationPath}. Use --overlay to add Daps files to an existing directory.");
 
 		var initScriptPath = Path.Combine(templatePath, "_scripts", InitTemplateToolkitScript);
 		var hasInitScript = File.Exists(initScriptPath);
@@ -50,6 +56,7 @@ public sealed class ConventionInitPlanBuilder : IInitPlanBuilder
 			DapsYamlProjectRelativePath = relativePath,
 			InitScriptPath = hasInitScript ? initScriptPath : null,
 			ProdUrl = NormalizeProdUrl(options.ProdUrl),
+			Overlay = options.Overlay,
 		};
 	}
 

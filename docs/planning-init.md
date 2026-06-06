@@ -76,3 +76,31 @@ The `DapsYamlEditor.AddProject` method also guards against duplicates as a safet
 ## Dry-Run Behavior
 
 `--dry-run` prints the plan (template source, destination, init script command, daps.yaml entry) without copying any files, running any scripts, or modifying `daps.yaml`.
+
+---
+
+## `--overlay` Mode
+
+### Problem
+
+By default, `dapsman init` throws if the destination directory already exists. This prevents accidentally clobbering an existing project. For templates that are added on top of an existing project (e.g. Astro, where the user creates the project first, then adds Daps to it), this guard is incorrect — the directory is expected to exist.
+
+### Design
+
+`--overlay` inverts the guard:
+
+- **Normal mode** (no `--overlay`): throws if destination exists.
+- **Overlay mode** (`--overlay`): throws if destination does **not** exist. Copies template files into the existing directory, skipping any file that already exists. Never overwrites.
+
+The destination check is done at plan-time in `ConventionInitPlanBuilder` (before any files are touched), keeping it consistent with the "duplicate name" and "template not found" guards.
+
+### Init script forwarding
+
+Dapsman passes `--overlay` as a second argument to `init-template.toolkit.sh`: `bash <script> <project-name> --overlay`. Templates that need to restrict their placeholder replacement to DAPS directories (to avoid touching the user's files) check `$2` and act accordingly.
+
+- **`templates/static`** — in normal mode processes all project files; in overlay mode restricts to `_docker/`, `_caddy_sites/`, `_scripts/`.
+- **`templates/astro`** — always restricts to DAPS dirs unconditionally (it is only ever used with `--overlay`).
+
+### `--prod-url`
+
+`--prod-url` works in overlay mode exactly as in normal mode — it replaces `{projectName}.example.com` in `_caddy_sites/*.prod.caddy` after the init script runs.

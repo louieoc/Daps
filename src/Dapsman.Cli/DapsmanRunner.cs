@@ -318,6 +318,7 @@ internal sealed class DapsmanRunner
 			ProjectName = projectName,
 			DestinationPath = _parsed.DestinationPath,
 			ProdUrl = _parsed.ProdUrl,
+			Overlay = _parsed.Overlay,
 			DryRun = _parsed.DryRun,
 		};
 
@@ -329,7 +330,10 @@ internal sealed class DapsmanRunner
 			Console.WriteLine();
 			Console.WriteLine("Step: copy-template");
 			service.Execute(plan);
-			Console.WriteLine($"- copied '{plan.TemplatePath}' -> '{plan.DestinationPath}'");
+			if (plan.Overlay)
+				Console.WriteLine($"- overlaid '{plan.TemplatePath}' -> '{plan.DestinationPath}' (skipped existing files)");
+			else
+				Console.WriteLine($"- copied '{plan.TemplatePath}' -> '{plan.DestinationPath}'");
 			if (plan.InitScriptPath is not null)
 				Console.WriteLine($"- ran init-template.toolkit.sh");
 			Console.WriteLine($"- registered '{plan.ProjectName}' in {plan.DapsYamlPath}");
@@ -861,7 +865,7 @@ internal sealed class DapsmanRunner
 	private static void PrintUsage()
 	{
 		Console.WriteLine("Usage:");
-		Console.WriteLine("  dapsman init --template <name> --name <project-name>|--project <name> [--prod-url <domain>] [--path <destination>] [--dry-run] [--config <path>]");
+		Console.WriteLine("  dapsman init --template <name> --name <project-name>|--project <name> [--overlay] [--prod-url <domain>] [--path <destination>] [--dry-run] [--config <path>]");
 		Console.WriteLine("  dapsman local build [--build] [--dry-run] [--project <name>...] [--config <path>]");
 		Console.WriteLine("  dapsman local caddy restart [--dry-run] [--config <path>]");
 		Console.WriteLine("  dapsman prod caddy restart [--dry-run] [--provider <name>] [--config <path>]");
@@ -886,8 +890,14 @@ internal sealed class DapsmanRunner
 		Console.WriteLine("Step: copy-template");
 		Console.WriteLine($"- template: {plan.TemplatePath}");
 		Console.WriteLine($"- destination: {plan.DestinationPath}");
+		Console.WriteLine(plan.Overlay
+			? "- mode: overlay (add Daps files to existing directory, skip existing files)"
+			: "- mode: normal (create new directory)");
 		if (plan.InitScriptPath is not null)
-			Console.WriteLine($"- init script: bash \"{plan.InitScriptPath}\" {plan.ProjectName}");
+		{
+			var scriptArgs = plan.Overlay ? $"{plan.ProjectName} --overlay" : plan.ProjectName;
+			Console.WriteLine($"- init script: bash \"{plan.InitScriptPath}\" {scriptArgs}");
+		}
 		else
 			Console.WriteLine("- no init-template.toolkit.sh found in template");
 		Console.WriteLine($"- register in daps.yaml: {plan.ProjectName}: path: {plan.DapsYamlProjectRelativePath}");

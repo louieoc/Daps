@@ -149,7 +149,7 @@ public class DockerResolver : IDockerResolver
 		if (isDapsLinked && !hasShared && !hasDev)
 		{
 			throw new InvalidOperationException(
-				$"Project '{project.Name}' has invalid DAPS local compose files for prefix '{prefix}'. A local build requires {prefix}_<project>.yaml or {prefix}_<project>.dev.yaml.");
+				$"Project '{project.Name}' has invalid Daps local compose files for prefix '{prefix}'. A local build requires {prefix}_<project>.yaml or {prefix}_<project>.dev.yaml.");
 		}
 
 		if (hasShared)

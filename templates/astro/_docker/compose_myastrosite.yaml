@@ -1,0 +1,14 @@
+name: myastrosite
+
+services:
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    networks:
+      daps_net:
+        aliases:
+          - myastrosite
+
+networks:
+  daps_net:
+    external: true

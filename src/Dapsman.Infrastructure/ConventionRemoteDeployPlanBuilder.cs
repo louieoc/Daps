@@ -37,7 +37,7 @@ public sealed class ConventionRemoteDeployPlanBuilder : IRemoteDeployPlanBuilder
 		var selectedProjects = _projectResolver.Resolve(options.ProjectFilters);
 		if (config.Projects.Count > 0 && selectedProjects.Count == 0)
 		{
-			warnings.Add("Project filters did not match configured projects; DAPS-only deploy will run.");
+			warnings.Add("Project filters did not match configured projects; Daps-only deploy will run.");
 		}
 
 		var dapsDockerDef = _dockerResolver.Resolve();

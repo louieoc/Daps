@@ -35,7 +35,7 @@ public class ToolkitResolver : IToolkitResolver
 		if (relative.StartsWith("..", StringComparison.Ordinal))
 		{
 			throw new InvalidOperationException(
-				$"Script path '{file}' is outside DAPS root '{dapsRoot}'. Cannot map to toolkit container path.");
+				$"Script path '{file}' is outside Daps root '{dapsRoot}'. Cannot map to toolkit container path.");
 		}
 
 		var unixRelative = relative.Replace('\\', '/');
@@ -55,7 +55,7 @@ public class ToolkitResolver : IToolkitResolver
 
 		if (preferred is null)
 		{
-			throw new InvalidOperationException("No running toolkit container found. Start local DAPS first (dapsman local build).");
+			throw new InvalidOperationException("No running toolkit container found. Start local Daps first (dapsman local build).");
 		}
 
 		return preferred;
