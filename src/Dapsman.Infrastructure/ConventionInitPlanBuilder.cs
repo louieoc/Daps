@@ -49,6 +49,17 @@ public sealed class ConventionInitPlanBuilder : IInitPlanBuilder
 			DapsYamlPath = _config.FullYamlPath,
 			DapsYamlProjectRelativePath = relativePath,
 			InitScriptPath = hasInitScript ? initScriptPath : null,
+			ProdUrl = NormalizeProdUrl(options.ProdUrl),
 		};
+	}
+
+	private static string? NormalizeProdUrl(string? url)
+	{
+		if (string.IsNullOrWhiteSpace(url)) return null;
+		// Strip scheme so the value is a bare hostname suitable for Caddy (e.g. "dapster.org")
+		foreach (var scheme in new[] { "https://", "http://" })
+			if (url.StartsWith(scheme, StringComparison.OrdinalIgnoreCase))
+				url = url[scheme.Length..];
+		return url.TrimEnd('/');
 	}
 }

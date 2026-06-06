@@ -317,6 +317,7 @@ internal sealed class DapsmanRunner
 			TemplateName = _parsed.TemplateName,
 			ProjectName = projectName,
 			DestinationPath = _parsed.DestinationPath,
+			ProdUrl = _parsed.ProdUrl,
 			DryRun = _parsed.DryRun,
 		};
 
@@ -332,6 +333,8 @@ internal sealed class DapsmanRunner
 			if (plan.InitScriptPath is not null)
 				Console.WriteLine($"- ran init-template.toolkit.sh");
 			Console.WriteLine($"- registered '{plan.ProjectName}' in {plan.DapsYamlPath}");
+			if (plan.ProdUrl is not null)
+				Console.WriteLine($"- set prod url: {plan.ProdUrl}");
 			Console.WriteLine();
 			Console.WriteLine($"Done. Project '{plan.ProjectName}' created at: {plan.DestinationPath}");
 		}
@@ -858,7 +861,7 @@ internal sealed class DapsmanRunner
 	private static void PrintUsage()
 	{
 		Console.WriteLine("Usage:");
-		Console.WriteLine("  dapsman init --template <name> --name <project-name>|--project <name> [--path <destination>] [--dry-run] [--config <path>]");
+		Console.WriteLine("  dapsman init --template <name> --name <project-name>|--project <name> [--prod-url <domain>] [--path <destination>] [--dry-run] [--config <path>]");
 		Console.WriteLine("  dapsman local build [--build] [--dry-run] [--project <name>...] [--config <path>]");
 		Console.WriteLine("  dapsman local caddy restart [--dry-run] [--config <path>]");
 		Console.WriteLine("  dapsman prod caddy restart [--dry-run] [--provider <name>] [--config <path>]");
@@ -888,6 +891,10 @@ internal sealed class DapsmanRunner
 		else
 			Console.WriteLine("- no init-template.toolkit.sh found in template");
 		Console.WriteLine($"- register in daps.yaml: {plan.ProjectName}: path: {plan.DapsYamlProjectRelativePath}");
+		if (plan.ProdUrl is not null)
+			Console.WriteLine($"- set prod url in _caddy_sites/{plan.ProjectName}.prod.caddy: {plan.ProdUrl}");
+		else
+			Console.WriteLine("- prod url: not set (edit _caddy_sites/*.prod.caddy manually)");
 	}
 
 	private static void PrintLocalBuildPlan(LocalBuildPlan plan, LocalBuildOptions options, CaddyRestartPlan caddyRestartPlan)

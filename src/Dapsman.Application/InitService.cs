@@ -25,6 +25,23 @@ public sealed class InitService(
 		}
 
 		yamlEditor.AddProject(plan.DapsYamlPath, plan.ProjectName, plan.DapsYamlProjectRelativePath);
+
+		if (plan.ProdUrl is not null)
+			ApplyProdUrl(plan.DestinationPath, plan.ProjectName, plan.ProdUrl);
+	}
+
+	private static void ApplyProdUrl(string destinationPath, string projectName, string prodUrl)
+	{
+		var caddySitesDir = Path.Combine(destinationPath, "_caddy_sites");
+		if (!Directory.Exists(caddySitesDir)) return;
+
+		var placeholder = $"{projectName}.example.com";
+		foreach (var file in Directory.GetFiles(caddySitesDir, "*.prod.caddy"))
+		{
+			var content = File.ReadAllText(file);
+			if (content.Contains(placeholder))
+				File.WriteAllText(file, content.Replace(placeholder, prodUrl));
+		}
 	}
 
 	private static void CopyTemplateDirectory(string sourcePath, string destinationPath)
