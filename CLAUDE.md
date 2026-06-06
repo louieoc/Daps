@@ -1,14 +1,14 @@
-# DAPS — Claude Code Instructions
+# Daps — Claude Code Instructions
 
-## What DAPS Is
+## What Daps Is
 
-DAPS (Docker Assisted Portable Sovereignty) is a CLI + conventions framework for non-technical creative people who want to own and control their web presence. Target persona: an artist, blogger, or musician who wants to spin up a website, back it up, and move it to a different host — without learning Docker.
+Daps (Docker Assisted Portable Sovereignty) is a CLI + conventions framework for non-technical creative people who want to own and control their web presence. Target persona: an artist, blogger, or musician who wants to spin up a website, back it up, and move it to a different host — without learning Docker.
 
-DAPS comprises a CLI for executing workflows, host definitions for targeting hosting providers that support OpenStack, and one or more projects. A project could be a custom web application, a Wordpress site, or one of any number of things for which a Docker image is available.
+Daps comprises a CLI for executing workflows, host definitions for targeting hosting providers that support OpenStack, and one or more projects. A project could be a custom web application, a Wordpress site, or one of any number of things for which a Docker image is available.
 
 The CLI is called **Dapsman**, written in C# (.NET 9). Keep it in C#.
 
-It's ok to refer to it as Daps (capitalized instead of all caps). It is open source, hosted on Codeberg right now, maybe Github later.
+It's preferred to refer to it as Daps (capitalized instead of all caps). It is open source, hosted on Codeberg right now, maybe Github later.
 
 ## Environments
 
@@ -218,7 +218,7 @@ Notes on security trade-offs in the current design. DAPS is a local dev tool for
 - Caddy container name: `daps-caddy-1` (Docker Compose project name `daps`, service `caddy`)
 - Caddy config path in container: `/etc/caddy/Caddyfile`
 - Remote and toolkit project root: `/srv/projects/<name>/`
-- Remote and toolkit DAPS root: `/srv/daps/`
+- Remote and toolkit Daps root: `/srv/daps/`
 
 ## README Accuracy
 

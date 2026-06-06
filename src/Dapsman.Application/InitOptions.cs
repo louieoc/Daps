@@ -6,5 +6,6 @@ public sealed class InitOptions
     public required string ProjectName { get; init; }
     public string? DestinationPath { get; init; }
     public string? ProdUrl { get; init; }
+    public bool Overlay { get; init; }
     public bool DryRun { get; init; }
 }

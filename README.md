@@ -418,9 +418,11 @@ All commands support `--dry-run`, which prints the plan without executing anythi
 
 ### `dapsman init`
 ```
-dapsman init --template <name> --name <project-name>|--project <name> [--prod-url <domain>] [--path <destination>] [--dry-run] [--config <path>]
+dapsman init --template <name> --name <project-name>|--project <name> [--overlay] [--prod-url <domain>] [--path <destination>] [--dry-run] [--config <path>]
 ```
 Creates a new project from a template. Copies the template directory to the destination (defaults to a sibling of the daps folder), runs `_scripts/init-template.toolkit.sh <project-name>` inside the copy if present (template-specific placeholder replacement lives there, not in dapsman), and registers the project in `daps.yaml`. If `--prod-url` is given (e.g. `--prod-url mysite.com`), the production domain is written into `_caddy_sites/*.prod.caddy` automatically, saving a manual edit step.
+
+`--overlay` adds DAPS infrastructure files into an **existing** directory instead of creating a new one — required for templates like `astro` where the project directory pre-exists. In overlay mode the destination must already exist, and any files that already exist there are skipped (never overwritten).
 
 ### `dapsman local build`
 ```

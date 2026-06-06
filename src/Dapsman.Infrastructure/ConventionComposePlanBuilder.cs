@@ -30,11 +30,11 @@ public sealed class ConventionComposePlanBuilder : ILocalPlanBuilder
 
 		if (_config.Projects.Count == 0)
 		{
-			warnings.Add("No projects configured in daps.yaml; continuing with DAPS-only local build.");
+			warnings.Add("No projects configured in daps.yaml; continuing with Daps-only local build.");
 		}
 		else if (selectedProjects.Count == 0)
 		{
-			warnings.Add("Project filters did not match configured projects; continuing with DAPS-only local build.");
+			warnings.Add("Project filters did not match configured projects; continuing with Daps-only local build.");
 		}
 
 		var dockerDefinition = _dockerResolver.Resolve();

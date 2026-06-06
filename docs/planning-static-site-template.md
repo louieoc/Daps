@@ -79,19 +79,3 @@ The static site template's hook calls `sync-local-to-remote.toolkit.sh` to rsync
 - `DapsmanRunner.RunRemoteDeploy` (CLI) — after caddy-reload, if `PostDeployScriptPath` is set, run via toolkit bash runner
 - `DapsmanRunner.PrintRemoteDeployPlan` — show post-deploy hook step in dry-run output
 
----
-
-## `dapster` Project
-
-After creating the template:
-
-```
-dapsman init --template static --name dapster
-```
-
-Then:
-1. Edit `_caddy_sites/dapster.prod.caddy` → set domain to `dapster.org`, uncomment www redirect
-2. Create initial `public/index.html` content
-3. `dapsman local build --project dapster`
-4. Visit `https://dapster.localhost`
-5. `dapsman prod deploy --project dapster --provider ramnode` → containers up + `public/` rsynced → site live at `https://dapster.org`

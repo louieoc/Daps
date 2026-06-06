@@ -10,4 +10,5 @@ public sealed class InitPlan
     public required string DapsYamlProjectRelativePath { get; init; }
     public string? InitScriptPath { get; init; }
     public string? ProdUrl { get; init; }
+    public bool Overlay { get; init; }
 }

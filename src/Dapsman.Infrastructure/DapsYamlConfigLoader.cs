@@ -14,7 +14,7 @@ public sealed class DapsYamlConfigLoader : IConfigLoader
 
 		var fullDapsYamlPath = Path.GetFullPath(dapsYamlPath);
 		var dapsRoot = Path.GetDirectoryName(fullDapsYamlPath)
-			?? throw new InvalidOperationException("Could not determine DAPS root path.");
+			?? throw new InvalidOperationException("Could not determine Daps root path.");
 
 		var providerDefinitions = new List<ProviderDefinition>();
 		var projects = new List<ProjectDefinition>();

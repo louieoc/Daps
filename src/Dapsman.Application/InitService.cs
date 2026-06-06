@@ -14,14 +14,15 @@ public sealed class InitService(
 
 	public void Execute(InitPlan plan)
 	{
-		CopyTemplateDirectory(plan.TemplatePath, plan.DestinationPath);
+		CopyTemplateDirectory(plan.TemplatePath, plan.DestinationPath, plan.Overlay);
 
 		if (plan.InitScriptPath is not null)
 		{
 			var scriptInDestination = Path.Combine(
 				plan.DestinationPath,
 				Path.GetRelativePath(plan.TemplatePath, plan.InitScriptPath));
-			bashRunner.RunScript(scriptInDestination, plan.DestinationPath, plan.ProjectName);
+			var scriptArgs = plan.Overlay ? $"{plan.ProjectName} --overlay" : plan.ProjectName;
+			bashRunner.RunScript(scriptInDestination, plan.DestinationPath, scriptArgs);
 		}
 
 		yamlEditor.AddProject(plan.DapsYamlPath, plan.ProjectName, plan.DapsYamlProjectRelativePath);
@@ -44,24 +45,44 @@ public sealed class InitService(
 		}
 	}
 
-	private static void CopyTemplateDirectory(string sourcePath, string destinationPath)
+	private static void CopyTemplateDirectory(string sourcePath, string destinationPath, bool overlay)
 	{
-		if (Directory.Exists(destinationPath))
-			throw new InvalidOperationException($"Destination already exists: {destinationPath}");
-
-		foreach (var sourceDir in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+		if (overlay)
 		{
-			var relative = Path.GetRelativePath(sourcePath, sourceDir);
-			var targetDir = Path.Combine(destinationPath, relative);
-			Directory.CreateDirectory(targetDir);
+			// Destination must already exist; copy only files that don't yet exist there.
+			foreach (var sourceDir in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+			{
+				var relative = Path.GetRelativePath(sourcePath, sourceDir);
+				Directory.CreateDirectory(Path.Combine(destinationPath, relative));
+			}
+
+			foreach (var sourceFile in Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories))
+			{
+				var relative = Path.GetRelativePath(sourcePath, sourceFile);
+				var targetFile = Path.Combine(destinationPath, relative);
+				Directory.CreateDirectory(Path.GetDirectoryName(targetFile)!);
+				if (!File.Exists(targetFile))
+					File.Copy(sourceFile, targetFile);
+			}
 		}
-
-		foreach (var sourceFile in Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories))
+		else
 		{
-			var relative = Path.GetRelativePath(sourcePath, sourceFile);
-			var targetFile = Path.Combine(destinationPath, relative);
-			Directory.CreateDirectory(Path.GetDirectoryName(targetFile)!);
-			File.Copy(sourceFile, targetFile);
+			if (Directory.Exists(destinationPath))
+				throw new InvalidOperationException($"Destination already exists: {destinationPath}");
+
+			foreach (var sourceDir in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+			{
+				var relative = Path.GetRelativePath(sourcePath, sourceDir);
+				Directory.CreateDirectory(Path.Combine(destinationPath, relative));
+			}
+
+			foreach (var sourceFile in Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories))
+			{
+				var relative = Path.GetRelativePath(sourcePath, sourceFile);
+				var targetFile = Path.Combine(destinationPath, relative);
+				Directory.CreateDirectory(Path.GetDirectoryName(targetFile)!);
+				File.Copy(sourceFile, targetFile);
+			}
 		}
 	}
 }

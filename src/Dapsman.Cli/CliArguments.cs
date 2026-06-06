@@ -25,6 +25,7 @@
 	public string? TemplateName { get; init; }
 	public string? ProjectName { get; init; }
 	public string? DestinationPath { get; init; }
+	public bool Overlay { get; init; }
 	public string? ProviderName { get; init; }
 	public string? SetVarsScriptPath { get; init; }
 	public string? CreateScriptPath { get; init; }
@@ -54,6 +55,7 @@
 		var isProdUnprovision = false;
 		var buildImages = false;
 		var dryRun = false;
+		var overlay = false;
 		var configPath = Path.Combine(Environment.CurrentDirectory, "daps.yaml");
 		string? templateName = null;
 		string? projectName = null;
@@ -166,6 +168,9 @@
 				case "--dry-run":
 					dryRun = true;
 					break;
+				case "--overlay":
+					overlay = true;
+					break;
 				case "--list-restore-points":
 					listRestorePoints = true;
 					break;
@@ -267,6 +272,7 @@
 			TemplateName = templateName,
 			ProjectName = projectName,
 			DestinationPath = destinationPath,
+			Overlay = overlay,
 			ProviderName = providerName,
 			SetVarsScriptPath = setVarsScriptPath,
 			CreateScriptPath = createScriptPath,
