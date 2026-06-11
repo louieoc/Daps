@@ -9,21 +9,25 @@ public sealed class ConventionComposePlanBuilder : ILocalPlanBuilder
 	private readonly IDockerResolver _dockerResolver;
 	private readonly ICaddyResolver _caddyResolver;
 	private readonly IProjectResolver _projectResolver;
+	private readonly IHostPortManager _hostPortManager;
 
 	public ConventionComposePlanBuilder(
 		DapsConfig config,
 		IDockerResolver dockerResolver,
 		ICaddyResolver caddyResolver,
-		IProjectResolver projectResolver)
+		IProjectResolver projectResolver,
+		IHostPortManager hostPortManager)
 	{
 		_config = config;
 		_dockerResolver = dockerResolver;
 		_caddyResolver = caddyResolver;
 		_projectResolver = projectResolver;
+		_hostPortManager = hostPortManager;
 	}
 
 	public LocalBuildPlan BuildLocalPlan(LocalBuildOptions options)
 	{
+		var allProjects = _projectResolver.Resolve([]);
 		var selectedProjects = _projectResolver.Resolve(options.ProjectFilters);
 
 		var warnings = new List<string>();
@@ -40,13 +44,28 @@ public sealed class ConventionComposePlanBuilder : ILocalPlanBuilder
 		var dockerDefinition = _dockerResolver.Resolve();
 		var dapsComposeFiles = ConfigUtils.RequireFiles(dockerDefinition.LocalDapsComposeFilePaths, "All expected Daps compose files must be present.").ToList();
 
-		var caddySyncPlan = BuildCaddySyncPlan(_config, _caddyResolver, selectedProjects, warnings);
-
-		var projectPlans = new List<ProjectComposePlan>();
-		foreach (var project in selectedProjects)
+		// Always include all projects' toolkit mount files so Docker Compose doesn't evict
+		// mounts for projects that aren't in the current --project filter.
+		foreach (var project in allProjects)
 		{
 			var projectDocker = _dockerResolver.ResolveForProject(project);
 			dapsComposeFiles.AddRange(projectDocker.LocalDapsExtensionComposeFiles);
+		}
+
+		var caddySyncPlan = BuildCaddySyncPlan(_config, _caddyResolver, selectedProjects, warnings);
+
+		var projectPlans = new List<ProjectComposePlan>();
+		var allBindings = new List<HostPortBinding>();
+
+		foreach (var project in allProjects)
+		{
+			var devFiles = _dockerResolver.ResolveForProject(project).LocalDevComposeFiles;
+			allBindings.AddRange(_hostPortManager.GetBindings(project.Definition.Name, devFiles));
+		}
+
+		foreach (var project in selectedProjects)
+		{
+			var projectDocker = _dockerResolver.ResolveForProject(project);
 
 			projectPlans.Add(new ProjectComposePlan
 			{
@@ -55,6 +74,13 @@ public sealed class ConventionComposePlanBuilder : ILocalPlanBuilder
 				ComposeFiles = projectDocker.LocalProjectComposeFiles,
 				PrerequisiteScripts = project.LocalPrerequisiteScripts
 			});
+		}
+
+		foreach (var conflict in _hostPortManager.FindConflicts(allBindings))
+		{
+			var projects = string.Join(", ", conflict.Bindings.Select(b =>
+				$"{b.ProjectName} ({Path.GetFileName(b.FilePath)})"));
+			warnings.Add($"Port {conflict.Port} is used by multiple projects: {projects}");
 		}
 
 		return new LocalBuildPlan

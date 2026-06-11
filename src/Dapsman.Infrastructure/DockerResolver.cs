@@ -37,6 +37,7 @@ public class DockerResolver : IDockerResolver
 		var dev = "dev";
 		var localDapsExtensions = ResolveProjectComposeSelection(project.Definition, "compose_daps", warnings, dev);
 		var localComposeFiles = ResolveProjectComposeSelection(project.Definition, "compose", warnings, dev);
+		var devOnlyComposeFiles = localComposeFiles.Where(f => f.EndsWith(".dev.yaml", StringComparison.OrdinalIgnoreCase)).ToList();
 
 		var prod = "prod";
 		var prodDapsExtensions = ResolveProjectComposeSelection(project.Definition, "compose_daps", warnings, prod);
@@ -47,6 +48,7 @@ public class DockerResolver : IDockerResolver
 			ProjectDockerPath = projectDockerPath,
 			LocalDapsExtensionComposeFiles = localDapsExtensions,
 			LocalProjectComposeFiles = localComposeFiles,
+			LocalDevComposeFiles = devOnlyComposeFiles,
 			ProdDapsExtensionComposeFiles = prodDapsExtensions,
 			ProdProjectComposeFiles = prodComposeFiles,
 			ImageExportsFolder = imageExportsFolder,
