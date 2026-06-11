@@ -37,15 +37,30 @@ public sealed class InitService(
 
 	private static void ApplyProdUrl(string destinationPath, string projectName, string prodUrl)
 	{
-		var caddySitesDir = Path.Combine(destinationPath, "_caddy_sites");
-		if (!Directory.Exists(caddySitesDir)) return;
-
 		var placeholder = $"{projectName}.example.com";
+		var httpsPlaceholder = $"https://{placeholder}";
+		var httpsUrl = $"https://{prodUrl}";
+
+		var caddySitesDir = Path.Combine(destinationPath, "_caddy_sites");
+		if (Directory.Exists(caddySitesDir))
+		{
 		foreach (var file in Directory.GetFiles(caddySitesDir, "*.prod.caddy"))
 		{
 			var content = File.ReadAllText(file);
 			if (content.Contains(placeholder))
 				File.WriteAllText(file, content.Replace(placeholder, prodUrl));
+		}
+	}
+
+		var dockerDir = Path.Combine(destinationPath, "_docker");
+		if (Directory.Exists(dockerDir))
+		{
+			foreach (var file in Directory.GetFiles(dockerDir, "*.prod.yaml"))
+			{
+				var content = File.ReadAllText(file);
+				if (content.Contains(httpsPlaceholder))
+					File.WriteAllText(file, content.Replace(httpsPlaceholder, httpsUrl));
+			}
 		}
 	}
 

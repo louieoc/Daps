@@ -25,7 +25,9 @@ internal static class DapsmanPlanPrinter
 			Console.WriteLine("- no init-template.toolkit.sh found in template");
 		Console.WriteLine($"- register in daps.yaml: {plan.ProjectName}: path: {plan.DapsYamlProjectRelativePath}");
 		if (plan.ProdUrl is not null)
-			Console.WriteLine($"- set prod url in _caddy_sites/{plan.ProjectName}.prod.caddy: {plan.ProdUrl}");
+			Console.WriteLine($"- set prod url in _caddy_sites/*.prod.caddy and _docker/*.prod.yaml: {plan.ProdUrl}");
+		else
+			Console.WriteLine("- prod url: not set (edit _caddy_sites/*.prod.caddy and _docker/*.prod.yaml manually)");
 		if (plan.DevPortAssignments.Count > 0)
 		{
 			Console.WriteLine("- dev port assignments:");
@@ -33,7 +35,7 @@ internal static class DapsmanPlanPrinter
 			{
 				if (a.AssignedPort != a.OriginalPort)
 					Console.WriteLine($"  {a.OriginalPort} → {a.AssignedPort} ({a.Reason})");
-		else
+				else
 					Console.WriteLine($"  {a.OriginalPort} (available)");
 			}
 		}
