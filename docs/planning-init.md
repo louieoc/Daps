@@ -103,4 +103,7 @@ Dapsman passes `--overlay` as a second argument to `init-template.toolkit.sh`: `
 
 ### `--prod-url`
 
-`--prod-url` works in overlay mode exactly as in normal mode — it replaces `{projectName}.example.com` in `_caddy_sites/*.prod.caddy` after the init script runs.
+`--prod-url` works in overlay mode exactly as in normal mode. After the init script runs, `InitService.Execute()` calls `ApplyProdUrl()` which patches two locations:
+
+1. **`_caddy_sites/*.prod.caddy`** — replaces the bare hostname placeholder `{projectName}.example.com` with the supplied prod URL (e.g. `mysite.com`)
+2. **`_docker/*.prod.yaml`** — replaces the full HTTPS URL `https://{projectName}.example.com` with `https://{prodUrl}` — needed for templates like WordPress that set `WP_HOME` / `WP_SITEURL` as environment variables in the prod compose file

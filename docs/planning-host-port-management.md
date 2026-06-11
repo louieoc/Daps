@@ -60,10 +60,12 @@ public sealed record PortAssignment(int OriginalPort, int AssignedPort, string R
 ## `local build` — Collision Warnings
 
 ### `ConventionComposePlanBuilder`
-Takes `IHostPortManager` as a constructor parameter. After resolving all project compose plans, collects all dev compose file paths (filtered for `*.dev.yaml`), calls `GetBindings()` for each project, then `FindConflicts()`. Appends each conflict as a warning:
+Takes `IHostPortManager` as a constructor parameter. Resolves **all configured projects** (not just the `--project` filter) to collect `LocalDevComposeFiles` for port conflict detection — so a filtered `local build` still reports collisions involving projects that weren't selected. Calls `GetBindings()` for each project, then `FindConflicts()`. Appends each conflict as a warning:
 ```
 warning: Port 8080 is used by multiple projects: dapster-wp (compose_dapster-wp.dev.yaml), loccom (compose_loccom.dev.yaml)
 ```
+
+`LocalDevComposeFiles` is a property on `ProjectDockerDefinition` that returns only the `.dev.yaml` project compose files (excluding the shared base and daps extension files). This replaces an earlier inline `.Where(f => f.EndsWith(".dev.yaml", ...))` filter.
 
 Warnings flow into `LocalBuildPlan.Warnings`, already printed by `DapsmanPlanPrinter.PrintLocalBuild`.
 
@@ -82,7 +84,7 @@ public IReadOnlyList<PortAssignment> DevPortAssignments { get; init; } = [];
 ### `ConventionInitPlanBuilder`
 Takes `IHostPortManager`, `IProjectResolver`, and `IDockerResolver` as constructor parameters. At plan time:
 1. Reads template's `_docker/*.dev.yaml` to extract desired host ports
-2. Collects all existing configured projects' dev compose bindings
+2. Collects all existing configured projects' bindings via `LocalDevComposeFiles` (dev-only files, from `ProjectDockerDefinition`)
 3. For each template port: if it conflicts, calls `FindNextAvailable()` passing all already-reserved + already-assigned ports
 4. Populates `DevPortAssignments` on the plan
 
@@ -114,12 +116,15 @@ After `CopyTemplateDirectory()`, applies port assignments: for each `PortAssignm
 | `src/Dapsman.Domain/PortAssignment.cs` | New record (Domain, not Application) |
 | `src/Dapsman.Domain/InitPlan.cs` | Add `DevPortAssignments` |
 | `src/Dapsman.Infrastructure/HostPortManager.cs` | New class |
-| `src/Dapsman.Infrastructure/ConventionComposePlanBuilder.cs` | Add `IHostPortManager`, generate collision warnings |
-| `src/Dapsman.Infrastructure/ConventionInitPlanBuilder.cs` | Add `IHostPortManager` + resolvers, compute port assignments |
+| `src/Dapsman.Domain/ProjectDockerDefinition.cs` | Add `LocalDevComposeFiles` property (dev-only compose files, excludes shared base and daps extension) |
+| `src/Dapsman.Infrastructure/DockerResolver.cs` | Populate `LocalDevComposeFiles` by filtering `localComposeFiles` to `.dev.yaml` entries |
+| `src/Dapsman.Infrastructure/ConventionComposePlanBuilder.cs` | Add `IHostPortManager`; scan all projects (not just selected) for conflict detection using `LocalDevComposeFiles`; always include all projects' toolkit mount files |
+| `src/Dapsman.Infrastructure/ConventionInitPlanBuilder.cs` | Add `IHostPortManager` + resolvers; use `LocalDevComposeFiles` for existing project bindings |
 | `src/Dapsman.Application/InitService.cs` | `ApplyDevPorts()` in `Execute()` |
 | `src/Dapsman.Cli/DapsmanPlanPrinter.cs` | Show port assignments in `PrintInit()` |
 | `src/Dapsman.Cli/DapsmanRunner.cs` | Wire `HostPortManager` into `RunInit()` and `RunLocalBuild()` |
 | `tests/Dapsman.Infrastructure.Tests/HostPortManagerTests.cs` | New test class |
+| `tests/Dapsman.Infrastructure.Tests/DockerResolver_IntegrationTests.cs` | New integration tests confirming `LocalProjectComposeFiles` includes shared file and `LocalDevComposeFiles` is dev-only |
 | `tests/Dapsman.Infrastructure.Tests/Fakes.cs` | Add `FakeHostPortManager` |
 | `tests/Dapsman.Infrastructure.Tests/ConventionComposePlanBuilderTests.cs` | Pass `FakeHostPortManager` |
 | `tests/Dapsman.Infrastructure.Tests/ConventionInitPlanBuilderTests.cs` | Pass resolvers + `FakeHostPortManager` |
