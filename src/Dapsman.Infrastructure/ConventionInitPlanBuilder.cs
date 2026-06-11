@@ -89,9 +89,7 @@ public sealed class ConventionInitPlanBuilder : IInitPlanBuilder
 		foreach (var project in existingProjects)
 		{
 			var docker = _dockerResolver.ResolveForProject(project);
-			var devFiles = docker.LocalProjectComposeFiles
-				.Where(f => f.EndsWith(".dev.yaml", StringComparison.OrdinalIgnoreCase));
-			existingBindings.AddRange(_hostPortManager.GetBindings(project.Definition.Name, devFiles));
+			existingBindings.AddRange(_hostPortManager.GetBindings(project.Definition.Name, docker.LocalDevComposeFiles));
 		}
 		var reservedPorts = new HashSet<int>(existingBindings.Select(b => b.HostPort));
 

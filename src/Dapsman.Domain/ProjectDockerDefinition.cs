@@ -14,9 +14,14 @@ public sealed class ProjectDockerDefinition : Resolved
 	public IReadOnlyList<string> LocalDapsExtensionComposeFiles { get; set; } = [];
 
 	/// <summary>
-	/// Workstation paths to local (e.g. dev) docker compose files for the project
+	/// Workstation paths to shared plus local (e.g. dev) docker compose files for the project (excludes prod and daps extension)
 	/// </summary>
 	public IReadOnlyList<string> LocalProjectComposeFiles { get; set; } = [];
+
+	/// <summary>
+	/// Workstation paths to local-only (e.g. dev) docker compose files for the project (excludes prod, shared, and daps extension)
+	/// </summary>
+	public IReadOnlyList<string> LocalDevComposeFiles { get; set; } = [];
 
 	/// <summary>
 	/// Workstation paths to remote/prod docker compose files that extend daps (e.g. to bind mount the project on the toolkit and remote VM)

@@ -27,6 +27,7 @@ public sealed class ConventionComposePlanBuilder : ILocalPlanBuilder
 
 	public LocalBuildPlan BuildLocalPlan(LocalBuildOptions options)
 	{
+		var allProjects = _projectResolver.Resolve([]);
 		var selectedProjects = _projectResolver.Resolve(options.ProjectFilters);
 
 		var warnings = new List<string>();
@@ -43,20 +44,28 @@ public sealed class ConventionComposePlanBuilder : ILocalPlanBuilder
 		var dockerDefinition = _dockerResolver.Resolve();
 		var dapsComposeFiles = ConfigUtils.RequireFiles(dockerDefinition.LocalDapsComposeFilePaths, "All expected Daps compose files must be present.").ToList();
 
+		// Always include all projects' toolkit mount files so Docker Compose doesn't evict
+		// mounts for projects that aren't in the current --project filter.
+		foreach (var project in allProjects)
+		{
+			var projectDocker = _dockerResolver.ResolveForProject(project);
+			dapsComposeFiles.AddRange(projectDocker.LocalDapsExtensionComposeFiles);
+		}
+
 		var caddySyncPlan = BuildCaddySyncPlan(_config, _caddyResolver, selectedProjects, warnings);
 
 		var projectPlans = new List<ProjectComposePlan>();
 		var allBindings = new List<HostPortBinding>();
 
+		foreach (var project in allProjects)
+		{
+			var devFiles = _dockerResolver.ResolveForProject(project).LocalDevComposeFiles;
+			allBindings.AddRange(_hostPortManager.GetBindings(project.Definition.Name, devFiles));
+		}
+
 		foreach (var project in selectedProjects)
 		{
 			var projectDocker = _dockerResolver.ResolveForProject(project);
-			dapsComposeFiles.AddRange(projectDocker.LocalDapsExtensionComposeFiles);
-
-			var devFiles = projectDocker.LocalProjectComposeFiles
-				.Where(f => f.EndsWith(".dev.yaml", StringComparison.OrdinalIgnoreCase))
-				.ToList();
-			allBindings.AddRange(_hostPortManager.GetBindings(project.Definition.Name, devFiles));
 
 			projectPlans.Add(new ProjectComposePlan
 			{
