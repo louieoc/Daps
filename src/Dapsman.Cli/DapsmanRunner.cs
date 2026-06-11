@@ -132,7 +132,7 @@ internal sealed class DapsmanRunner
 		var service = new LocalBuildService(
 			_localPrerequisiteChecker,
 			_configLoader,
-			new ConventionComposePlanBuilder(_config, _dockerResolver, _workstationCaddyResolver, _projectResolver),
+			new ConventionComposePlanBuilder(_config, _dockerResolver, _workstationCaddyResolver, _projectResolver, new HostPortManager()),
 			new DevCaddySiteSync(),
 			new WorkstationDockerComposeExecutor(),
 			_workstationBashRunner);
@@ -309,7 +309,7 @@ internal sealed class DapsmanRunner
 			throw new ArgumentException("--name <project-name> (or --project <name>) is required for init.");
 
 		var service = new InitService(
-			new ConventionInitPlanBuilder(_config),
+			new ConventionInitPlanBuilder(_config, _projectResolver, _dockerResolver, new HostPortManager()),
 			_workstationBashRunner,
 			new DapsYamlEditor());
 

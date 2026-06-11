@@ -22,3 +22,15 @@ public sealed class FakeHostingProviderResolver(HostingProvider provider) : IHos
 		return provider;
 	}
 }
+
+public sealed class FakeHostPortManager : IHostPortManager
+{
+	public IReadOnlyList<HostPortBinding> GetBindings(string projectName, IEnumerable<string> devComposeFilePaths)
+		=> [];
+
+	public IReadOnlyList<HostPortConflict> FindConflicts(IReadOnlyList<HostPortBinding> bindings)
+		=> [];
+
+	public int FindNextAvailable(int preferredPort, IReadOnlyCollection<int> reservedPorts)
+		=> preferredPort;
+}

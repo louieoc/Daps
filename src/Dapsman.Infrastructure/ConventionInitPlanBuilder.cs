@@ -8,10 +8,20 @@ public sealed class ConventionInitPlanBuilder : IInitPlanBuilder
 	public const string InitTemplateToolkitScript = "init-template.toolkit.sh";
 
 	private readonly DapsConfig _config;
+	private readonly IProjectResolver _projectResolver;
+	private readonly IDockerResolver _dockerResolver;
+	private readonly IHostPortManager _hostPortManager;
 
-	public ConventionInitPlanBuilder(DapsConfig config)
+	public ConventionInitPlanBuilder(
+		DapsConfig config,
+		IProjectResolver projectResolver,
+		IDockerResolver dockerResolver,
+		IHostPortManager hostPortManager)
 	{
 		_config = config;
+		_projectResolver = projectResolver;
+		_dockerResolver = dockerResolver;
+		_hostPortManager = hostPortManager;
 	}
 
 	public InitPlan BuildInitPlan(InitOptions options)
@@ -46,6 +56,8 @@ public sealed class ConventionInitPlanBuilder : IInitPlanBuilder
 		if (!relativePath.StartsWith("..") && !relativePath.StartsWith("./"))
 			relativePath = "./" + relativePath;
 
+		var portAssignments = ComputePortAssignments(templatePath, options.TemplateName);
+
 		return new InitPlan
 		{
 			TemplateName = options.TemplateName,
@@ -57,7 +69,56 @@ public sealed class ConventionInitPlanBuilder : IInitPlanBuilder
 			InitScriptPath = hasInitScript ? initScriptPath : null,
 			ProdUrl = NormalizeProdUrl(options.ProdUrl),
 			Overlay = options.Overlay,
+			DevPortAssignments = portAssignments,
 		};
+	}
+
+	private IReadOnlyList<PortAssignment> ComputePortAssignments(string templatePath, string templateName)
+	{
+		var templateDockerDir = Path.Combine(templatePath, "_docker");
+		if (!Directory.Exists(templateDockerDir))
+			return [];
+
+		var templateDevFiles = Directory.GetFiles(templateDockerDir, "*.dev.yaml");
+		if (templateDevFiles.Length == 0)
+			return [];
+
+		// Ports already in use by configured projects
+		var existingProjects = _projectResolver.Resolve([]);
+		var existingBindings = new List<HostPortBinding>();
+		foreach (var project in existingProjects)
+		{
+			var docker = _dockerResolver.ResolveForProject(project);
+			var devFiles = docker.LocalProjectComposeFiles
+				.Where(f => f.EndsWith(".dev.yaml", StringComparison.OrdinalIgnoreCase));
+			existingBindings.AddRange(_hostPortManager.GetBindings(project.Definition.Name, devFiles));
+		}
+		var reservedPorts = new HashSet<int>(existingBindings.Select(b => b.HostPort));
+
+		// Ports the template wants
+		var templateBindings = _hostPortManager.GetBindings(templateName, templateDevFiles);
+		// Deduplicate template ports (same port in multiple files counts once)
+		var templatePorts = templateBindings.Select(b => b.HostPort).Distinct().ToList();
+
+		var assignments = new List<PortAssignment>();
+		foreach (var port in templatePorts)
+		{
+			if (!reservedPorts.Contains(port))
+			{
+				assignments.Add(new PortAssignment(port, port, "available"));
+				reservedPorts.Add(port); // Reserve for subsequent ports in same template
+			}
+			else
+			{
+				var conflictingProject = existingBindings
+					.FirstOrDefault(b => b.HostPort == port)?.ProjectName ?? "another project";
+				var assigned = _hostPortManager.FindNextAvailable(port, reservedPorts);
+				assignments.Add(new PortAssignment(port, assigned, $"conflict with {conflictingProject}"));
+				reservedPorts.Add(assigned);
+			}
+		}
+
+		return assignments;
 	}
 
 	private static string? NormalizeProdUrl(string? url)

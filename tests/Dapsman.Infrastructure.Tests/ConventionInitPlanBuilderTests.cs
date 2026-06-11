@@ -12,7 +12,7 @@ public sealed class ConventionInitPlanBuilderTests
 		var config = new Domain.DapsConfig { DapsRootPath = root, FullYamlPath = dapsYaml };
 		File.WriteAllText(dapsYaml, "projects:\n");
 
-		var plan = new ConventionInitPlanBuilder(config).BuildInitPlan(new InitOptions
+		var plan = new ConventionInitPlanBuilder(config, new ProjectResolver(config), new DockerResolver(config), new FakeHostPortManager()).BuildInitPlan(new InitOptions
 		{
 			TemplateName = "wordpress",
 			ProjectName = "mysite",
@@ -29,7 +29,7 @@ public sealed class ConventionInitPlanBuilderTests
 		var config = new Domain.DapsConfig { DapsRootPath = root, FullYamlPath = dapsYaml };
 		File.WriteAllText(dapsYaml, "projects:\n");
 
-		var plan = new ConventionInitPlanBuilder(config).BuildInitPlan(new InitOptions
+		var plan = new ConventionInitPlanBuilder(config, new ProjectResolver(config), new DockerResolver(config), new FakeHostPortManager()).BuildInitPlan(new InitOptions
 		{
 			TemplateName = "wordpress",
 			ProjectName = "mysite",
@@ -48,7 +48,7 @@ public sealed class ConventionInitPlanBuilderTests
 		File.WriteAllText(dapsYaml, "projects:\n");
 		var customDest = Path.Combine(Path.GetTempPath(), "custom-dest-" + Guid.NewGuid().ToString("N"));
 
-		var plan = new ConventionInitPlanBuilder(config).BuildInitPlan(new InitOptions
+		var plan = new ConventionInitPlanBuilder(config, new ProjectResolver(config), new DockerResolver(config), new FakeHostPortManager()).BuildInitPlan(new InitOptions
 		{
 			TemplateName = "wordpress",
 			ProjectName = "mysite",
@@ -69,7 +69,7 @@ public sealed class ConventionInitPlanBuilderTests
 		var config = new Domain.DapsConfig { DapsRootPath = root, FullYamlPath = dapsYaml };
 		File.WriteAllText(dapsYaml, "projects:\n");
 
-		var plan = new ConventionInitPlanBuilder(config).BuildInitPlan(new InitOptions
+		var plan = new ConventionInitPlanBuilder(config, new ProjectResolver(config), new DockerResolver(config), new FakeHostPortManager()).BuildInitPlan(new InitOptions
 		{
 			TemplateName = "wordpress",
 			ProjectName = "mysite",
@@ -87,7 +87,7 @@ public sealed class ConventionInitPlanBuilderTests
 		var config = new Domain.DapsConfig { DapsRootPath = root, FullYamlPath = dapsYaml };
 		File.WriteAllText(dapsYaml, "projects:\n");
 
-		var plan = new ConventionInitPlanBuilder(config).BuildInitPlan(new InitOptions
+		var plan = new ConventionInitPlanBuilder(config, new ProjectResolver(config), new DockerResolver(config), new FakeHostPortManager()).BuildInitPlan(new InitOptions
 		{
 			TemplateName = "wordpress",
 			ProjectName = "mysite",
@@ -104,7 +104,7 @@ public sealed class ConventionInitPlanBuilderTests
 		var config = new Domain.DapsConfig { DapsRootPath = root, FullYamlPath = dapsYaml };
 		File.WriteAllText(dapsYaml, "projects:\n");
 
-		var plan = new ConventionInitPlanBuilder(config).BuildInitPlan(new InitOptions
+		var plan = new ConventionInitPlanBuilder(config, new ProjectResolver(config), new DockerResolver(config), new FakeHostPortManager()).BuildInitPlan(new InitOptions
 		{
 			TemplateName = "wordpress",
 			ProjectName = "mysite",
@@ -123,7 +123,7 @@ public sealed class ConventionInitPlanBuilderTests
 		File.WriteAllText(dapsYaml, "projects:\n");
 
 		var ex = Assert.Throws<InvalidOperationException>(() =>
-			new ConventionInitPlanBuilder(config).BuildInitPlan(new InitOptions
+			new ConventionInitPlanBuilder(config, new ProjectResolver(config), new DockerResolver(config), new FakeHostPortManager()).BuildInitPlan(new InitOptions
 			{
 				TemplateName = "nonexistent",
 				ProjectName = "mysite",

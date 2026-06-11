@@ -29,6 +29,10 @@ public sealed class InitService(
 
 		if (plan.ProdUrl is not null)
 			ApplyProdUrl(plan.DestinationPath, plan.ProjectName, plan.ProdUrl);
+
+		var portChanges = plan.DevPortAssignments.Where(a => a.AssignedPort != a.OriginalPort).ToList();
+		if (portChanges.Count > 0)
+			ApplyDevPorts(plan.DestinationPath, portChanges);
 	}
 
 	private static void ApplyProdUrl(string destinationPath, string projectName, string prodUrl)
@@ -42,6 +46,24 @@ public sealed class InitService(
 			var content = File.ReadAllText(file);
 			if (content.Contains(placeholder))
 				File.WriteAllText(file, content.Replace(placeholder, prodUrl));
+		}
+	}
+
+	private static void ApplyDevPorts(string destinationPath, IReadOnlyList<PortAssignment> changes)
+	{
+		var dockerDir = Path.Combine(destinationPath, "_docker");
+		if (!Directory.Exists(dockerDir)) return;
+
+		foreach (var file in Directory.GetFiles(dockerDir, "*.dev.yaml"))
+		{
+			var content = File.ReadAllText(file);
+			var modified = content;
+			foreach (var change in changes)
+				modified = modified.Replace(
+					$"127.0.0.1:{change.OriginalPort}:",
+					$"127.0.0.1:{change.AssignedPort}:");
+			if (!ReferenceEquals(modified, content))
+				File.WriteAllText(file, modified);
 		}
 	}
 

@@ -122,6 +122,13 @@ public interface IRestorePointsDiscoverer
 	IReadOnlyList<RestorePoint> Discover(DapsProject project);
 }
 
+public interface IHostPortManager
+{
+	IReadOnlyList<HostPortBinding> GetBindings(string projectName, IEnumerable<string> devComposeFilePaths);
+	IReadOnlyList<HostPortConflict> FindConflicts(IReadOnlyList<HostPortBinding> bindings);
+	int FindNextAvailable(int preferredPort, IReadOnlyCollection<int> reservedPorts);
+}
+
 public interface IRestorePlanBuilder
 {
 	PlanResult<RestorePlan> BuildPlan(DapsProject project, RestoreOptions options);
