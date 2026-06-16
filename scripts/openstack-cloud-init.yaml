@@ -13,3 +13,5 @@ runcmd:
   - [ sh, -lc, "apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin" ]
   - [ sh, -lc, "systemctl enable --now docker" ] # configures docker to start at boot time and also start it right now
   - [ sh, -lc, "id -u ubuntu >/dev/null 2>&1 && usermod -aG docker ubuntu || true" ] # add ubuntu to docker group when present
+  - [ sh, -lc, "if [[ ! -f /swapfile ]]; then fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' >> /etc/fstab; fi" ]
+  - [ sh, -lc, "echo 'vm.swappiness=10' > /etc/sysctl.d/99-daps.conf && sysctl -p /etc/sysctl.d/99-daps.conf" ]
