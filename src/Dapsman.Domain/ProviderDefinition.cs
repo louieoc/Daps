@@ -6,4 +6,9 @@
 public abstract class ProviderDefinition
 {
 	public required string Name { get; init; }
+
+	/// <summary>
+	/// When true, the provider is excluded from resolution. Same semantics as Disabled on ProjectDefinition.
+	/// </summary>
+	public bool Disabled { get; init; }
 }

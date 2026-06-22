@@ -16,12 +16,40 @@ public class HostingProviderResolver : IHostingProviderResolver
 
 	public HostingProvider Resolve(string? providerName)
 	{
-		var provider = FindProviderInConfig(_config, providerName);
-		var os = provider as OpenstackProviderDefinition;
-		if (os is null)
+		var definition = FindProviderInConfig(_config, providerName);
+		return ResolveFromDefinition(definition);
+	}
+
+	public HostingProvider Resolve(string? cliProviderName, string? projectProviderName)
+	{
+		var definition = FindProviderInConfig(_config, cliProviderName ?? projectProviderName);
+		return ResolveFromDefinition(definition);
+	}
+
+	public HostingProvider ResolveExplicit(string? providerName)
+	{
+		var activeProviders = _config.Providers.Where(p => !p.Disabled).ToList();
+
+		if (string.IsNullOrWhiteSpace(providerName))
 		{
-			throw new InvalidOperationException($"Provider {providerName} is not an OpenStack provider. Only OpenStack is supported currently.");
+			if (activeProviders.Count == 1)
+				return ResolveFromDefinition(activeProviders[0]);
+
+			if (activeProviders.Count == 0)
+				throw new InvalidOperationException("No providers found in daps.yaml.");
+
+			var names = string.Join(", ", activeProviders.Select(p => p.Name));
+			throw new InvalidOperationException(
+				$"--provider is required when multiple providers are configured. Available: {names}");
 		}
+
+		return Resolve(providerName);
+	}
+
+	private HostingProvider ResolveFromDefinition(ProviderDefinition provider)
+	{
+		var os = provider as OpenstackProviderDefinition
+			?? throw new InvalidOperationException($"Provider '{provider.Name}' is not an OpenStack provider. Only OpenStack is supported currently.");
 
 		ConfigUtils.RequireFile(os.OpenRcPath, $"OpenStack RC script not found for provider '{provider.Name}'.");
 
@@ -45,13 +73,18 @@ public class HostingProviderResolver : IHostingProviderResolver
 
 	private static ProviderDefinition FindProviderInConfig(DapsConfig config, string? providerName)
 	{
-		if (string.IsNullOrWhiteSpace(providerName))
-		{
-			return config.Providers.FirstOrDefault() ?? throw new InvalidOperationException($"No providers found in daps.yaml.");
-		}
+		var activeProviders = config.Providers.Where(p => !p.Disabled).ToList();
 
-		return config.Providers.FirstOrDefault(p => string.Equals(p.Name, providerName, StringComparison.OrdinalIgnoreCase))
+		if (string.IsNullOrWhiteSpace(providerName))
+			return activeProviders.FirstOrDefault() ?? throw new InvalidOperationException("No providers found in daps.yaml.");
+
+		var named = config.Providers.FirstOrDefault(p => string.Equals(p.Name, providerName, StringComparison.OrdinalIgnoreCase))
 			?? throw new InvalidOperationException($"Provider '{providerName}' not found in daps.yaml.");
+
+		if (named.Disabled)
+			throw new InvalidOperationException($"Provider '{providerName}' is disabled in daps.yaml.");
+
+		return named;
 	}
 
 	private static string RequireValue(Dictionary<string, string> vars, string key, string providerName)

@@ -35,7 +35,7 @@ public sealed class ConventionRemoteSyncFromLocalPlanBuilder : ISyncFromLocalPla
 				$"Project '{project.Definition.Name}' has no sync script ({SyncRemoteFromLocal}); sync-from-local is not supported for this project.");
 		}
 
-		var provider = _hostingResolver.Resolve(_providerName ?? options.ProviderName);
+		var provider = _hostingResolver.Resolve(_providerName ?? options.ProviderName, project.Definition.Provider);
 		var toolkitDef = _toolkitResolver.Resolve();
 
 		return PlanResult<SyncFromLocalPlan>.Supported(new SyncFromLocalPlan

@@ -165,6 +165,13 @@ public interface IProjectResolver
 public interface IHostingProviderResolver
 {
 	HostingProvider Resolve(string? providerName);
+	HostingProvider Resolve(string? cliProviderName, string? projectProviderName);
+
+	/// <summary>
+	/// For host-level operations not tied to a project. Returns the single active provider when
+	/// only one exists; requires an explicit name when multiple active providers are configured.
+	/// </summary>
+	HostingProvider ResolveExplicit(string? providerName);
 }
 
 public interface IContainerResolver

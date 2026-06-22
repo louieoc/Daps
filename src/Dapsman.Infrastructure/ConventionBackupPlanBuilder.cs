@@ -34,8 +34,8 @@ public sealed class ConventionBackupPlanBuilder : IBackupPlanBuilder
 			return PlanResult<BackupPlan>.NotSupported(
 				$"Project '{project.Definition.Name}' has no backup script ({BackupRemoteToLocal}); backup is not supported for this project.");
 		}
-
-		var provider = _hostingResolver.Resolve(_providerName ?? options.ProviderName);
+		// todo: why do we have the cli provider twice? _providerName and options.ProviderName
+		var provider = _hostingResolver.Resolve(_providerName ?? options.ProviderName, project.Definition.Provider);
 		var toolkitDef = _toolkitResolver.Resolve();
 
 		return PlanResult<BackupPlan>.Supported(new BackupPlan

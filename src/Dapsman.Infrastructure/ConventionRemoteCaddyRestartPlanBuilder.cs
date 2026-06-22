@@ -27,7 +27,7 @@ public sealed class ConventionRemoteCaddyRestartPlanBuilder : ICaddyRestartPlanB
 
 	public CaddyRestartPlan BuildPlan()
 	{
-		var provider = _hostingResolver.Resolve(_providerName);
+		var provider = _hostingResolver.ResolveExplicit(_providerName);
 		var toolkitDef = _toolkitResolver.Resolve();
 		var caddyDef = _caddyResolver.Resolve();
 
