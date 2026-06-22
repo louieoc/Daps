@@ -31,10 +31,12 @@ public sealed class ConventionRemoteDeployPlanBuilder : IRemoteDeployPlanBuilder
 	public RemoteDeployPlan BuildRemoteDeployPlan(DapsConfig config, RemoteDeployOptions options)
 	{
 		var warnings = new List<string>();
-		var provider = _providerResolver.Resolve(options.ProviderName);
+		var selectedProjects = _projectResolver.Resolve(options.ProjectFilters);
+
+		var inferredProjectProvider = InferProjectProvider(selectedProjects, options.ProviderName);
+		var provider = _providerResolver.Resolve(options.ProviderName, inferredProjectProvider);
 		var toolkitDefinition = _toolkitResolver.Resolve();
 		var caddyDefinition = _caddyResolver.Resolve();
-		var selectedProjects = _projectResolver.Resolve(options.ProjectFilters);
 		if (config.Projects.Count > 0 && selectedProjects.Count == 0)
 		{
 			warnings.Add("Project filters did not match configured projects; Daps-only deploy will run.");
@@ -132,6 +134,34 @@ public sealed class ConventionRemoteDeployPlanBuilder : IRemoteDeployPlanBuilder
 			ProjectPlans = projectPlans,
 			Warnings = warnings,
 		};
+	}
+
+	private static string? InferProjectProvider(IReadOnlyList<DapsProject> selectedProjects, string? cliProviderName)
+	{
+		if (cliProviderName is not null)
+		{
+			return null;
+		}
+
+		var projectProviders = selectedProjects
+			.Select(p => p.Definition.Provider)
+			.Where(p => p is not null)
+			.Distinct(StringComparer.OrdinalIgnoreCase)
+			.ToList();
+
+		if (projectProviders.Count > 1)
+		{
+			var groups = selectedProjects
+				.Where(p => p.Definition.Provider is not null)
+				.GroupBy(p => p.Definition.Provider, StringComparer.OrdinalIgnoreCase)
+				.Select(g => $"{g.Key}: {string.Join(", ", g.Select(p => p.Definition.Name))}");
+			throw new InvalidOperationException(
+				"Projects target different providers. Specify --provider to disambiguate, " +
+				"or target only projects that share a provider with --project:\n" +
+				string.Join("\n", groups));
+		}
+
+		return projectProviders.FirstOrDefault();
 	}
 
 	private static IReadOnlyList<ProjectUploadFilePlan> ParseProjectUploadManifest(DapsProject project)

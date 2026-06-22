@@ -23,7 +23,7 @@ public sealed class OpenStackRemoteProvisionPlanBuilder : IRemoteProvisionPlanBu
 
 	public RemoteProvisionPlan BuildRemotePlan(DapsConfig config, RemoteProvisionOptions options)
 	{
-		var hostingProvider = _providerResolver.Resolve(options.ProviderName);
+		var hostingProvider = _providerResolver.ResolveExplicit(options.ProviderName);
 		var provider = hostingProvider.ConfigDefinition as OpenstackProviderDefinition
 			?? throw new InvalidOperationException("No OpenStack provider configured in daps.yaml.");
 		var providerOptions = hostingProvider.Options as OpenStackProviderOptions

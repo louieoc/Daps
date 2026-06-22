@@ -28,7 +28,7 @@ public sealed class ConventionTeardownPlanBuilder : ITeardownPlanBuilder
 	public TeardownPlan BuildPlan(DapsConfig config, TeardownOptions options)
 	{
 		var project = _projectResolver.Resolve(options.ProjectName);
-		var provider = _hostingResolver.Resolve(_providerName ?? options.ProviderName);
+		var provider = _hostingResolver.Resolve(_providerName ?? options.ProviderName, project.Definition.Provider);
 		var toolkitDef = _toolkitResolver.Resolve();
 		var dockerPrefix = string.Equals(provider.RemoteUser, "root", StringComparison.OrdinalIgnoreCase) ? "docker" : "sudo docker";
 

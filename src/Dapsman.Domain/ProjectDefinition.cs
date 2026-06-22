@@ -17,4 +17,10 @@ public sealed class ProjectDefinition
 	/// Explicitly targeting a disabled project with --project is an error.
 	/// </summary>
 	public bool Disabled { get; init; }
+
+	/// <summary>
+	/// The name of the hosting provider to use for this project.
+	/// If null, the first non-disabled provider in daps.yaml is used.
+	/// </summary>
+	public string? Provider { get; init; }
 }

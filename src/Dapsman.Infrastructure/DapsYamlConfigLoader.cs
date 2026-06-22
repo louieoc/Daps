@@ -20,12 +20,36 @@ public sealed class DapsYamlConfigLoader : IConfigLoader
 		var projects = new List<ProjectDefinition>();
 
 		string? section = null;
-		string? currentProviderName = null;
-		string? currentProviderType = null;
+
+		string? pendingProviderName = null;
+		string? pendingProviderType = null;
+		string? pendingProviderOpenRcPath = null;
+		var pendingProviderDisabled = false;
+
+		void FlushPendingProvider()
+		{
+			if (pendingProviderName is not null && pendingProviderOpenRcPath is not null)
+			{
+				if (pendingProviderType == "openstack")
+				{
+					providerDefinitions.Add(new OpenstackProviderDefinition
+					{
+						Name = pendingProviderName,
+						OpenRcPath = pendingProviderOpenRcPath,
+						Disabled = pendingProviderDisabled,
+					});
+				}
+			}
+			pendingProviderName = null;
+			pendingProviderType = null;
+			pendingProviderOpenRcPath = null;
+			pendingProviderDisabled = false;
+		}
 
 		string? pendingProjectName = null;
 		string? pendingProjectPath = null;
 		var pendingProjectDisabled = false;
+		string? pendingProjectProvider = null;
 
 		void FlushPendingProject()
 		{
@@ -36,11 +60,13 @@ public sealed class DapsYamlConfigLoader : IConfigLoader
 					Name = pendingProjectName,
 					Path = pendingProjectPath,
 					Disabled = pendingProjectDisabled,
+					Provider = pendingProjectProvider,
 				});
 			}
 			pendingProjectName = null;
 			pendingProjectPath = null;
 			pendingProjectDisabled = false;
+			pendingProjectProvider = null;
 		}
 
 		foreach (var rawLine in File.ReadLines(fullDapsYamlPath))
@@ -56,9 +82,8 @@ public sealed class DapsYamlConfigLoader : IConfigLoader
 
 			if (indent == 0)
 			{
+				FlushPendingProvider();
 				FlushPendingProject();
-				currentProviderName = null;
-				currentProviderType = null;
 
 				if (!trimmed.EndsWith(':'))
 				{
@@ -73,21 +98,18 @@ public sealed class DapsYamlConfigLoader : IConfigLoader
 			{
 				if (indent == 2 && ConfigUtils.TryParseKeyValue(trimmed, out var providerName, out var providerType))
 				{
-					currentProviderName = providerName;
-					currentProviderType = providerType;
+					FlushPendingProvider();
+					pendingProviderName = providerName;
+					pendingProviderType = providerType;
 					continue;
 				}
 
-				if (indent == 4 && currentProviderName is not null && ConfigUtils.TryParseKeyValue(trimmed, out var key, out var value))
+				if (indent == 4 && pendingProviderName is not null && ConfigUtils.TryParseKeyValue(trimmed, out var key, out var value))
 				{
-					if (currentProviderType == "openstack" && key == "openrc")
-					{
-						providerDefinitions.Add(new OpenstackProviderDefinition
-						{
-							Name = currentProviderName,
-							OpenRcPath = ConfigUtils.ResolvePath(dapsRoot, value),
-						});
-					}
+					if (key == "openrc")
+						pendingProviderOpenRcPath = ConfigUtils.ResolvePath(dapsRoot, value);
+					else if (key == "disabled")
+						pendingProviderDisabled = string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
 				}
 
 				continue;
@@ -108,10 +130,13 @@ public sealed class DapsYamlConfigLoader : IConfigLoader
 						pendingProjectPath = ConfigUtils.ResolvePath(dapsRoot, value);
 					else if (key == "disabled")
 						pendingProjectDisabled = string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
+					else if (key == "provider")
+						pendingProjectProvider = value;
 				}
 			}
 		}
 
+		FlushPendingProvider();
 		FlushPendingProject();
 
 		return new DapsConfig
