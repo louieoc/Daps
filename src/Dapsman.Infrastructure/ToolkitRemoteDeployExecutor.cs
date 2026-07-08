@@ -139,14 +139,18 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
         sb.AppendLine($"ssh_key=\"~/.ssh/{EscapeBash(plan.SshKeyName)}\"");
         sb.AppendLine("ssh_opts=(-o StrictHostKeyChecking=accept-new -o BatchMode=yes -i \"$ssh_key\")");
         sb.AppendLine();
-        sb.AppendLine("ssh \"${ssh_opts[@]}\" \"$remote\" 'mkdir -p /srv/daps/caddy /srv/daps/caddy_sites /srv/daps/docker /srv/projects'");
+        var sudo = plan.SudoPrefix;
+        var setupDirs = $"{sudo}mkdir -p /srv/daps/caddy /srv/daps/caddy_sites /srv/daps/docker /srv/projects";
+        if (!string.IsNullOrEmpty(sudo))
+            setupDirs += $" && {sudo}chown -R \"$(id -un)\" /srv/daps /srv/projects";
+        sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" '{setupDirs}'");
         sb.AppendLine();
         sb.AppendLine($"scp \"${{ssh_opts[@]}}\" \"{EscapeBash(stagingToolkitPath)}/caddy/Caddyfile\" \"$remote:/srv/daps/caddy/Caddyfile\"");
 
         sb.AppendLine();
         sb.AppendLine("ssh \"${ssh_opts[@]}\" \"$remote\" 'bash -s' <<'REMOTE_CLEAN'");
         sb.AppendLine("set -euo pipefail");
-        sb.AppendLine("mkdir -p /srv/daps/caddy_sites");
+        sb.AppendLine($"{sudo}mkdir -p /srv/daps/caddy_sites");
         sb.AppendLine("mapfile -t expected < <(cat <<'EOF_EXPECTED'");
         foreach (var fileName in plan.ExpectedProdCaddyFileNames)
         {
@@ -183,7 +187,11 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
 
         foreach (var projectPlan in plan.ProjectPlans)
         {
-            sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" 'mkdir -p /srv/projects/{EscapeBash(projectPlan.ProjectName)}/_docker /srv/projects/{EscapeBash(projectPlan.ProjectName)}/_docker/image-exports'");
+            var projectDir = $"/srv/projects/{EscapeBash(projectPlan.ProjectName)}";
+            var mkdirProject = $"{sudo}mkdir -p {projectDir}/_docker {projectDir}/_docker/image-exports";
+            if (!string.IsNullOrEmpty(sudo))
+                mkdirProject += $" && {sudo}chown -R \"$(id -un)\" {projectDir}";
+            sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" '{mkdirProject}'");
             foreach (var composeFile in projectPlan.ComposeFilesToUpload)
             {
                 sb.AppendLine($"scp \"${{ssh_opts[@]}}\" \"{EscapeBash(stagingToolkitPath)}/projects/{EscapeBash(projectPlan.ProjectName)}/_docker/{EscapeBash(Path.GetFileName(composeFile))}\" \"$remote:/srv/projects/{EscapeBash(projectPlan.ProjectName)}/_docker/{EscapeBash(Path.GetFileName(composeFile))}\"");
@@ -200,7 +208,7 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
                 var stagedName = $"{i:D3}_{Path.GetFileName(upload.SourcePath)}";
                 var remoteDestination = EscapeBash(upload.RemoteDestinationPath);
                 var remoteTempPath = EscapeBash($"/tmp/dapsman-upload-{projectPlan.ProjectName}-{i:D3}");
-                sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" 'mkdir -p \"$(dirname \"{remoteDestination}\")\"'");
+                sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" '{sudo}mkdir -p \"$(dirname \"{remoteDestination}\")\"'");
                 sb.AppendLine($"scp \"${{ssh_opts[@]}}\" \"{EscapeBash(stagingToolkitPath)}/projects/{EscapeBash(projectPlan.ProjectName)}/_uploads/{EscapeBash(stagedName)}\" \"$remote:{remoteTempPath}\"");
                 sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" 'if [ -d \"{remoteDestination}\" ]; then rm -rf \"{remoteDestination}\"; fi'");
                 sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" 'rm -f \"{remoteDestination}\" && install -m 600 \"{remoteTempPath}\" \"{remoteDestination}\" && rm -f \"{remoteTempPath}\"'");
@@ -210,7 +218,7 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
             if (projectPlan.RemoteScriptFilesToUpload.Count > 0)
             {
                 var remoteScriptsDir = $"/srv/projects/{EscapeBash(projectPlan.ProjectName)}/_scripts";
-                sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" 'mkdir -p {remoteScriptsDir}'");
+                sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" '{sudo}mkdir -p {remoteScriptsDir}'");
                 foreach (var scriptFile in projectPlan.RemoteScriptFilesToUpload)
                 {
                     var fileName = EscapeBash(Path.GetFileName(scriptFile));

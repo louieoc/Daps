@@ -262,11 +262,11 @@ internal sealed class DapsmanRunner
 			ProjectFilters = _parsed.ProjectFilters,
 		};
 
-		var caddyRestartPlanBuilder = new ConventionRemoteCaddyRestartPlanBuilder(
-			_config, options.ProviderName, _toolkitResolver, _remoteCaddyResolver, _hostingResolver);
-		var caddyRestartPlan = caddyRestartPlanBuilder.BuildPlan();
-
 		var plan = service.CreatePlan(_parsed.ConfigPath, options);
+
+		var caddyRestartPlanBuilder = new ConventionRemoteCaddyRestartPlanBuilder(
+			_config, plan.ProviderName, _toolkitResolver, _remoteCaddyResolver, _hostingResolver);
+		var caddyRestartPlan = caddyRestartPlanBuilder.BuildPlan();
 		DapsmanPlanPrinter.PrintRemoteDeploy(plan, options, caddyRestartPlan);
 
 		if (!options.DryRun)
