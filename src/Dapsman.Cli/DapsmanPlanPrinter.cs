@@ -124,9 +124,10 @@ internal static class DapsmanPlanPrinter
 		Console.WriteLine($"- provider: {plan.ProviderName}");
 		Console.WriteLine($"- default key name: {plan.DefaultKeyName}");
 		Console.WriteLine($"- toolkit container: {plan.ToolkitContainerName}");
-		Console.WriteLine($"- openrc script: {plan.OpenRcScriptHostPath}");
-		Console.WriteLine($"- set-vars script: {plan.SetVarsScriptHostPath}");
-		Console.WriteLine($"- create script: {plan.CreateScriptHostPath}");
+		foreach (var (label, value) in plan.ProviderDetails)
+		{
+			Console.WriteLine($"- {label}: {value}");
+		}
 
 		Console.WriteLine();
 		Console.WriteLine("Step: setup-prod-environment");

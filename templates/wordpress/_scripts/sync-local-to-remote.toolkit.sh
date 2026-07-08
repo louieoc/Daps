@@ -22,6 +22,14 @@ set -euo pipefail
 PROJECT_ROOT="/srv/projects/${DAPS_PROJECT}"
 SSH_OPTS=(-o StrictHostKeyChecking=accept-new -o BatchMode=yes -i "${DAPS_SSH_KEY}")
 
+if [[ "${DAPS_REMOTE_USER}" == "root" ]]; then
+  remote_docker="docker"
+  remote_rsync_path=()
+else
+  remote_docker="sudo docker"
+  remote_rsync_path=(--rsync-path="sudo rsync")
+fi
+
 # --- Resolve URLs from caddy files ---
 dev_caddy="${PROJECT_ROOT}/_caddy_sites/${DAPS_PROJECT}.dev.caddy"
 prod_caddy="${PROJECT_ROOT}/_caddy_sites/${DAPS_PROJECT}.prod.caddy"
@@ -60,6 +68,7 @@ echo "Step 1/3: syncing wp-content..."
 rsync -az --delete \
   --exclude='cache/' \
   --exclude='upgrade/' \
+  "${remote_rsync_path[@]}" \
   -e "ssh ${SSH_OPTS[*]}" \
   "${PROJECT_ROOT}/wp-content/" \
   "${DAPS_REMOTE_USER}@${DAPS_REMOTE_HOST}:/srv/projects/${DAPS_PROJECT}/wp-content/"
@@ -79,7 +88,7 @@ scp "${SSH_OPTS[@]}" "${tmp_dump}" "${DAPS_REMOTE_USER}@${DAPS_REMOTE_HOST}:${tm
 ssh "${SSH_OPTS[@]}" "${DAPS_REMOTE_USER}@${DAPS_REMOTE_HOST}" bash -s <<REMOTE_IMPORT
 set -euo pipefail
 remote_pw=\$(cat /srv/projects/${DAPS_PROJECT}/_secrets/mysql_root_password.txt)
-docker exec -i ${remote_db_container} mysql \
+${remote_docker} exec -i ${remote_db_container} mysql \
   --binary-mode=1 -uroot -p"\${remote_pw}" "${db_name}" < "${tmp_dump}"
 rm -f "${tmp_dump}"
 REMOTE_IMPORT
@@ -90,8 +99,8 @@ echo "- database sync done"
 # --- Step 3: Replace URLs in remote DB ---
 echo "Step 3/3: replacing URLs (${dev_url} -> ${prod_url})..."
 ssh "${SSH_OPTS[@]}" "${DAPS_REMOTE_USER}@${DAPS_REMOTE_HOST}" \
-  "docker exec ${remote_wp_container} wp search-replace '${dev_url}' '${prod_url}' --allow-root --path=/var/www/html \
-  && docker exec ${remote_wp_container} wp cache flush --allow-root --path=/var/www/html"
+  "${remote_docker} exec ${remote_wp_container} wp search-replace '${dev_url}' '${prod_url}' --allow-root --path=/var/www/html \
+  && ${remote_docker} exec ${remote_wp_container} wp cache flush --allow-root --path=/var/www/html"
 echo "- URL replacement done"
 
 echo ""

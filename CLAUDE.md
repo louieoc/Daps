@@ -4,7 +4,7 @@
 
 Daps (Docker Assisted Portable Sovereignty) is a CLI + conventions framework for non-technical creative people who want to own and control their web presence. Target persona: an artist, blogger, or musician who wants to spin up a website, back it up, and move it to a different host — without learning Docker.
 
-Daps comprises a CLI for executing workflows, host definitions for targeting hosting providers that support OpenStack, and one or more projects. A project could be a custom web application, a Wordpress site, or one of any number of things for which a Docker image is available.
+Daps comprises a CLI for executing workflows, host definitions for targeting remote hosting providers, and one or more projects. A project could be a custom web application, a Wordpress site, or one of any number of things for which a Docker image is available.
 
 The CLI is called **Dapsman**, written in C# (.NET 9). Keep it in C#.
 
@@ -75,13 +75,11 @@ myproject/
 
 ## Hosting Files Naming Convention
 
-Currently we only support OpenStack VPS hosting. We want to support other kinds of hosting in the future.
+Daps supports two provider types, both configured under `providers:` in `daps.yaml`:
 
-Assume the user has to open an account with their preferred hosting provider and download an OpenRC file. They should save the file to the `daps/hosting` folder.
+**`openstack` providers** (e.g. DreamCompute, RamNode) — Daps creates the VM. The user opens an account, downloads an OpenRC file into `daps/hosting/`, and defines the provider in `daps.yaml` referencing that file. OpenStack also requires selecting an OS image and instance "flavor"; those choices are saved in `daps/hosting/openstack_<name>_instance_vars.sh` where `<name>` matches the provider name in `daps.yaml`.
 
-The user also must define the host in the `daps.yaml` file and reference the OpenRC file.
-
-OpenStack requires users to select OS images and make other choices when creating an instance. Those choices are saved in a file `daps/hosting/openstack_example_instance_vars.sh` where "example" is the name of the host, matching the name in `daps.yaml`.
+**`generic-vps` providers** (e.g. OVHCloud bare-metal VPS, Hostinger) — the host already exists; Daps configures it. The user subscribes to a VPS plan and receives a hostname and username. These go directly in `daps.yaml` as `hostname:` and `user:` — no files in `hosting/` are needed for this provider type.
 
 
 ## Script Naming Convention
@@ -122,9 +120,12 @@ Paths inside compose files resolve relative to the compose file's directory (`_d
 Minimal project registry. Most config is convention-driven.
 
 ```yaml
-openstack:
-  ramnode:
+providers:
+  ramnode: openstack
     openrc: ./hosting/ramnode_openrc
+  ovhcloud1: generic-vps
+    hostname: vps-12345678.vps.ovh.us
+    user: ubuntu
 
 projects:
   myproject:
@@ -171,9 +172,9 @@ Secret files in `_secrets/` are bind-mounted into containers. They must be `chmo
 dapsman init --template <name> --name <project-name> [--path <dest>] [--dry-run]
 dapsman local build [--build] [--dry-run] [--project <name>...] [--config <path>]
 dapsman local caddy restart [--dry-run] [--config <path>]
-dapsman prod provision [--dry-run] [--provider <name>] [--toolkit-container <name>] ...
-dapsman prod deploy [--dry-run] [--project <name>...] [--provider <name>] ...
-dapsman prod caddy restart [--dry-run] [--provider <name>] [--toolkit-container <name>]
+dapsman prod provision [--dry-run] [--provider <name>] [--upgrade] [--set-vars-script <path>] [--create-script <path>] [--config <path>]
+dapsman prod deploy [--dry-run] [--project <name>...] [--provider <name>] [--build] [--config <path>]
+dapsman prod caddy restart [--dry-run] [--provider <name>] [--config <path>]
 ```
 
 Commands use `group action` token pairs (e.g. `local build`, `prod deploy`) except `init` which is a single token.

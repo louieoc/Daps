@@ -115,7 +115,9 @@ public sealed class ConventionRemoteDeployPlanBuilder : IRemoteDeployPlanBuilder
 
 		var caddyfileSourcePath = ConfigUtils.RequireFile(caddyDefinition.WorkstationCaddyFilePath, "Required Caddyfile not found.");
 		var dapsComposeFiles = dapsDockerDef.RemoteDapsComposeFilePaths;
-		var dockerPrefix = string.Equals(provider.RemoteUser, "root", StringComparison.OrdinalIgnoreCase) ? "docker" : "sudo docker";
+		var isRoot = string.Equals(provider.RemoteUser, "root", StringComparison.OrdinalIgnoreCase);
+		var dockerPrefix = isRoot ? "docker" : "sudo docker";
+		var sudoPrefix = isRoot ? "" : "sudo ";
 
 		return new RemoteDeployPlan
 		{
@@ -126,6 +128,7 @@ public sealed class ConventionRemoteDeployPlanBuilder : IRemoteDeployPlanBuilder
 			RemoteUser = provider.RemoteUser,
 			SshKeyName = provider.KeyName,
 			DockerCommandPrefix = dockerPrefix,
+			SudoPrefix = sudoPrefix,
 			BuildImageCommands = buildImageCommands,
 			CaddyfileSourcePath = caddyfileSourcePath,
 			CaddySiteFilesToUpload = caddySiteFilesToUpload,

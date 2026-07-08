@@ -203,11 +203,13 @@ internal sealed class DapsmanRunner
 	private Task<int> RunRemoteProvision()
 	{
 		var openStackPlanBuilder = new OpenStackRemoteProvisionPlanBuilder(_toolkitResolver, _hostingResolver);
+		var genericVpsPlanBuilder = new GenericVpsRemoteProvisionPlanBuilder(_toolkitResolver, _hostingResolver);
+		var planBuilder = new CompositeRemoteProvisionPlanBuilder(_hostingResolver, openStackPlanBuilder, genericVpsPlanBuilder);
 
 		var service = new RemoteProvisionService(
 			_localPrerequisiteChecker,
 			_configLoader,
-			openStackPlanBuilder,
+			planBuilder,
 			_toolkitBashRunner);
 
 		var options = new RemoteProvisionOptions
@@ -216,6 +218,7 @@ internal sealed class DapsmanRunner
 			ProviderName = _parsed.ProviderName,
 			SetVarsScriptPath = _parsed.SetVarsScriptPath,
 			CreateScriptPath = _parsed.CreateScriptPath,
+			Upgrade = _parsed.Upgrade,
 		};
 
 		var plan = service.CreatePlan(_parsed.ConfigPath, options);
@@ -259,11 +262,11 @@ internal sealed class DapsmanRunner
 			ProjectFilters = _parsed.ProjectFilters,
 		};
 
-		var caddyRestartPlanBuilder = new ConventionRemoteCaddyRestartPlanBuilder(
-			_config, options.ProviderName, _toolkitResolver, _remoteCaddyResolver, _hostingResolver);
-		var caddyRestartPlan = caddyRestartPlanBuilder.BuildPlan();
-
 		var plan = service.CreatePlan(_parsed.ConfigPath, options);
+
+		var caddyRestartPlanBuilder = new ConventionRemoteCaddyRestartPlanBuilder(
+			_config, plan.ProviderName, _toolkitResolver, _remoteCaddyResolver, _hostingResolver);
+		var caddyRestartPlan = caddyRestartPlanBuilder.BuildPlan();
 		DapsmanPlanPrinter.PrintRemoteDeploy(plan, options, caddyRestartPlan);
 
 		if (!options.DryRun)
@@ -780,7 +783,7 @@ internal sealed class DapsmanRunner
 		Console.WriteLine("  dapsman local build [--build] [--dry-run] [--project <name>...] [--config <path>]");
 		Console.WriteLine("  dapsman local caddy restart [--dry-run] [--config <path>]");
 		Console.WriteLine("  dapsman prod caddy restart [--dry-run] [--provider <name>] [--config <path>]");
-		Console.WriteLine("  dapsman prod provision [--dry-run] [--provider <name>] [--set-vars-script <path>] [--create-script <path>] [--config <path>]");
+		Console.WriteLine("  dapsman prod provision [--dry-run] [--provider <name>] [--upgrade] [--set-vars-script <path>] [--create-script <path>] [--config <path>]");
 		Console.WriteLine("  dapsman prod deploy [--dry-run] [--project <name>...] [--provider <name>] [--build] [--set-vars-script <path>] [--config <path>]");
 		Console.WriteLine("  dapsman prod sync-from-local --project <name> [--dry-run] [--provider <name>] [--config <path>]");
 		Console.WriteLine("  dapsman local sync-from-prod --project <name> [--dry-run] [--provider <name>] [--config <path>]");

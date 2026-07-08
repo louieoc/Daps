@@ -74,12 +74,12 @@ public sealed class RemoteProvisionServiceTests
 				ProviderName = "dream",
 				DefaultKeyName = "daps-key-dream",
 				ToolkitContainerName = "toolkit",
-				OpenRcScriptHostPath = "openrc",
-				SetVarsScriptHostPath = "setvars",
-				CreateScriptHostPath = "create",
-				OpenRcScriptContainerPath = "/srv/daps/openrc",
-				SetVarsScriptContainerPath = "/srv/daps/setvars",
-				CreateScriptContainerPath = "/srv/daps/create",
+				ProviderDetails =
+				[
+					new("openrc script", "openrc"),
+					new("set-vars script", "setvars"),
+					new("create script", "create"),
+				],
 				ToolkitCommand = "echo ok",
 			};
 		}

@@ -29,6 +29,7 @@
 	public string? ProviderName { get; init; }
 	public string? SetVarsScriptPath { get; init; }
 	public string? CreateScriptPath { get; init; }
+	public bool Upgrade { get; init; }
 
 	public static CliArguments Parse(string[] args)
 	{
@@ -63,6 +64,7 @@
 		string? providerName = null;
 		string? setVarsScriptPath = null;
 		string? createScriptPath = null;
+		var upgrade = false;
 
 		if (tokens.Count >= 1)
 		{
@@ -171,6 +173,9 @@
 				case "--overlay":
 					overlay = true;
 					break;
+				case "--upgrade":
+					upgrade = true;
+					break;
 				case "--list-restore-points":
 					listRestorePoints = true;
 					break;
@@ -276,6 +281,7 @@
 			ProviderName = providerName,
 			SetVarsScriptPath = setVarsScriptPath,
 			CreateScriptPath = createScriptPath,
+			Upgrade = upgrade,
 		};
 	}
 }

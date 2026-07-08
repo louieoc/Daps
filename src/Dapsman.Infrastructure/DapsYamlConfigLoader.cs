@@ -24,13 +24,15 @@ public sealed class DapsYamlConfigLoader : IConfigLoader
 		string? pendingProviderName = null;
 		string? pendingProviderType = null;
 		string? pendingProviderOpenRcPath = null;
+		string? pendingProviderHostname = null;
+		string? pendingProviderUser = null;
 		var pendingProviderDisabled = false;
 
 		void FlushPendingProvider()
 		{
-			if (pendingProviderName is not null && pendingProviderOpenRcPath is not null)
+			if (pendingProviderName is not null)
 			{
-				if (pendingProviderType == "openstack")
+				if (pendingProviderType == "openstack" && pendingProviderOpenRcPath is not null)
 				{
 					providerDefinitions.Add(new OpenstackProviderDefinition
 					{
@@ -39,10 +41,22 @@ public sealed class DapsYamlConfigLoader : IConfigLoader
 						Disabled = pendingProviderDisabled,
 					});
 				}
+				else if (pendingProviderType == "generic-vps" && pendingProviderHostname is not null && pendingProviderUser is not null)
+				{
+					providerDefinitions.Add(new GenericVpsProviderDefinition
+					{
+						Name = pendingProviderName,
+						Hostname = pendingProviderHostname,
+						User = pendingProviderUser,
+						Disabled = pendingProviderDisabled,
+					});
+				}
 			}
 			pendingProviderName = null;
 			pendingProviderType = null;
 			pendingProviderOpenRcPath = null;
+			pendingProviderHostname = null;
+			pendingProviderUser = null;
 			pendingProviderDisabled = false;
 		}
 
@@ -108,6 +122,10 @@ public sealed class DapsYamlConfigLoader : IConfigLoader
 				{
 					if (key == "openrc")
 						pendingProviderOpenRcPath = ConfigUtils.ResolvePath(dapsRoot, value);
+					else if (key == "hostname")
+						pendingProviderHostname = value;
+					else if (key == "user")
+						pendingProviderUser = value;
 					else if (key == "disabled")
 						pendingProviderDisabled = string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
 				}

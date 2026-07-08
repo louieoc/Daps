@@ -59,12 +59,12 @@ public sealed class OpenStackRemoteProvisionPlanBuilder : IRemoteProvisionPlanBu
 			ProviderName = provider.Name,
 			DefaultKeyName = defaultKeyName,
 			ToolkitContainerName = toolkitDefinition.ContainerName,
-			OpenRcScriptHostPath = provider.OpenRcPath,
-			SetVarsScriptHostPath = setVarsHostPath,
-			CreateScriptHostPath = createScriptHostPath,
-			OpenRcScriptContainerPath = openRcInContainer,
-			SetVarsScriptContainerPath = setVarsInContainer,
-			CreateScriptContainerPath = createScriptInContainer,
+			ProviderDetails = new List<KeyValuePair<string, string>>
+			{
+				new("openrc script", provider.OpenRcPath),
+				new("set-vars script", setVarsHostPath),
+				new("create script", createScriptHostPath),
+			},
 			ToolkitCommand = toolkitCommand,
 		};
 	}

@@ -78,6 +78,7 @@ public sealed partial class RemoteDeployServiceTests
                 RemoteUser = "root",
                 SshKeyName = "daps-key-ramnode",
                 DockerCommandPrefix = "docker",
+                SudoPrefix = "",
                 BuildImageCommands = new[]
                 {
                     new BuildImageCommandPlan

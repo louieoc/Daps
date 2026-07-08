@@ -53,9 +53,9 @@ public sealed class OpenStackRemoteProvisionPlanBuilderTests
 		Assert.Equal("dream", plan.ProviderName);
 		Assert.Equal("daps-key-dream", plan.DefaultKeyName);
 		Assert.Equal("daps-toolkit-1", plan.ToolkitContainerName);
-		Assert.Equal("/srv/daps/hosting/dream_openrc.sh", plan.OpenRcScriptContainerPath);
-		Assert.Equal("/srv/daps/hosting/openstack_dream_instance_vars.sh", plan.SetVarsScriptContainerPath);
-		Assert.Equal("/srv/daps/scripts/openstack-create-instance.sh", plan.CreateScriptContainerPath);
+		Assert.Equal(openRc, plan.ProviderDetails.Single(d => d.Key == "openrc script").Value);
+		Assert.Equal(setVars, plan.ProviderDetails.Single(d => d.Key == "set-vars script").Value);
+		Assert.Equal(create, plan.ProviderDetails.Single(d => d.Key == "create script").Value);
 		Assert.Contains("openstack keypair show", plan.ToolkitCommand, StringComparison.Ordinal);
 		Assert.Contains("ssh-keygen -t rsa -b 4096", plan.ToolkitCommand, StringComparison.Ordinal);
 	}
