@@ -46,20 +46,24 @@ public class HostingProviderResolver : IHostingProviderResolver
 		return Resolve(providerName);
 	}
 
-	private HostingProvider ResolveFromDefinition(ProviderDefinition provider)
+	private HostingProvider ResolveFromDefinition(ProviderDefinition provider) => provider switch
 	{
-		var os = provider as OpenstackProviderDefinition
-			?? throw new InvalidOperationException($"Provider '{provider.Name}' is not an OpenStack provider. Only OpenStack is supported currently.");
+		OpenstackProviderDefinition os => ResolveOpenstack(os),
+		GenericVpsProviderDefinition vps => ResolveGenericVps(vps),
+		_ => throw new InvalidOperationException($"Provider '{provider.Name}' has an unsupported type."),
+	};
 
-		ConfigUtils.RequireFile(os.OpenRcPath, $"OpenStack RC script not found for provider '{provider.Name}'.");
+	private HostingProvider ResolveOpenstack(OpenstackProviderDefinition os)
+	{
+		ConfigUtils.RequireFile(os.OpenRcPath, $"OpenStack RC script not found for provider '{os.Name}'.");
 
-		var instanceVarsFile = $"openstack_{provider.Name}_instance_vars.sh";
+		var instanceVarsFile = $"openstack_{os.Name}_instance_vars.sh";
 		var instanceVarsPath = Path.Combine(_config.DapsRootPath, "hosting", instanceVarsFile);
 
 		var vars = ParseExportVariables(instanceVarsPath);
-		var remoteHost = RequireValue(vars, "OS_SERVER_IP", provider.Name);
+		var remoteHost = RequireValue(vars, "OS_SERVER_IP", os.Name);
 		var remoteUser = GetValueOrDefault(vars, "OS_SERVER_USER", DefaultOpenStackUser);
-		var keyName = GetValueOrDefault(vars, "OS_KEY_NAME", $"daps-key-{provider.Name}");
+		var keyName = GetValueOrDefault(vars, "OS_KEY_NAME", $"daps-key-{os.Name}");
 
 		return new HostingProvider
 		{
@@ -70,6 +74,15 @@ public class HostingProviderResolver : IHostingProviderResolver
 			Options = new OpenStackProviderOptions { InstanceVarsFilePath = instanceVarsPath },
 		};
 	}
+
+	private static HostingProvider ResolveGenericVps(GenericVpsProviderDefinition vps) => new()
+	{
+		ConfigDefinition = vps,
+		RemoteHost = vps.Hostname,
+		RemoteUser = vps.User,
+		KeyName = $"daps-key-{vps.Name}",
+		Options = new GenericVpsProviderOptions(),
+	};
 
 	private static ProviderDefinition FindProviderInConfig(DapsConfig config, string? providerName)
 	{

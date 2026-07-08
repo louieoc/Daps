@@ -171,6 +171,74 @@ projects:
         Assert.True(config.Providers[0].Disabled);
     }
 
+    [Fact]
+    public void Load_ParsesGenericVpsProvider()
+    {
+        var root = CreateTempDirectory();
+
+        var yaml = """
+providers:
+  ovhcloud1: generic-vps
+    hostname: vps-12345678.vps.ovh.us
+    user: ubuntu
+projects:
+""";
+
+        File.WriteAllText(Path.Combine(root, "daps.yaml"), yaml);
+
+        var loader = new DapsYamlConfigLoader();
+        var config = loader.Load(Path.Combine(root, "daps.yaml"));
+
+        Assert.Single(config.Providers);
+        var provider = Assert.IsType<GenericVpsProviderDefinition>(config.Providers[0]);
+        Assert.Equal("ovhcloud1", provider.Name);
+        Assert.Equal("vps-12345678.vps.ovh.us", provider.Hostname);
+        Assert.Equal("ubuntu", provider.User);
+    }
+
+    [Fact]
+    public void Load_GenericVpsProviderWithoutUser_IsNotAdded()
+    {
+        var root = CreateTempDirectory();
+
+        var yaml = """
+providers:
+  ovhcloud1: generic-vps
+    hostname: vps-12345678.vps.ovh.us
+projects:
+""";
+
+        File.WriteAllText(Path.Combine(root, "daps.yaml"), yaml);
+
+        var loader = new DapsYamlConfigLoader();
+        var config = loader.Load(Path.Combine(root, "daps.yaml"));
+
+        Assert.Empty(config.Providers);
+    }
+
+    [Fact]
+    public void Load_GenericVpsProvider_DisabledBeforeFields_SetsDisabledTrue()
+    {
+        var root = CreateTempDirectory();
+
+        var yaml = """
+providers:
+  ovhcloud1: generic-vps
+    disabled: true
+    hostname: vps-12345678.vps.ovh.us
+    user: ubuntu
+projects:
+""";
+
+        File.WriteAllText(Path.Combine(root, "daps.yaml"), yaml);
+
+        var loader = new DapsYamlConfigLoader();
+        var config = loader.Load(Path.Combine(root, "daps.yaml"));
+
+        Assert.Single(config.Providers);
+        Assert.True(config.Providers[0].Disabled);
+    }
+
     private static string CreateTempDirectory()
     {
         var path = Path.Combine(Path.GetTempPath(), "dapsman-tests", Guid.NewGuid().ToString("N"));

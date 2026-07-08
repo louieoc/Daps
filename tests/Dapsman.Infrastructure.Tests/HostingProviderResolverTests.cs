@@ -161,4 +161,28 @@ public sealed class HostingProviderResolverTests
 
 		Assert.Contains("bogus", ex.Message);
 	}
+
+	[Fact]
+	public void Resolve_GenericVps_UsesHostnameAndUserFromConfig_NoFileIO()
+	{
+		var root = Path.Combine(Path.GetTempPath(), "dapsman-tests", Guid.NewGuid().ToString("N"));
+		Directory.CreateDirectory(root);
+
+		var config = new DapsConfig
+		{
+			DapsRootPath = root,
+			FullYamlPath = Path.Combine(root, "daps.yaml"),
+			Providers =
+			[
+				new GenericVpsProviderDefinition { Name = "ovhcloud1", Hostname = "vps-12345678.vps.ovh.us", User = "ubuntu" },
+			],
+		};
+		var resolver = new HostingProviderResolver(config);
+
+		var result = resolver.Resolve(cliProviderName: null, projectProviderName: null);
+
+		Assert.Equal("vps-12345678.vps.ovh.us", result.RemoteHost);
+		Assert.Equal("ubuntu", result.RemoteUser);
+		Assert.Equal("daps-key-ovhcloud1", result.KeyName);
+	}
 }
