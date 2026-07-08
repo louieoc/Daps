@@ -45,7 +45,7 @@ Daps enables 2 environments:
 2. a remote environment running docker that acts as "prod"
     - remote Caddy container for managing reverse proxy for domains
     - one or more project containers
-    - currently Daps targets [OpenStack](https://www.openstack.org/) VPS instances, but we should be able to support other Unix hosting options
+    - Daps supports two provider types: **`openstack`** providers (e.g. DreamCompute, RamNode) where Daps creates the VM, and **`generic-vps`** providers (e.g. OVHCloud bare-metal VPS) where the host already exists and Daps configures it
     - a backend network called `daps_net`
 
 
@@ -157,21 +157,27 @@ Deploying to prod is accomplished with 2 workflows: provisioning a host, and dep
 
 ### Provisioning a host
 
-When you're ready to go live to the public with your projects, you need to set up remote hosting.
+When you're ready to go live to the public with your projects, you need to set up remote hosting. Daps supports two provider types configured in `daps.yaml`.
 
-Currently Daps supports only one remote host at a time, and only OpenStack providers.
+#### OpenStack providers (DreamCompute, RamNode, etc.)
 
-1. find an OpenStack hosting provider. Daps only support OpenStack, for now. I've run Daps against [DreamCompute](https://www.dreamhost.com/cloud/computing/) and [RamNode](https://ramnode.com/products/cloud-vps) so far.
-1. open an account and download the OpenRC file from your provider into the `daps/hosting` folder
-1. add a provider entry in the `daps.yaml` file
-    1. TODO: describe this
-1. pick the OpenStack instance size and operating system
-    1. TODO: there are a couple of ways to do this, and we should describe them here
-    1. capture the values for the next step
-1. create an instance variables file
-    1. TODO: describe this
-1. run `dapsman prod provision`
-1. at this point you may opt to verify the remote host was provisioned correctly by SSHing to it. See the [Toolkit and SSH to remote host](#toolkit-and-ssh-to-remote-host) section below.
+OpenStack providers have an API — Daps creates the VM for you.
+
+1. Open an account with an OpenStack hosting provider. I've run Daps against [DreamCompute](https://www.dreamhost.com/cloud/computing/) and [RamNode](https://ramnode.com/products/cloud-vps) so far.
+1. Download the OpenRC file from your provider into `daps/hosting/`
+1. Add a provider entry in `daps.yaml` (type `openstack`, with `openrc:` pointing to the file)
+1. Pick the OpenStack instance size and OS image; create an instance vars file at `hosting/openstack_<name>_instance_vars.sh`
+1. Run `dapsman prod provision --provider <name>`
+
+#### Generic VPS providers (OVHCloud bare-metal VPS, Hostinger, etc.)
+
+Generic VPS providers have no API. You subscribe to a plan, receive a hostname and username, and the host already exists when you provision with Daps.
+
+1. Subscribe to a VPS plan and note the hostname and username (possibly this involves a welcome email)
+1. Add a provider entry in `daps.yaml` (type `generic-vps`, with `hostname:` and `user:`)
+1. Run `dapsman prod provision --provider <name>` — this will prompt once for the host's password to copy an SSH key, then install Docker and set up swap
+
+After either path, you may verify the remote host by SSHing to it from the toolkit. See [Toolkit and SSH to remote host](#toolkit-and-ssh-to-remote-host) below.
 
 
 ### Deploying projects
@@ -271,7 +277,7 @@ Configuration file for daps
 
 ### Docker context
 - for local deployment, docker runs on your local workstation
-- for remote deployment, docker runs on the remote VM (e.g. Openstack instance)
+- for remote deployment, docker runs on the remote VM (e.g. an OpenStack instance or a generic VPS)
 - for building images, docker runs on the local workstation to save on compute costs, assuming you're charged for those on the remote VM
 
 ### A note on docker paths
@@ -319,9 +325,10 @@ Configuration file for daps
 ### Hosting folder and files
 - `hosting`
     - located in daps project root
-    - contains files specific to a particular hosting provider, so as to separate out "custom" configuration/settings from "generic" scripts that act on them
-    - supporting OpenStack only to start
+    - contains files specific to a particular hosting provider, to separate provider-specific configuration from generic scripts
     - can include files for multiple hosting providers
+    - for OpenStack providers: OpenRC file and instance vars file
+    - for generic-vps providers: no files needed (hostname and user live directly in `daps.yaml`)
 - openrc file
     - the openrc filename is not restricted by convention, since typically you download this file from the OpenStack provider
     - if the name given at download is too generic, lean toward `<providername>_openrc` (e.g. `ramnode_openrc` where RamNode is a hosting company)
@@ -438,9 +445,13 @@ Reloads Caddy's configuration on the local Docker instance (`docker exec daps-ca
 
 ### `dapsman prod provision`
 ```
-dapsman prod provision [--dry-run] [--provider <name>] [--set-vars-script <path>] [--create-script <path>] [--config <path>]
+dapsman prod provision [--dry-run] [--provider <name>] [--upgrade] [--set-vars-script <path>] [--create-script <path>] [--config <path>]
 ```
-Provisions a new remote OpenStack instance from the toolkit container. Creates an SSH keypair if one doesn't exist, uploads the public key to OpenStack, and runs the instance creation script (`scripts/openstack-create-instance.sh`). Run this once when setting up a new hosting environment.
+Sets up Docker on a remote host from the toolkit container. Behavior depends on the provider's type in `daps.yaml`:
+- **`openstack` providers** — creates a new instance. Creates an SSH keypair if one doesn't exist, uploads the public key to OpenStack, and runs the instance creation script (`scripts/openstack-create-instance.sh`). Run this once when setting up a new hosting environment.
+- **`generic-vps` providers** — configures an existing host (e.g. a VPS from a provider with no creation API, like a bare-metal OVHCloud instance) rather than creating one. Creates an SSH keypair if one doesn't exist, copies it to the host with `ssh-copy-id` (prompts for the host's password interactively — the password is never stored by Daps), then installs Docker and sets up swap via `scripts/provision-generic-vps.sh`. Safe to re-run; skips key setup once a working key is in place. `--upgrade` additionally runs `apt-get upgrade -y` on the host.
+
+`--set-vars-script` / `--create-script` only apply to `openstack` providers.
 
 ### `dapsman prod deploy`
 ```
@@ -521,6 +532,6 @@ Deletes a project from the remote deployment. Requires specifying a project. Req
 ```
 dapsman prod unprovision [--dry-run] [--provider <name>] [--config <path>]
 ```
-Deletes the OpenStack instance and SSH keypair from the remote host, the SSH key files from the toolkit, and the instance vars file from the workstation. Requires confirmation ("are you sure?") and re-confirmation ("really really sure?").
+OpenStack providers only. Deletes the OpenStack instance and SSH keypair from the remote host, the SSH key files from the toolkit, and the instance vars file from the workstation. Requires confirmation ("are you sure?") and re-confirmation ("really really sure?"). Generic-vps providers have no instance-creation API, so there is no corresponding unprovision workflow for them.
 
 
