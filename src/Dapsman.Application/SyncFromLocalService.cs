@@ -4,12 +4,12 @@ namespace Dapsman.Application;
 
 public sealed class SyncFromLocalService
 {
-    private readonly IConfigLoader _configLoader;
+    private readonly IDapsConfigLoader _configLoader;
     private readonly ISyncFromLocalPlanBuilder _planBuilder;
     private readonly IBashRunner _bashRunner;
 
     public SyncFromLocalService(
-        IConfigLoader configLoader,
+        IDapsConfigLoader configLoader,
         ISyncFromLocalPlanBuilder planBuilder,
         IBashRunner bashRunner)
     {

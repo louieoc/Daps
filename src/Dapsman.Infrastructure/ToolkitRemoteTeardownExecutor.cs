@@ -3,16 +3,16 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class ToolkitTeardownExecutor : ITeardownExecutor
+public sealed class ToolkitRemoteTeardownExecutor : IRemoteTeardownExecutor
 {
 	private readonly IBashRunner _bashRunner;
 
-	public ToolkitTeardownExecutor(IBashRunner bashRunner)
+	public ToolkitRemoteTeardownExecutor(IBashRunner bashRunner)
 	{
 		_bashRunner = bashRunner;
 	}
 
-	public void Execute(TeardownPlan plan)
+	public void Execute(RemoteTeardownPlan plan)
 	{
 		var staging = CreateStaging(plan);
 		try
@@ -27,7 +27,7 @@ public sealed class ToolkitTeardownExecutor : ITeardownExecutor
 		}
 	}
 
-	private static StagingPaths CreateStaging(TeardownPlan plan)
+	private static StagingPaths CreateStaging(RemoteTeardownPlan plan)
 	{
 		var id = Guid.NewGuid().ToString("N");
 		var hostPath = Path.Combine(plan.DapsRootPath, ".dapsman", "teardown", id);
@@ -52,7 +52,7 @@ public sealed class ToolkitTeardownExecutor : ITeardownExecutor
 		};
 	}
 
-	private static string BuildScript(TeardownPlan plan, StagingPaths staging)
+	private static string BuildScript(RemoteTeardownPlan plan, StagingPaths staging)
 	{
 		var keyName = EscapeBash(plan.SshKeyName);
 		var remote = $"{EscapeBash(plan.RemoteUser)}@{EscapeBash(plan.RemoteHost)}";

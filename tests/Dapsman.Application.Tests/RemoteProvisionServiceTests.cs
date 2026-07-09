@@ -42,7 +42,7 @@ public sealed class RemoteProvisionServiceTests
 		public void EnsureLocalBuildPrerequisites() => Called = true;
 	}
 
-	private sealed class FakeLoader : IConfigLoader
+	private sealed class FakeLoader : IDapsConfigLoader
 	{
 		public bool Called { get; private set; }
 

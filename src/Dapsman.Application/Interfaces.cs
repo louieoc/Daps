@@ -2,12 +2,12 @@ using Dapsman.Domain;
 
 namespace Dapsman.Application;
 
-public interface IConfigLoader
+public interface IDapsConfigLoader
 {
 	DapsConfig Load(string dapsYamlPath);
 }
 
-public interface ILocalPlanBuilder
+public interface ILocalBuildPlanBuilder
 {
 	LocalBuildPlan BuildLocalPlan(LocalBuildOptions options);
 }
@@ -19,10 +19,10 @@ public interface IPrerequisiteChecker
 
 public interface ICaddySiteSync
 {
-	void SyncDevSites(CaddySyncPlan plan);
+	void SyncLocalSites(LocalCaddySyncPlan plan);
 }
 
-public interface IComposeExecutor
+public interface IDockerComposeExecutor
 {
 	void RunComposeUp(IReadOnlyList<string> composeFiles, bool buildImages, string workingDirectory);
 }
@@ -62,9 +62,9 @@ public interface ISyncFromRemotePlanBuilder
 	PlanResult<SyncFromRemotePlan> BuildPlan(DapsConfig config, SyncFromRemoteOptions options);
 }
 
-public interface IBackupPlanBuilder
+public interface IRemoteBackupPlanBuilder
 {
-	PlanResult<BackupPlan> BuildPlan(DapsConfig config, BackupOptions options);
+	PlanResult<RemoteBackupPlan> BuildPlan(DapsConfig config, BackupOptions options);
 }
 
 public interface IOfflineStatusPlanBuilder
@@ -87,14 +87,14 @@ public interface ICaddyRestartPlanBuilder
 	CaddyRestartPlan BuildPlan();
 }
 
-public interface ITeardownPlanBuilder
+public interface IRemoteTeardownPlanBuilder
 {
-	TeardownPlan BuildPlan(DapsConfig config, TeardownOptions options);
+	RemoteTeardownPlan BuildPlan(DapsConfig config, TeardownOptions options);
 }
 
-public interface ITeardownExecutor
+public interface IRemoteTeardownExecutor
 {
-	void Execute(TeardownPlan plan);
+	void Execute(RemoteTeardownPlan plan);
 }
 
 public interface IUnprovisionPlanBuilder

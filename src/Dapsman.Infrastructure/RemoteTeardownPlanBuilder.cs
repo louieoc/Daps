@@ -3,7 +3,7 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class ConventionTeardownPlanBuilder : ITeardownPlanBuilder
+public sealed class RemoteTeardownPlanBuilder : IRemoteTeardownPlanBuilder
 {
 	private readonly string? _providerName;
 	private readonly IToolkitResolver _toolkitResolver;
@@ -11,7 +11,7 @@ public sealed class ConventionTeardownPlanBuilder : ITeardownPlanBuilder
 	private readonly ICaddyResolver _caddyResolver;
 	private readonly IHostingProviderResolver _hostingResolver;
 
-	public ConventionTeardownPlanBuilder(
+	public RemoteTeardownPlanBuilder(
 		string? providerName,
 		IToolkitResolver toolkitResolver,
 		IProjectResolver projectResolver,
@@ -25,7 +25,7 @@ public sealed class ConventionTeardownPlanBuilder : ITeardownPlanBuilder
 		_hostingResolver = hostingResolver;
 	}
 
-	public TeardownPlan BuildPlan(DapsConfig config, TeardownOptions options)
+	public RemoteTeardownPlan BuildPlan(DapsConfig config, TeardownOptions options)
 	{
 		var project = _projectResolver.Resolve(options.ProjectName);
 		var provider = _hostingResolver.Resolve(_providerName ?? options.ProviderName, project.Definition.Provider);
@@ -46,7 +46,7 @@ public sealed class ConventionTeardownPlanBuilder : ITeardownPlanBuilder
 			}
 		}
 
-		return new TeardownPlan
+		return new RemoteTeardownPlan
 		{
 			ProjectName = project.Definition.Name,
 			DapsRootPath = config.DapsRootPath,

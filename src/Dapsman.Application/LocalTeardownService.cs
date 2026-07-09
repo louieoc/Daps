@@ -3,7 +3,7 @@ using Dapsman.Domain;
 namespace Dapsman.Application;
 
 public sealed class LocalTeardownService(
-	IConfigLoader configLoader,
+	IDapsConfigLoader configLoader,
 	ILocalTeardownPlanBuilder planBuilder,
 	ILocalTeardownExecutor executor,
 	IDapsYamlEditor yamlEditor)

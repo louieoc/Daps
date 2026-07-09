@@ -4,7 +4,7 @@ using Dapsman.Application;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class WorkstationDockerComposeExecutor : IComposeExecutor
+public sealed class WorkstationDockerComposeExecutor : IDockerComposeExecutor
 {
 	public void RunComposeUp(IReadOnlyList<string> composeFiles, bool buildImages, string workingDirectory)
 	{

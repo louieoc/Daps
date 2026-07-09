@@ -3,14 +3,14 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class ConventionLocalRestorePlanBuilder : IRestorePlanBuilder
+public sealed class LocalRestorePlanBuilder : IRestorePlanBuilder
 {
 	public const string RestoreLocalScript = "restore-local.toolkit.sh";
 
 	private readonly IToolkitResolver _toolkitResolver;
 	private readonly IRestorePointsDiscoverer _discoverer;
 
-	public ConventionLocalRestorePlanBuilder(
+	public LocalRestorePlanBuilder(
 		IToolkitResolver toolkitResolver,
 		IRestorePointsDiscoverer discoverer)
 	{

@@ -3,7 +3,7 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class ConventionRemoteCaddyRestartPlanBuilder : ICaddyRestartPlanBuilder
+public sealed class RemoteCaddyRestartPlanBuilder : ICaddyRestartPlanBuilder
 {
 	private readonly DapsConfig _config;
 	private readonly string? _providerName;
@@ -11,7 +11,7 @@ public sealed class ConventionRemoteCaddyRestartPlanBuilder : ICaddyRestartPlanB
 	private readonly ICaddyResolver _caddyResolver;
 	private readonly IHostingProviderResolver _hostingResolver;
 
-	public ConventionRemoteCaddyRestartPlanBuilder(
+	public RemoteCaddyRestartPlanBuilder(
 		DapsConfig config,
 		string? providerName,
 		IToolkitResolver toolkitResolver,

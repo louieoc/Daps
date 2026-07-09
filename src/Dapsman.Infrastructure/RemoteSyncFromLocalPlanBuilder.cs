@@ -3,7 +3,7 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class ConventionRemoteSyncFromLocalPlanBuilder : ISyncFromLocalPlanBuilder
+public sealed class RemoteSyncFromLocalPlanBuilder : ISyncFromLocalPlanBuilder
 {
 	private const string SyncRemoteFromLocal = "sync-local-to-remote.toolkit.sh";
 
@@ -12,7 +12,7 @@ public sealed class ConventionRemoteSyncFromLocalPlanBuilder : ISyncFromLocalPla
 	private readonly IToolkitResolver _toolkitResolver;
 	private readonly IHostingProviderResolver _hostingResolver;
 
-	public ConventionRemoteSyncFromLocalPlanBuilder(
+	public RemoteSyncFromLocalPlanBuilder(
 		string? providerName,
 		IToolkitResolver toolkitResolver,
 		IProjectResolver projectResolver,

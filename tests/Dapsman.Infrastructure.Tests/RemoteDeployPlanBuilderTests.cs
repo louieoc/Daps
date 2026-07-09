@@ -3,7 +3,7 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure.Tests;
 
-public sealed class ConventionRemoteDeployPlanBuilderTests
+public sealed class RemoteDeployPlanBuilderTests
 {
 	[Fact]
 	public void BuildRemoteDeployPlan_UsesDapsOrderAndAllProjectsForStaleCaddyBaseline()
@@ -45,7 +45,7 @@ export OS_KEY_NAME="daps-key-ramnode"
 		};
 
 		var containerManager = new FakeContainerManager(null);
-		var planner = new ConventionRemoteDeployPlanBuilder(
+		var planner = new RemoteDeployPlanBuilder(
 			new HostingProviderResolver(config),
 			new DockerResolver(config),
 			new ToolkitResolver(config, containerManager),
@@ -99,7 +99,7 @@ export OS_SERVER_IP="10.0.0.20"
 		};
 
 		var containerManager = new FakeContainerManager(null);
-		var planner = new ConventionRemoteDeployPlanBuilder(
+		var planner = new RemoteDeployPlanBuilder(
 			new HostingProviderResolver(config),
 			new DockerResolver(config),
 			new ToolkitResolver(config, containerManager),
@@ -146,7 +146,7 @@ export OS_KEY_NAME=daps-key-ramnode # another comment
 		};
 
 		var containerManager = new FakeContainerManager(null);
-		var planner = new ConventionRemoteDeployPlanBuilder(
+		var planner = new RemoteDeployPlanBuilder(
 			new HostingProviderResolver(config),
 			new DockerResolver(config),
 			new ToolkitResolver(config, containerManager),

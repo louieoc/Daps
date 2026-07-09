@@ -5,13 +5,13 @@ namespace Dapsman.Application;
 public sealed class RemoteDeployService
 {
 	private readonly IPrerequisiteChecker _prerequisiteChecker;
-	private readonly IConfigLoader _configLoader;
+	private readonly IDapsConfigLoader _configLoader;
 	private readonly IRemoteDeployPlanBuilder _remoteDeployPlanBuilder;
 	private readonly IRemoteDeployExecutor _remoteDeployExecutor;
 
 	public RemoteDeployService(
 		IPrerequisiteChecker prerequisiteChecker,
-		IConfigLoader configLoader,
+		IDapsConfigLoader configLoader,
 		IRemoteDeployPlanBuilder remoteDeployPlanBuilder,
 		IRemoteDeployExecutor remoteDeployExecutor)
 	{

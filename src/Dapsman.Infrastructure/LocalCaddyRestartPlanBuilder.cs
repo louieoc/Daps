@@ -3,12 +3,12 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class ConventionLocalCaddyRestartPlanBuilder : ICaddyRestartPlanBuilder
+public sealed class LocalCaddyRestartPlanBuilder : ICaddyRestartPlanBuilder
 {
 	private readonly DapsConfig _config;
 	private readonly ICaddyResolver _caddyResolver;
 
-	public ConventionLocalCaddyRestartPlanBuilder(DapsConfig config, ICaddyResolver caddyResolver)
+	public LocalCaddyRestartPlanBuilder(DapsConfig config, ICaddyResolver caddyResolver)
 	{
 		_config = config;
 		_caddyResolver = caddyResolver;

@@ -3,13 +3,13 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class ConventionLocalTeardownPlanBuilder : ILocalTeardownPlanBuilder
+public sealed class LocalTeardownPlanBuilder : ILocalTeardownPlanBuilder
 {
 	private readonly IProjectResolver _projectResolver;
 	private readonly IDockerResolver _dockerResolver;
 	private readonly ICaddyResolver _caddyResolver;
 
-	public ConventionLocalTeardownPlanBuilder(
+	public LocalTeardownPlanBuilder(
 		IProjectResolver projectResolver,
 		IDockerResolver dockerResolver,
 		ICaddyResolver caddyResolver)

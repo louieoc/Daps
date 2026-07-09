@@ -3,7 +3,7 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class ConventionComposePlanBuilder : ILocalPlanBuilder
+public sealed class LocalBuildPlanBuilder : ILocalBuildPlanBuilder
 {
 	private readonly DapsConfig _config;
 	private readonly IDockerResolver _dockerResolver;
@@ -11,7 +11,7 @@ public sealed class ConventionComposePlanBuilder : ILocalPlanBuilder
 	private readonly IProjectResolver _projectResolver;
 	private readonly IHostPortManager _hostPortManager;
 
-	public ConventionComposePlanBuilder(
+	public LocalBuildPlanBuilder(
 		DapsConfig config,
 		IDockerResolver dockerResolver,
 		ICaddyResolver caddyResolver,
@@ -54,7 +54,7 @@ public sealed class ConventionComposePlanBuilder : ILocalPlanBuilder
 
 		var caddySyncPlan = BuildCaddySyncPlan(_config, _caddyResolver, selectedProjects, warnings);
 
-		var projectPlans = new List<ProjectComposePlan>();
+		var projectPlans = new List<LocalProjectComposePlan>();
 		var allBindings = new List<HostPortBinding>();
 
 		foreach (var project in allProjects)
@@ -67,7 +67,7 @@ public sealed class ConventionComposePlanBuilder : ILocalPlanBuilder
 		{
 			var projectDocker = _dockerResolver.ResolveForProject(project);
 
-			projectPlans.Add(new ProjectComposePlan
+			projectPlans.Add(new LocalProjectComposePlan
 			{
 				ProjectName = project.Definition.Name,
 				ProjectPath = project.Definition.Path,
@@ -93,7 +93,7 @@ public sealed class ConventionComposePlanBuilder : ILocalPlanBuilder
 		};
 	}
 
-	private static CaddySyncPlan BuildCaddySyncPlan(
+	private static LocalCaddySyncPlan BuildCaddySyncPlan(
 		DapsConfig config,
 		ICaddyResolver caddyResolver,
 		IReadOnlyList<DapsProject> projects,
@@ -101,7 +101,7 @@ public sealed class ConventionComposePlanBuilder : ILocalPlanBuilder
 	{
 		var caddyDef = caddyResolver.Resolve();
 		var runtimeSitesPath = caddyDef.WorkstationSitesPath;
-		var filesToCopy = new List<CaddySiteCopyPlan>();
+		var filesToCopy = new List<LocalCaddySiteCopyPlan>();
 		var destinationTracker = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 		foreach (var project in projects)
@@ -124,7 +124,7 @@ public sealed class ConventionComposePlanBuilder : ILocalPlanBuilder
 						$"Duplicate caddy filename '{fileName}' detected while planning sync. Ensure project caddy filenames are globally unique.");
 				}
 
-				filesToCopy.Add(new CaddySiteCopyPlan
+				filesToCopy.Add(new LocalCaddySiteCopyPlan
 				{
 					ProjectName = project.Definition.Name,
 					SourcePath = sourcePath,
@@ -135,7 +135,7 @@ public sealed class ConventionComposePlanBuilder : ILocalPlanBuilder
 
 		var placeholderPath = Path.Combine(runtimeSitesPath, "000-empty.dev.caddy");
 
-		return new CaddySyncPlan
+		return new LocalCaddySyncPlan
 		{
 			RuntimeSitesPath = runtimeSitesPath,
 			FilesToCopy = filesToCopy,

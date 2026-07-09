@@ -4,12 +4,12 @@ namespace Dapsman.Application;
 
 public sealed class SyncFromRemoteService
 {
-    private readonly IConfigLoader _configLoader;
+    private readonly IDapsConfigLoader _configLoader;
     private readonly ISyncFromRemotePlanBuilder _planBuilder;
     private readonly IBashRunner _bashRunner;
 
     public SyncFromRemoteService(
-        IConfigLoader configLoader,
+        IDapsConfigLoader configLoader,
         ISyncFromRemotePlanBuilder planBuilder,
         IBashRunner bashRunner)
     {

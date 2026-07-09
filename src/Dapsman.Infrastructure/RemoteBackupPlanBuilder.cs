@@ -3,7 +3,7 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class ConventionBackupPlanBuilder : IBackupPlanBuilder
+public sealed class RemoteBackupPlanBuilder : IRemoteBackupPlanBuilder
 {
 	public const string BackupRemoteToLocal = "backup-remote.toolkit.sh";
 
@@ -12,7 +12,7 @@ public sealed class ConventionBackupPlanBuilder : IBackupPlanBuilder
 	private readonly IProjectResolver _projectResolver;
 	private readonly IHostingProviderResolver _hostingResolver;
 
-	public ConventionBackupPlanBuilder(
+	public RemoteBackupPlanBuilder(
 		string? providerName,
 		IToolkitResolver toolkitResolver,
 		IProjectResolver projectResolver,
@@ -24,21 +24,21 @@ public sealed class ConventionBackupPlanBuilder : IBackupPlanBuilder
 		_hostingResolver = hostingResolver;
 	}
 
-	public PlanResult<BackupPlan> BuildPlan(DapsConfig config, BackupOptions options)
+	public PlanResult<RemoteBackupPlan> BuildPlan(DapsConfig config, BackupOptions options)
 	{
 		var project = _projectResolver.Resolve(options.ProjectName);
 
 		var backupScriptHostPath = Path.Combine(project.WorkstationScriptsPath, BackupRemoteToLocal);
 		if (!File.Exists(backupScriptHostPath))
 		{
-			return PlanResult<BackupPlan>.NotSupported(
+			return PlanResult<RemoteBackupPlan>.NotSupported(
 				$"Project '{project.Definition.Name}' has no backup script ({BackupRemoteToLocal}); backup is not supported for this project.");
 		}
 		// todo: why do we have the cli provider twice? _providerName and options.ProviderName
 		var provider = _hostingResolver.Resolve(_providerName ?? options.ProviderName, project.Definition.Provider);
 		var toolkitDef = _toolkitResolver.Resolve();
 
-		return PlanResult<BackupPlan>.Supported(new BackupPlan
+		return PlanResult<RemoteBackupPlan>.Supported(new RemoteBackupPlan
 		{
 			ProjectName = project.Definition.Name,
 			DapsRootPath = config.DapsRootPath,

@@ -8,8 +8,7 @@ public sealed class RemoteDeployPlan
 	public required string RemoteHost { get; init; }
 	public required string RemoteUser { get; init; }
 	public required string SshKeyName { get; init; }
-	public required string DockerCommandPrefix { get; init; }
-	public required string SudoPrefix { get; init; }
+	public required bool IsRoot { get; init; }
 	public required IReadOnlyList<BuildImageCommandPlan> BuildImageCommands { get; init; }
 	public required string CaddyfileSourcePath { get; init; }
 

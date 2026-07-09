@@ -5,13 +5,13 @@ namespace Dapsman.Application;
 public sealed class RemoteProvisionService
 {
     private readonly IPrerequisiteChecker _prerequisiteChecker;
-    private readonly IConfigLoader _configLoader;
+    private readonly IDapsConfigLoader _configLoader;
     private readonly IRemoteProvisionPlanBuilder _remotePlanBuilder;
     private readonly IBashRunner _bashRunner;
 
     public RemoteProvisionService(
         IPrerequisiteChecker prerequisiteChecker,
-        IConfigLoader configLoader,
+        IDapsConfigLoader configLoader,
         IRemoteProvisionPlanBuilder remotePlanBuilder,
         IBashRunner bashRunner)
     {

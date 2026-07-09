@@ -254,7 +254,7 @@ internal static class DapsmanPlanPrinter
 		Console.WriteLine($"- caddy site file: {plan.CaddySiteFileName}");
 	}
 
-	public static void PrintProdBackup(BackupPlan plan)
+	public static void PrintProdBackup(RemoteBackupPlan plan)
 	{
 		Console.WriteLine($"- toolkit container: {plan.ToolkitContainerName}");
 		Console.WriteLine($"- remote: {plan.RemoteUser}@{plan.RemoteHost}");
@@ -344,7 +344,7 @@ internal static class DapsmanPlanPrinter
 			Console.WriteLine($"  {key}={value}");
 	}
 
-	public static void PrintProdTeardown(TeardownPlan plan)
+	public static void PrintProdTeardown(RemoteTeardownPlan plan)
 	{
 		Console.WriteLine("Step: validate");
 		Console.WriteLine("- prerequisites ok");

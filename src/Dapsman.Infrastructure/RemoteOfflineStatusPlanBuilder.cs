@@ -3,7 +3,7 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class ConventionOfflineStatusPlanBuilder : IOfflineStatusPlanBuilder
+public sealed class RemoteOfflineStatusPlanBuilder : IOfflineStatusPlanBuilder
 {
 	private readonly bool _offline;
 	private readonly string? _providerName;
@@ -12,7 +12,7 @@ public sealed class ConventionOfflineStatusPlanBuilder : IOfflineStatusPlanBuild
 	private readonly IProjectResolver _projectResolver;
 	private readonly IHostingProviderResolver _hostingResolver;
 
-	public ConventionOfflineStatusPlanBuilder(
+	public RemoteOfflineStatusPlanBuilder(
 		bool offline,
 		string? providerName,
 		IToolkitResolver toolkitResolver,

@@ -1,6 +1,6 @@
 ﻿namespace Dapsman.Domain;
 
-public sealed class ProjectComposePlan
+public sealed class LocalProjectComposePlan
 {
 	public required string ProjectName { get; init; }
 	public required string ProjectPath { get; init; }

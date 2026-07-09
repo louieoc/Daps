@@ -65,7 +65,7 @@ public sealed class LocalBuildServiceTests
         public void EnsureLocalBuildPrerequisites() => Called = true;
     }
 
-    private sealed class FakeLoader : IConfigLoader
+    private sealed class FakeLoader : IDapsConfigLoader
     {
         public bool Called { get; private set; }
 
@@ -76,7 +76,7 @@ public sealed class LocalBuildServiceTests
         }
     }
 
-    private sealed class FakeBuilder : ILocalPlanBuilder
+    private sealed class FakeBuilder : ILocalBuildPlanBuilder
     {
         public bool Called { get; private set; }
 
@@ -86,11 +86,11 @@ public sealed class LocalBuildServiceTests
             return new LocalBuildPlan
             {
                 DapsComposeFiles = new[] { Path.Combine("docker", "compose_daps.yaml") },
-                ProjectComposePlans = Array.Empty<ProjectComposePlan>(),
-                CaddySync = new CaddySyncPlan
+                ProjectComposePlans = Array.Empty<LocalProjectComposePlan>(),
+                CaddySync = new LocalCaddySyncPlan
                 {
                     RuntimeSitesPath = "caddy_sites",
-                    FilesToCopy = Array.Empty<CaddySiteCopyPlan>(),
+                    FilesToCopy = Array.Empty<LocalCaddySiteCopyPlan>(),
                     ShouldCreatePlaceholder = true,
                     PlaceholderFilePath = Path.Combine("caddy_sites", "000-empty.dev.caddy"),
                 },
@@ -104,13 +104,13 @@ public sealed class LocalBuildServiceTests
     {
         public bool Called { get; private set; }
 
-        public void SyncDevSites(CaddySyncPlan plan)
+        public void SyncLocalSites(LocalCaddySyncPlan plan)
         {
             Called = true;
         }
     }
 
-    private sealed class FakeComposeExecutor : IComposeExecutor
+    private sealed class FakeComposeExecutor : IDockerComposeExecutor
     {
         public bool Called { get; private set; }
 

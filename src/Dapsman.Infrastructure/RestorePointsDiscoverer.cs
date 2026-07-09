@@ -5,13 +5,13 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class ConventionRestorePointsDiscoverer : IRestorePointsDiscoverer
+public sealed class RestorePointsDiscoverer : IRestorePointsDiscoverer
 {
 	public const string ListRestorePointsScript = "list-restore-points.toolkit.sh";
 
 	private readonly IBashRunner _workstationBashRunner;
 
-	public ConventionRestorePointsDiscoverer(IBashRunner workstationBashRunner)
+	public RestorePointsDiscoverer(IBashRunner workstationBashRunner)
 	{
 		_workstationBashRunner = workstationBashRunner;
 	}

@@ -1,6 +1,6 @@
 namespace Dapsman.Domain;
 
-public sealed class TeardownPlan
+public sealed class RemoteTeardownPlan
 {
 	public required string ProjectName { get; init; }
 	public required string DapsRootPath { get; init; }
@@ -9,7 +9,7 @@ public sealed class TeardownPlan
 	public required string RemoteUser { get; init; }
 	public required string SshKeyName { get; init; }
 
-	/// <summary>e.g. "docker" for root, "sudo docker" for non-root remote users.</summary>
+	/// <summary>e.g. "docker" for root, "sudo docker" for non-root remote users. TODO use IsRoot consistent with remote deploy plan</summary>
 	public required string DockerCommandPrefix { get; init; }
 
 	/// <summary>Filename of the Caddy site file on the remote, e.g. mywpsite.prod.caddy. Null if the project has no prod caddy file.</summary>

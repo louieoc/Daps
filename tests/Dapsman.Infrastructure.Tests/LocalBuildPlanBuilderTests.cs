@@ -4,7 +4,7 @@ using Dapsman.Infrastructure;
 
 namespace Dapsman.Infrastructure.Tests;
 
-public sealed class ConventionComposePlanBuilderTests
+public sealed class LocalBuildPlanBuilderTests
 {
 	[Fact]
 	public void BuildLocalPlan_NoProjectsConfigured_UsesDapsOnlyAndWarns()
@@ -26,7 +26,7 @@ public sealed class ConventionComposePlanBuilderTests
 		var dockerResolver = new DockerResolver(config);
 		var projectResolver = new ProjectResolver(config);
 		var caddyResolver = new CaddyResolver(config, new FakeContainerManager(null));
-		var builder = new ConventionComposePlanBuilder(config, dockerResolver, caddyResolver, projectResolver, new FakeHostPortManager());
+		var builder = new LocalBuildPlanBuilder(config, dockerResolver, caddyResolver, projectResolver, new FakeHostPortManager());
 		var plan = builder.BuildLocalPlan(new LocalBuildOptions());
 
 		Assert.Equal(2, plan.DapsComposeFiles.Count);
@@ -66,7 +66,7 @@ public sealed class ConventionComposePlanBuilderTests
 		var dockerResolver = new DockerResolver(config);
 		var caddyResolver = new CaddyResolver(config, new FakeContainerManager(null));
 		var projectResolver = new ProjectResolver(config);
-		var builder = new ConventionComposePlanBuilder(config, dockerResolver, caddyResolver, projectResolver, new FakeHostPortManager());
+		var builder = new LocalBuildPlanBuilder(config, dockerResolver, caddyResolver, projectResolver, new FakeHostPortManager());
 		var plan = builder.BuildLocalPlan(new LocalBuildOptions());
 
 		Assert.Single(plan.ProjectComposePlans);
@@ -106,7 +106,7 @@ public sealed class ConventionComposePlanBuilderTests
 		var dockerResolver = new DockerResolver(config);
 		var caddyResolver = new CaddyResolver(config, new FakeContainerManager(null));
 		var projectResolver = new ProjectResolver(config);
-		var builder = new ConventionComposePlanBuilder(config, dockerResolver, caddyResolver, projectResolver, new FakeHostPortManager());
+		var builder = new LocalBuildPlanBuilder(config, dockerResolver, caddyResolver, projectResolver, new FakeHostPortManager());
 		var plan = builder.BuildLocalPlan(new LocalBuildOptions());
 
 		Assert.Single(plan.ProjectComposePlans);
@@ -146,7 +146,7 @@ public sealed class ConventionComposePlanBuilderTests
 		var dockerResolver = new DockerResolver(config);
 		var caddyResolver = new CaddyResolver(config, new FakeContainerManager(null));
 		var projectResolver = new ProjectResolver(config);
-		var builder = new ConventionComposePlanBuilder(config, dockerResolver, caddyResolver, projectResolver, new FakeHostPortManager());
+		var builder = new LocalBuildPlanBuilder(config, dockerResolver, caddyResolver, projectResolver, new FakeHostPortManager());
 		var plan = builder.BuildLocalPlan(new LocalBuildOptions());
 
 		Assert.Single(plan.ProjectComposePlans);
@@ -185,7 +185,7 @@ public sealed class ConventionComposePlanBuilderTests
 		var dockerResolver = new DockerResolver(config);
 		var caddyResolver = new CaddyResolver(config, new FakeContainerManager(null));
 		var projectResolver = new ProjectResolver(config);
-		var builder = new ConventionComposePlanBuilder(config, dockerResolver, caddyResolver, projectResolver, new FakeHostPortManager());
+		var builder = new LocalBuildPlanBuilder(config, dockerResolver, caddyResolver, projectResolver, new FakeHostPortManager());
 		var plan = builder.BuildLocalPlan(new LocalBuildOptions());
 
 		Assert.Contains(plan.DapsComposeFiles, p => p.EndsWith("compose_daps_jshirt.dev.yaml", StringComparison.OrdinalIgnoreCase));

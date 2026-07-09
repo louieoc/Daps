@@ -4,12 +4,12 @@ namespace Dapsman.Application;
 
 public sealed class OfflineStatusService
 {
-	private readonly IConfigLoader _configLoader;
+	private readonly IDapsConfigLoader _configLoader;
 	private readonly IOfflineStatusPlanBuilder _planBuilder;
 	private readonly IOfflineStatusExecutor _executor;
 
 	public OfflineStatusService(
-		IConfigLoader configLoader,
+		IDapsConfigLoader configLoader,
 		IOfflineStatusPlanBuilder planBuilder,
 		IOfflineStatusExecutor executor)
 	{

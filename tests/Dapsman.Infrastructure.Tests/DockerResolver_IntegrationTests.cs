@@ -30,7 +30,7 @@ public sealed class DockerResolver_IntegrationTests
 
 		// Should contain both the shared base compose file AND the dev overlay.
 		// This confirms LocalProjectComposeFiles is NOT dev-only — the .Where filter
-		// in ConventionComposePlanBuilder is load-bearing, not redundant.
+		// in LocalBuildPlanBuilder is load-bearing, not redundant.
 		Assert.Contains(def.LocalProjectComposeFiles, f => f.EndsWith("compose_mywpsite.yaml", StringComparison.OrdinalIgnoreCase));
 		Assert.Contains(def.LocalProjectComposeFiles, f => f.EndsWith("compose_mywpsite.dev.yaml", StringComparison.OrdinalIgnoreCase));
 	}

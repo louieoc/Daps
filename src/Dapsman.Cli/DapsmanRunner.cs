@@ -4,7 +4,7 @@ using Dapsman.Infrastructure;
 
 internal sealed class DapsmanRunner
 {
-	private readonly IConfigLoader _configLoader;
+	private readonly IDapsConfigLoader _dapsConfigLoader;
 	private readonly IContainerManager _workstationContainerManager;
 	private readonly IContainerManager _remoteContainerManager;
 	private readonly IHostingProviderResolver _hostingResolver;
@@ -24,12 +24,12 @@ internal sealed class DapsmanRunner
 	public DapsmanRunner(CliArguments parsed)
 	{
 		_parsed = parsed;
-		_configLoader = new DapsYamlConfigLoader();
-		_config = _configLoader.Load(parsed.ConfigPath);
+		_dapsConfigLoader = new DapsYamlConfigLoader();
+		_config = _dapsConfigLoader.Load(parsed.ConfigPath);
 
 		_hostingResolver = new HostingProviderResolver(_config);
 		_workstationContainerManager = new WorkstationContainerManager();
-		_remoteContainerManager = new HardcodedRemoteContainerManager(); // this will need to be replaced with something real
+		_remoteContainerManager = new HardcodedRemoteContainerManager(); // todo: this will need to be replaced with something real
 		_toolkitResolver = new ToolkitResolver(_config, _workstationContainerManager);
 		_toolkitDefinition = _toolkitResolver.Resolve();
 		_toolkitBashRunner = new ContainerBashRunner(_toolkitDefinition.ContainerName);
@@ -131,9 +131,9 @@ internal sealed class DapsmanRunner
 	{
 		var service = new LocalBuildService(
 			_localPrerequisiteChecker,
-			_configLoader,
-			new ConventionComposePlanBuilder(_config, _dockerResolver, _workstationCaddyResolver, _projectResolver, new HostPortManager()),
-			new DevCaddySiteSync(),
+			_dapsConfigLoader,
+			new LocalBuildPlanBuilder(_config, _dockerResolver, _workstationCaddyResolver, _projectResolver, new HostPortManager()),
+			new LocalCaddySiteSync(),
 			new WorkstationDockerComposeExecutor(),
 			_workstationBashRunner);
 
@@ -145,7 +145,7 @@ internal sealed class DapsmanRunner
 		};
 
 		var plan = service.CreatePlan(_parsed.ConfigPath, options);
-		var caddyRestartPlanBuilder = new ConventionLocalCaddyRestartPlanBuilder(_config, _workstationCaddyResolver);
+		var caddyRestartPlanBuilder = new LocalCaddyRestartPlanBuilder(_config, _workstationCaddyResolver);
 		var caddyRestartPlan = caddyRestartPlanBuilder.BuildPlan();
 		DapsmanPlanPrinter.PrintLocalBuild(plan, options, caddyRestartPlan);
 
@@ -208,7 +208,7 @@ internal sealed class DapsmanRunner
 
 		var service = new RemoteProvisionService(
 			_localPrerequisiteChecker,
-			_configLoader,
+			_dapsConfigLoader,
 			planBuilder,
 			_toolkitBashRunner);
 
@@ -238,7 +238,7 @@ internal sealed class DapsmanRunner
 
 	private Task<int> RunRemoteDeploy()
 	{
-		var planBuilder = new ConventionRemoteDeployPlanBuilder(
+		var planBuilder = new RemoteDeployPlanBuilder(
 			_hostingResolver,
 			_dockerResolver,
 			_toolkitResolver,
@@ -249,7 +249,7 @@ internal sealed class DapsmanRunner
 
 		var service = new RemoteDeployService(
 			_localPrerequisiteChecker,
-			_configLoader,
+			_dapsConfigLoader,
 			planBuilder,
 			executor);
 
@@ -264,7 +264,7 @@ internal sealed class DapsmanRunner
 
 		var plan = service.CreatePlan(_parsed.ConfigPath, options);
 
-		var caddyRestartPlanBuilder = new ConventionRemoteCaddyRestartPlanBuilder(
+		var caddyRestartPlanBuilder = new RemoteCaddyRestartPlanBuilder(
 			_config, plan.ProviderName, _toolkitResolver, _remoteCaddyResolver, _hostingResolver);
 		var caddyRestartPlan = caddyRestartPlanBuilder.BuildPlan();
 		DapsmanPlanPrinter.PrintRemoteDeploy(plan, options, caddyRestartPlan);
@@ -312,7 +312,7 @@ internal sealed class DapsmanRunner
 			throw new ArgumentException("--name <project-name> (or --project <name>) is required for init.");
 
 		var service = new InitService(
-			new ConventionInitPlanBuilder(_config, _projectResolver, _dockerResolver, new HostPortManager()),
+			new InitPlanBuilder(_config, _projectResolver, _dockerResolver, new HostPortManager()),
 			_workstationBashRunner,
 			new DapsYamlEditor());
 
@@ -357,12 +357,12 @@ internal sealed class DapsmanRunner
 
 		if (remote)
 		{
-			planBuilder = new ConventionRemoteCaddyRestartPlanBuilder(_config, _parsed.ProviderName, _toolkitResolver, _remoteCaddyResolver, _hostingResolver);
+			planBuilder = new RemoteCaddyRestartPlanBuilder(_config, _parsed.ProviderName, _toolkitResolver, _remoteCaddyResolver, _hostingResolver);
 			bashRunner = _toolkitBashRunner;
 		}
 		else
 		{
-			planBuilder = new ConventionLocalCaddyRestartPlanBuilder(_config, _workstationCaddyResolver);
+			planBuilder = new LocalCaddyRestartPlanBuilder(_config, _workstationCaddyResolver);
 			bashRunner = _workstationBashRunner;
 		}
 
@@ -387,7 +387,7 @@ internal sealed class DapsmanRunner
 		var action = offline ? "offline" : "online";
 		var projects = _projectResolver.Resolve(_parsed.ProjectFilters);
 
-		var planBuilder = new ConventionOfflineStatusPlanBuilder(
+		var planBuilder = new RemoteOfflineStatusPlanBuilder(
 			offline,
 			_parsed.ProviderName,
 			_toolkitResolver,
@@ -396,7 +396,7 @@ internal sealed class DapsmanRunner
 			_hostingResolver);
 
 		var executor = new ToolkitOfflineStatusExecutor(_toolkitBashRunner);
-		var service = new OfflineStatusService(_configLoader, planBuilder, executor);
+		var service = new OfflineStatusService(_dapsConfigLoader, planBuilder, executor);
 
 		foreach (var project in projects)
 		{
@@ -439,13 +439,13 @@ internal sealed class DapsmanRunner
 	{
 		var projects = _projectResolver.Resolve(_parsed.ProjectFilters);
 
-		var planBuilder = new ConventionBackupPlanBuilder(
+		var planBuilder = new RemoteBackupPlanBuilder(
 			_parsed.ProviderName,
 			_toolkitResolver,
 			_projectResolver,
 			_hostingResolver);
 
-		var service = new BackupService(_configLoader, planBuilder, _toolkitBashRunner);
+		var service = new RemoteBackupService(_dapsConfigLoader, planBuilder, _toolkitBashRunner);
 
 		foreach (var project in projects)
 		{
@@ -493,13 +493,13 @@ internal sealed class DapsmanRunner
 			ProviderName = _parsed.ProviderName,
 		};
 
-		var planBuilder = new ConventionLocalSyncFromRemotePlanBuilder(
+		var planBuilder = new LocalSyncFromRemotePlanBuilder(
 			_parsed.ProviderName,
 			_toolkitResolver,
 			_projectResolver,
 			_hostingResolver);
 
-		var service = new SyncFromRemoteService(_configLoader, planBuilder, _toolkitBashRunner);
+		var service = new SyncFromRemoteService(_dapsConfigLoader, planBuilder, _toolkitBashRunner);
 		var result = service.CreatePlan(_parsed.ConfigPath, options);
 
 		if (!result.IsSupported)
@@ -528,7 +528,7 @@ internal sealed class DapsmanRunner
 		var projectName = _parsed.ProjectFilters.Count == 1 ? _parsed.ProjectFilters[0] : null;
 		var project = _projectResolver.Resolve(projectName);
 
-		var discoverer = new ConventionRestorePointsDiscoverer(_workstationBashRunner);
+		var discoverer = new RestorePointsDiscoverer(_workstationBashRunner);
 		var points = discoverer.Discover(project);
 
 		if (points.Count == 0)
@@ -551,8 +551,8 @@ internal sealed class DapsmanRunner
 		var projectName = _parsed.ProjectFilters.Count == 1 ? _parsed.ProjectFilters[0] : null;
 		var project = _projectResolver.Resolve(projectName);
 
-		var discoverer = new ConventionRestorePointsDiscoverer(_workstationBashRunner);
-		var planBuilder = new ConventionLocalRestorePlanBuilder(_toolkitResolver, discoverer);
+		var discoverer = new RestorePointsDiscoverer(_workstationBashRunner);
+		var planBuilder = new LocalRestorePlanBuilder(_toolkitResolver, discoverer);
 		var service = new RestoreService(planBuilder, new ToolkitLocalRestoreExecutor(_toolkitBashRunner));
 
 		var options = new RestoreOptions
@@ -600,13 +600,13 @@ internal sealed class DapsmanRunner
 		if (string.IsNullOrEmpty(projectName))
 			throw new ArgumentException("--project <name> is required for local teardown.");
 
-		var planBuilder = new ConventionLocalTeardownPlanBuilder(
+		var planBuilder = new LocalTeardownPlanBuilder(
 			_projectResolver,
 			_dockerResolver,
 			_workstationCaddyResolver);
 
 		var service = new LocalTeardownService(
-			_configLoader,
+			_dapsConfigLoader,
 			planBuilder,
 			new WorkstationLocalTeardownExecutor(_workstationBashRunner),
 			new DapsYamlEditor());
@@ -643,13 +643,13 @@ internal sealed class DapsmanRunner
 			ProviderName = _parsed.ProviderName,
 		};
 
-		var planBuilder = new ConventionRemoteSyncFromLocalPlanBuilder(
+		var planBuilder = new RemoteSyncFromLocalPlanBuilder(
 			_parsed.ProviderName,
 			_toolkitResolver,
 			_projectResolver,
 			_hostingResolver);
 
-		var service = new SyncFromLocalService(_configLoader, planBuilder, _toolkitBashRunner);
+		var service = new SyncFromLocalService(_dapsConfigLoader, planBuilder, _toolkitBashRunner);
 		var result = service.CreatePlan(_parsed.ConfigPath, options);
 
 		if (!result.IsSupported)
@@ -679,17 +679,17 @@ internal sealed class DapsmanRunner
 		if (string.IsNullOrEmpty(projectName))
 			throw new ArgumentException("--project <name> is required for prod teardown.");
 
-		var planBuilder = new ConventionTeardownPlanBuilder(
+		var planBuilder = new RemoteTeardownPlanBuilder(
 			_parsed.ProviderName,
 			_toolkitResolver,
 			_projectResolver,
 			_workstationCaddyResolver,
 			_hostingResolver);
 
-		var service = new TeardownService(
-			_configLoader,
+		var service = new RemoteTeardownService(
+			_dapsConfigLoader,
 			planBuilder,
-			new ToolkitTeardownExecutor(_toolkitBashRunner));
+			new ToolkitRemoteTeardownExecutor(_toolkitBashRunner));
 
 		var options = new TeardownOptions
 		{
@@ -727,7 +727,7 @@ internal sealed class DapsmanRunner
 		var planBuilder = new OpenStackUnprovisionPlanBuilder(_toolkitResolver, _hostingResolver);
 
 		var service = new UnprovisionService(
-			_configLoader,
+			_dapsConfigLoader,
 			planBuilder,
 			new ToolkitUnprovisionExecutor(_toolkitBashRunner));
 

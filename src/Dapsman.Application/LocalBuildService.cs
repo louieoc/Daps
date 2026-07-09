@@ -5,18 +5,18 @@ namespace Dapsman.Application;
 public sealed class LocalBuildService
 {
 	private readonly IPrerequisiteChecker _prerequisiteChecker;
-	private readonly IConfigLoader _configLoader;
-	private readonly ILocalPlanBuilder _composePlanBuilder;
+	private readonly IDapsConfigLoader _configLoader;
+	private readonly ILocalBuildPlanBuilder _composePlanBuilder;
 	private readonly ICaddySiteSync _caddySiteSync;
-	private readonly IComposeExecutor _composeExecutor;
+	private readonly IDockerComposeExecutor _composeExecutor;
 	private readonly IBashRunner _bashRunner;
 
 	public LocalBuildService(
 		IPrerequisiteChecker prerequisiteChecker,
-		IConfigLoader configLoader,
-		ILocalPlanBuilder composePlanBuilder,
+		IDapsConfigLoader configLoader,
+		ILocalBuildPlanBuilder composePlanBuilder,
 		ICaddySiteSync caddySiteSync,
-		IComposeExecutor composeExecutor,
+		IDockerComposeExecutor composeExecutor,
 		IBashRunner bashRunner)
 	{
 		_prerequisiteChecker = prerequisiteChecker;
@@ -36,7 +36,7 @@ public sealed class LocalBuildService
 
 	public void SyncCaddySites(LocalBuildPlan plan)
 	{
-		_caddySiteSync.SyncDevSites(plan.CaddySync);
+		_caddySiteSync.SyncLocalSites(plan.CaddySync);
 	}
 
 	public void ExecuteDapsCompose(LocalBuildPlan plan, LocalBuildOptions options)
@@ -50,7 +50,7 @@ public sealed class LocalBuildService
 		_composeExecutor.RunComposeUp(plan.DapsComposeFiles, options.BuildImages, workingDirectory);
 	}
 
-	public void ExecutePrerequisites(ProjectComposePlan projectPlan)
+	public void ExecutePrerequisites(LocalProjectComposePlan projectPlan)
 	{
 		foreach (var script in projectPlan.PrerequisiteScripts)
 		{
@@ -58,7 +58,7 @@ public sealed class LocalBuildService
 		}
 	}
 
-	public void ExecuteProjectCompose(ProjectComposePlan projectPlan, LocalBuildOptions options)
+	public void ExecuteProjectCompose(LocalProjectComposePlan projectPlan, LocalBuildOptions options)
 	{
 		_composeExecutor.RunComposeUp(projectPlan.ComposeFiles, options.BuildImages, projectPlan.ProjectPath);
 	}

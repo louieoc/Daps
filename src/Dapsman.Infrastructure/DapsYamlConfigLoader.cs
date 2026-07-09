@@ -3,7 +3,7 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class DapsYamlConfigLoader : IConfigLoader
+public sealed class DapsYamlConfigLoader : IDapsConfigLoader
 {
 	public DapsConfig Load(string dapsYamlPath)
 	{

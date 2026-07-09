@@ -4,12 +4,12 @@ namespace Dapsman.Application;
 
 public sealed class UnprovisionService
 {
-	private readonly IConfigLoader _configLoader;
+	private readonly IDapsConfigLoader _configLoader;
 	private readonly IUnprovisionPlanBuilder _planBuilder;
 	private readonly IUnprovisionExecutor _executor;
 
 	public UnprovisionService(
-		IConfigLoader configLoader,
+		IDapsConfigLoader configLoader,
 		IUnprovisionPlanBuilder planBuilder,
 		IUnprovisionExecutor executor)
 	{

@@ -3,7 +3,7 @@ using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class ConventionInitPlanBuilder : IInitPlanBuilder
+public sealed class InitPlanBuilder : IInitPlanBuilder
 {
 	public const string InitTemplateToolkitScript = "init-template.toolkit.sh";
 
@@ -12,7 +12,7 @@ public sealed class ConventionInitPlanBuilder : IInitPlanBuilder
 	private readonly IDockerResolver _dockerResolver;
 	private readonly IHostPortManager _hostPortManager;
 
-	public ConventionInitPlanBuilder(
+	public InitPlanBuilder(
 		DapsConfig config,
 		IProjectResolver projectResolver,
 		IDockerResolver dockerResolver,
