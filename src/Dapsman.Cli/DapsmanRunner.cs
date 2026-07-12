@@ -13,10 +13,9 @@ internal sealed class DapsmanRunner
 	private readonly ICaddyResolver _remoteCaddyResolver;
 	private readonly IDockerResolver _dockerResolver;
 	private readonly IProjectResolver _projectResolver;
-	private readonly ToolkitDefinition _toolkitDefinition;
-	private readonly IBashRunner _toolkitBashRunner;
 	private readonly IBashRunner _workstationBashRunner;
-	private readonly IPrerequisiteChecker _localPrerequisiteChecker;
+
+	private IBashRunner _toolkitBashRunner = null!;
 
 	private readonly CliArguments _parsed;
 	private readonly DapsConfig _config;
@@ -31,14 +30,20 @@ internal sealed class DapsmanRunner
 		_workstationContainerManager = new WorkstationContainerManager();
 		_remoteContainerManager = new HardcodedRemoteContainerManager(); // todo: this will need to be replaced with something real
 		_toolkitResolver = new ToolkitResolver(_config, _workstationContainerManager);
-		_toolkitDefinition = _toolkitResolver.Resolve();
-		_toolkitBashRunner = new ContainerBashRunner(_toolkitDefinition.ContainerName);
 		_workstationBashRunner = new WorkstationBashRunner();
 		_workstationCaddyResolver = new CaddyResolver(_config, _workstationContainerManager);
 		_remoteCaddyResolver = new CaddyResolver(_config, _remoteContainerManager);
 		_dockerResolver = new DockerResolver(_config);
 		_projectResolver = new ProjectResolver(_config);
-		_localPrerequisiteChecker = new LocalPrerequisiteChecker();
+	}
+
+	public void ResolveDependencies()
+	{
+		var localPrerequisiteChecker = new LocalPrerequisiteChecker();
+		localPrerequisiteChecker.EnsureLocalBuildPrerequisites();
+
+		var toolkitDefinition = _toolkitResolver.Resolve().ContainerName;
+		_toolkitBashRunner = new ContainerBashRunner(toolkitDefinition);
 	}
 
 	public async Task<int> RunAsync()
@@ -130,7 +135,6 @@ internal sealed class DapsmanRunner
 	private Task<int> RunLocalBuild()
 	{
 		var service = new LocalBuildService(
-			_localPrerequisiteChecker,
 			_dapsConfigLoader,
 			new LocalBuildPlanBuilder(_config, _dockerResolver, _workstationCaddyResolver, _projectResolver, new HostPortManager()),
 			new LocalCaddySiteSync(),
@@ -207,7 +211,6 @@ internal sealed class DapsmanRunner
 		var planBuilder = new CompositeRemoteProvisionPlanBuilder(_hostingResolver, openStackPlanBuilder, genericVpsPlanBuilder);
 
 		var service = new RemoteProvisionService(
-			_localPrerequisiteChecker,
 			_dapsConfigLoader,
 			planBuilder,
 			_toolkitBashRunner);
@@ -248,7 +251,6 @@ internal sealed class DapsmanRunner
 		var executor = new ToolkitRemoteDeployExecutor(_toolkitBashRunner);
 
 		var service = new RemoteDeployService(
-			_localPrerequisiteChecker,
 			_dapsConfigLoader,
 			planBuilder,
 			executor);

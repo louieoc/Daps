@@ -8,6 +8,7 @@ internal static class ProgramEntry
 		{
 			var parsed = CliArguments.Parse(args);
 			var runner = new DapsmanRunner(parsed);
+			runner.ResolveDependencies();
 			return await runner.RunAsync();
 		}
 		catch (Exception ex)

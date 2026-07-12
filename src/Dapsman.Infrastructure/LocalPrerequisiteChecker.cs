@@ -1,16 +1,44 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using Dapsman.Application;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class LocalPrerequisiteChecker : IPrerequisiteChecker
+public sealed class LocalPrerequisiteChecker
 {
 	public void EnsureLocalBuildPrerequisites()
 	{
 		EnsureCommandExists("docker", "Docker Desktop");
+		EnsureDockerRunning();
 		EnsureCommandExists("git", "Git");
 		EnsureBashExists();
+	}
+
+	private static void EnsureDockerRunning()
+	{
+		var startInfo = new ProcessStartInfo
+		{
+			FileName = "docker",
+			Arguments = "info",
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+			UseShellExecute = false,
+			CreateNoWindow = true,
+		};
+
+		bool isRunning;
+		try
+		{
+			using var process = Process.Start(startInfo);
+			isRunning = process is not null && process.WaitForExit(5000) && process.ExitCode == 0;
+		}
+		catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+		{
+			_ = ex;
+			isRunning = false;
+		}
+
+		if (!isRunning)
+			throw new InvalidOperationException("Docker is not running. Start Docker Desktop and try again.");
 	}
 
 	private static void EnsureBashExists()

@@ -7,17 +7,15 @@ public sealed class LocalBuildServiceTests
     [Fact]
     public void CreatePlan_DelegatesToDependencies()
     {
-        var checker = new FakeChecker();
         var loader = new FakeLoader();
         var builder = new FakeBuilder();
         var caddySync = new FakeCaddySync();
         var compose = new FakeComposeExecutor();
         var runner = new FakeBashRunner();
-        var service = new LocalBuildService(checker, loader, builder, caddySync, compose, runner);
+        var service = new LocalBuildService(loader, builder, caddySync, compose, runner);
 
         var plan = service.CreatePlan("daps.yaml", new LocalBuildOptions { DryRun = true });
 
-        Assert.True(checker.Called);
         Assert.True(loader.Called);
         Assert.True(builder.Called);
         Assert.Single(plan.DapsComposeFiles);
@@ -26,13 +24,12 @@ public sealed class LocalBuildServiceTests
     [Fact]
     public void SyncCaddySites_DelegatesToCaddySync()
     {
-        var checker = new FakeChecker();
         var loader = new FakeLoader();
         var builder = new FakeBuilder();
         var caddySync = new FakeCaddySync();
         var compose = new FakeComposeExecutor();
         var runner = new FakeBashRunner();
-        var service = new LocalBuildService(checker, loader, builder, caddySync, compose, runner);
+        var service = new LocalBuildService(loader, builder, caddySync, compose, runner);
 
         var plan = builder.BuildLocalPlan(new LocalBuildOptions());
 
@@ -44,25 +41,18 @@ public sealed class LocalBuildServiceTests
     [Fact]
     public void ExecuteDapsCompose_DelegatesToComposeExecutor()
     {
-        var checker = new FakeChecker();
         var loader = new FakeLoader();
         var builder = new FakeBuilder();
         var caddySync = new FakeCaddySync();
         var compose = new FakeComposeExecutor();
         var runner = new FakeBashRunner();
-        var service = new LocalBuildService(checker, loader, builder, caddySync, compose, runner);
+        var service = new LocalBuildService(loader, builder, caddySync, compose, runner);
 
         var plan = builder.BuildLocalPlan(new LocalBuildOptions());
 
         service.ExecuteDapsCompose(plan, new LocalBuildOptions());
 
         Assert.True(compose.Called);
-    }
-
-    private sealed class FakeChecker : IPrerequisiteChecker
-    {
-        public bool Called { get; private set; }
-        public void EnsureLocalBuildPrerequisites() => Called = true;
     }
 
     private sealed class FakeLoader : IDapsConfigLoader

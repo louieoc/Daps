@@ -4,7 +4,6 @@ namespace Dapsman.Application;
 
 public sealed class LocalBuildService
 {
-	private readonly IPrerequisiteChecker _prerequisiteChecker;
 	private readonly IDapsConfigLoader _configLoader;
 	private readonly ILocalBuildPlanBuilder _composePlanBuilder;
 	private readonly ICaddySiteSync _caddySiteSync;
@@ -12,14 +11,12 @@ public sealed class LocalBuildService
 	private readonly IBashRunner _bashRunner;
 
 	public LocalBuildService(
-		IPrerequisiteChecker prerequisiteChecker,
 		IDapsConfigLoader configLoader,
 		ILocalBuildPlanBuilder composePlanBuilder,
 		ICaddySiteSync caddySiteSync,
 		IDockerComposeExecutor composeExecutor,
 		IBashRunner bashRunner)
 	{
-		_prerequisiteChecker = prerequisiteChecker;
 		_configLoader = configLoader;
 		_composePlanBuilder = composePlanBuilder;
 		_caddySiteSync = caddySiteSync;
@@ -29,7 +26,6 @@ public sealed class LocalBuildService
 
 	public LocalBuildPlan CreatePlan(string dapsYamlPath, LocalBuildOptions options)
 	{
-		_prerequisiteChecker.EnsureLocalBuildPrerequisites();
 		var config = _configLoader.Load(dapsYamlPath);
 		return _composePlanBuilder.BuildLocalPlan(options);
 	}

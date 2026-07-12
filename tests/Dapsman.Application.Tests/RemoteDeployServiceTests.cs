@@ -7,15 +7,13 @@ public sealed partial class RemoteDeployServiceTests
 	[Fact]
 	public void CreatePlan_DelegatesToDependencies()
 	{
-		var checker = new FakeChecker();
 		var loader = new FakeLoader();
 		var planner = new FakePlanner();
 		var executor = new FakeExecutor();
-		var service = new RemoteDeployService(checker, loader, planner, executor);
+		var service = new RemoteDeployService(loader, planner, executor);
 
 		var plan = service.CreatePlan("daps.yaml", new RemoteDeployOptions { DryRun = true });
 
-		Assert.True(checker.Called);
 		Assert.True(loader.Called);
 		Assert.True(planner.Called);
 		Assert.Equal("10.0.0.5", plan.RemoteHost);
@@ -24,11 +22,10 @@ public sealed partial class RemoteDeployServiceTests
 	[Fact]
 	public void ExecuteBuildImageScripts_DelegatesToExecutor()
 	{
-		var checker = new FakeChecker();
 		var loader = new FakeLoader();
 		var planner = new FakePlanner();
 		var executor = new FakeExecutor();
-		var service = new RemoteDeployService(checker, loader, planner, executor);
+		var service = new RemoteDeployService(loader, planner, executor);
 
 		var plan = planner.BuildRemoteDeployPlan(
 			new DapsConfig
@@ -39,12 +36,6 @@ public sealed partial class RemoteDeployServiceTests
 		service.ExecuteBuildImageScripts(plan.BuildImageCommands, plan.DapsRootPath);
 
 		Assert.True(executor.BuildImagesCalled);
-	}
-
-	private sealed class FakeChecker : IPrerequisiteChecker
-	{
-		public bool Called { get; private set; }
-		public void EnsureLocalBuildPrerequisites() => Called = true;
 	}
 
 	private sealed class FakeLoader : IDapsConfigLoader

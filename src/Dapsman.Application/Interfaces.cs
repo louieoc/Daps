@@ -12,11 +12,6 @@ public interface ILocalBuildPlanBuilder
 	LocalBuildPlan BuildLocalPlan(LocalBuildOptions options);
 }
 
-public interface IPrerequisiteChecker
-{
-	void EnsureLocalBuildPrerequisites();
-}
-
 public interface ICaddySiteSync
 {
 	void SyncLocalSites(LocalCaddySyncPlan plan);

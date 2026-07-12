@@ -24,6 +24,6 @@ Internal design documents capturing the why and how behind features are in `docs
 
 As features are completed and become "mature" these documents "graduate" (Claude's term, I like it) to a more specific categorization, e.g. `workflow-local-restore.md`, `template-astro.md`, etc.
 
-The idea is for these files to serve the purpose of a an Azure DevOps or Jira work item type of thing, a planning context for LLMs and humans to refine the feature, and finally documentation context mainly for humans but also providing context for future development.
+The idea is for these files to serve multiple purposes: as an Azure DevOps or Jira work item type of thing, a planning context for LLMs and humans to refine each feature, and finally as mature feature documentation, mainly for humans but also providing context for future development by humans and LLMs.
 
 These files all feed into [dapster.org](dapster.org).
