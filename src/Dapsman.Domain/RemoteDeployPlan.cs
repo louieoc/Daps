@@ -48,6 +48,8 @@ public sealed class CaddyUploadPlan
 
 public sealed class RemoteProjectDeployPlan
 {
+	private static string[] PrerequisiteScriptNames => new[] { "prerequisites.sh", "prerequisites.prod.sh" };
+
 	public required string ProjectName { get; init; }
 	public required IReadOnlyList<string> ComposeFilesToUpload { get; init; }
 	public required IReadOnlyList<string> ComposeFileNamesForRemoteRun { get; init; }
@@ -65,16 +67,20 @@ public sealed class RemoteProjectDeployPlan
 	/// Ordered prerequisite scripts to run on the remote server after uploading.
 	/// prerequisites.sh (all environments) runs first, then prerequisites.prod.sh — mirroring compose file layering.
 	/// </summary>
-	public IEnumerable<string> RemotePrerequisiteScriptNames =>
-		new[] { "prerequisites.sh", "prerequisites.prod.sh" }
-			.Where(name => RemoteScriptFilesToUpload.Any(f =>
-				string.Equals(Path.GetFileName(f), name, StringComparison.OrdinalIgnoreCase)));
+	public IEnumerable<string> RemotePrerequisiteScriptNames => PrerequisiteScriptNames
+		.Where(name => RemoteScriptFilesToUpload
+			.Any(f => string.Equals(Path.GetFileName(f), name, StringComparison.OrdinalIgnoreCase)));
 
 	/// <summary>
 	/// Toolkit-relative path to post-remote-deploy.toolkit.sh, if present in the project's _scripts/ folder.
 	/// When set, this script is run inside the toolkit container after containers are up and Caddy is reloaded.
 	/// </summary>
 	public string? PostDeployScriptPath { get; init; }
+
+	/// <summary>
+	/// Environment variables to pass when running PostDeployScriptPath. Null when PostDeployScriptPath is null.
+	/// </summary>
+	public IReadOnlyDictionary<string, string>? PostDeployScriptEnvVars { get; init; }
 }
 
 public sealed class ProjectUploadFilePlan

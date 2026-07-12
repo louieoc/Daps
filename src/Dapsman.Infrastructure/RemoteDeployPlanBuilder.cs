@@ -99,6 +99,15 @@ public sealed class RemoteDeployPlanBuilder : IRemoteDeployPlanBuilder
 			var postDeployScriptPath = File.Exists(postDeployScriptWorkstationPath)
 				? $"{project.ToolkitScriptsPath}/{PostRemoteDeploy}"
 				: null;
+			var postDeployScriptEnvVars = postDeployScriptPath is not null
+				? new Dictionary<string, string>
+				{
+					["DAPS_PROJECT"] = project.Definition.Name,
+					["DAPS_REMOTE_HOST"] = provider.RemoteHost,
+					["DAPS_REMOTE_USER"] = provider.RemoteUser,
+					["DAPS_SSH_KEY"] = $"{toolkitDefinition.SshPath}/{provider.KeyName}",
+				}
+				: null;
 
 			projectPlans.Add(new RemoteProjectDeployPlan
 			{
@@ -110,6 +119,7 @@ public sealed class RemoteDeployPlanBuilder : IRemoteDeployPlanBuilder
 				UploadFiles = ParseProjectUploadManifest(project),
 				RemoteScriptFilesToUpload = remoteScripts,
 				PostDeployScriptPath = postDeployScriptPath,
+				PostDeployScriptEnvVars = postDeployScriptEnvVars,
 			});
 		}
 

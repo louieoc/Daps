@@ -44,13 +44,13 @@ public sealed class InitService(
 		var caddySitesDir = Path.Combine(destinationPath, "_caddy_sites");
 		if (Directory.Exists(caddySitesDir))
 		{
-		foreach (var file in Directory.GetFiles(caddySitesDir, "*.prod.caddy"))
-		{
-			var content = File.ReadAllText(file);
-			if (content.Contains(placeholder))
-				File.WriteAllText(file, content.Replace(placeholder, prodUrl));
+			foreach (var file in Directory.GetFiles(caddySitesDir, "*.prod.caddy"))
+			{
+				var content = File.ReadAllText(file);
+				if (content.Contains(placeholder))
+					File.WriteAllText(file, content.Replace(placeholder, prodUrl));
+			}
 		}
-	}
 
 		var dockerDir = Path.Combine(destinationPath, "_docker");
 		if (Directory.Exists(dockerDir))

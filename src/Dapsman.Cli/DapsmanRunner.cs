@@ -294,7 +294,10 @@ internal sealed class DapsmanRunner
 			{
 				Console.WriteLine();
 				Console.WriteLine($"Step: post-deploy-hook ({projectPlan.ProjectName})");
-				_toolkitBashRunner.RunScript(projectPlan.PostDeployScriptPath!, projectPlan.PostDeployScriptPath!);
+				_toolkitBashRunner.RunScript(
+					projectPlan.PostDeployScriptPath!,
+					plan.DapsRootPath,
+					env: projectPlan.PostDeployScriptEnvVars);
 				Console.WriteLine("- done");
 			}
 		}
