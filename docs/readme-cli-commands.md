@@ -1,7 +1,7 @@
 ---
 title: CLI Commands
 sidebar:
-  order: 5
+  order: 7
 ---
 
 ## Dapsman Workflows

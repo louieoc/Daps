@@ -1,7 +1,7 @@
 ---
 title: Deployment
 sidebar:
-  order: 3
+  order: 5
 ---
 
 ## Deploying to production

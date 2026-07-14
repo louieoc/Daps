@@ -1,7 +1,7 @@
 ---
 title: Security
 sidebar:
-  order: 6
+  order: 8
 ---
 
 ## Security Considerations

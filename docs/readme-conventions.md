@@ -1,7 +1,7 @@
 ---
 title: Conventions
 sidebar:
-  order: 4
+  order: 6
 ---
 
 ## Conventions

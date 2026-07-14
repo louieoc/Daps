@@ -12,7 +12,9 @@ Documentation is in the [`docs/`](docs/) folder and published at [dapster.org](h
 
 ### Readme
 - [Overview](docs/readme-overview.md) — what Daps is, technology requirements, project structure, architecture diagrams
-- [Setup](docs/readme-setup.md) — installing prerequisites, setting up `dapsman`, initializing a project from a template
+- [Setup](docs/readme-setup.md) — installing prerequisites, setting up `dapsman`
+- [Projects](docs/readme-projects.md) - what are projects? Initializing a project from a template, etc.
+- [Templates](docs/readme-templates.md) - what templates are and available templates.
 - [Deployment](docs/readme-deployment.md) — provisioning a host (OpenStack and generic VPS), deploying projects, toolkit access
 - [Conventions](docs/readme-conventions.md) — terminology, file naming, folder layout, Docker and Caddy patterns
 - [CLI Commands](docs/readme-cli-commands.md) — all `dapsman` commands with flags and behavior

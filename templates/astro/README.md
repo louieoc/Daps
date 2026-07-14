@@ -111,6 +111,20 @@ yourprojectname/
 
 ---
 
+## Differences from the `static` template
+
+| | `static` | `astro` |
+|---|---|---|
+| Init mode | normal — creates a new directory | overlay — adds Daps files to an existing Astro project directory |
+| Served directory | `public/` | `dist/` |
+| Build step | none (files go directly in `public/`) | `npm run build` produces `dist/` |
+| Init script scope | whole project directory | only `_docker/`, `_caddy_sites/`, `_scripts/` — Astro source untouched |
+| Placeholder content | `public/index.html` | `dist/index.html` (replaced on first build) |
+
+Use `static` when you have hand-authored HTML. Use `astro` when you have an existing Astro project and want to build, preview, and deploy it via Daps.
+
+---
+
 ## Running multiple Astro sites
 
 Multiple Astro projects can run alongside each other and alongside other project types on the same Daps instance:
