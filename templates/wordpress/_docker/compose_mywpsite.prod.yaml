@@ -13,8 +13,11 @@ services:
       # SETUP: replace "mywpsite" with your project name.
       - /srv/projects/mywpsite/wp-content:/var/www/html/wp-content
     environment:
+      # Note: WORDPRESS_CONFIG_EXTRA settings may be duplicated between dev and prod
+      # compose files because Docker Compose doesn't merge multi-line strings.
       WORDPRESS_CONFIG_EXTRA: |
         define( 'WP_HOME',    'https://mywpsite.example.com' );
         define( 'WP_SITEURL', 'https://mywpsite.example.com' );
         define( 'WP_REDIS_HOST', 'redis' );
         define( 'WP_REDIS_PORT', 6379 );
+        define( 'WP_AUTO_UPDATE_CORE', false );

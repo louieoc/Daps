@@ -221,6 +221,65 @@ Secrets are bind-mounted as files into containers at `/run/secrets/` and must be
 
 ---
 
+## Upgrading WordPress core
+
+WordPress core files live inside the container image, not in a bind-mounted directory. **Do not use the WordPress dashboard to upgrade WordPress core.** The dashboard upgrade modifies files inside the container's writable layer, which works until the container is recreated.
+
+To prevent this from happening silently, the template sets `WP_AUTO_UPDATE_CORE false` in `WORDPRESS_CONFIG_EXTRA`, which disables WordPress's background auto-update feature. Core updates go through the image tag flow below. On the next `dapsman local build --build`, `dapsman prod deploy`, or `docker compose down` + `up`, the container is rebuilt from the image — and all those in-container changes are gone. If the database was migrated to the newer WP schema but the running core reverts to the old version, the mismatch can cause PHP errors, broken admin screens, or unpredictable behavior.
+
+The correct upgrade path is to update the image tag and rebuild.
+
+### Steps
+
+1. **Sync prod to local** (prod is canonical for WordPress — don't lose any recent content):
+   ```
+   dapsman local sync-from-prod --project mywpsite --provider <name>
+   ```
+
+2. **Put prod offline** if the site has active traffic (prevents writes during the upgrade):
+   ```
+   dapsman prod offline --provider <name>
+   ```
+
+3. **Back up prod**:
+   ```
+   dapsman prod backup --project mywpsite --provider <name>
+   ```
+
+4. **Update the image tag** in `_docker/wordpress.dockerfile`:
+   ```dockerfile
+   # before
+   FROM wordpress:6.7-php8.3-apache
+   # after (check Docker Hub for the actual available tag)
+   FROM wordpress:7.0-php8.4-apache
+   ```
+   Before committing: check Docker Hub for the exact tag and verify PHP compatibility with your installed plugins.
+
+5. **Rebuild and test locally**:
+   ```
+   dapsman local build --build --project mywpsite
+   ```
+   WordPress detects the version change and runs its database migration automatically on first page load. Test the front end, WP Admin, and any plugins that had PHP compatibility notes.
+
+6. **Deploy to prod**:
+   ```
+   dapsman prod deploy --build --project mywpsite --provider <name>
+   ```
+   This rebuilds the image, exports it as a tarball, uploads it to the remote server, and restarts the container. WordPress runs the same database migration on prod automatically.
+
+7. **Bring prod back online**:
+   ```
+   dapsman prod online --provider <name>
+   ```
+
+WordPress handles its own database schema migrations — no manual SQL needed.
+
+### Plugins and themes
+
+Plugins and themes live in `wp-content/`, which is bind-mounted. These **can** be updated via WP Admin. Recommended flow: update on prod (since prod has the live data), then sync back to local with `dapsman local sync-from-prod`.
+
+---
+
 ## Running multiple WordPress projects
 
 Multiple WordPress projects can run alongside each other on the same DAPS instance. The template is designed for this:
