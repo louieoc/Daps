@@ -66,7 +66,7 @@ public sealed class WorkstationDockerComposeExecutor : IDockerComposeExecutor
 		argsBuilder.Append(" up -d");
 		if (buildImages)
 		{
-			argsBuilder.Append(" --build");
+			argsBuilder.Append(" --build --renew-anon-volumes");
 		}
 
 		return argsBuilder.ToString();

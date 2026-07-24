@@ -175,7 +175,7 @@ mywpsite/
 
 ## Custom WordPress image
 
-The template builds a custom image (`_docker/wordpress.dockerfile`) that extends the official `wordpress:6.7-php8.3-apache` image with wp-cli baked in. wp-cli is used in the sync and restore scripts for URL rewriting and Redis cache flushing after database imports.
+The template builds a custom image (`_docker/wordpress.dockerfile`) that extends the official WordPress image with wp-cli baked in. wp-cli is used in the sync and restore scripts for URL rewriting and Redis cache flushing after database imports.
 
 The image must be built before the first remote deploy. `dapsman prod deploy` handles this via `_scripts/build-docker-images.toolkit.sh`, which builds the image inside the toolkit container and exports it as a tar to `_docker/image-exports/` for upload to the remote server.
 
@@ -231,17 +231,17 @@ The correct upgrade path is to update the image tag and rebuild.
 
 ### Steps
 
-1. **Sync prod to local** (prod is canonical for WordPress — don't lose any recent content):
+1. **Put prod offline** if the site has active traffic (prevents writes during the upgrade):
    ```
-   dapsman local sync-from-prod --project mywpsite --provider <name>
-   ```
-
-2. **Put prod offline** if the site has active traffic (prevents writes during the upgrade):
-   ```
-   dapsman prod offline --provider <name>
+   dapsman prod offline --project mywpsite [--provider <name>]
    ```
 
-3. **Back up prod**:
+2. **Sync prod to local** (prod is canonical for WordPress — don't lose any recent content):
+   ```
+   dapsman local sync-from-prod --project mywpsite [--provider <name>]
+   ```
+
+3. **Back up prod** (good to have in case something goes wrong and you need to restore the site):
    ```
    dapsman prod backup --project mywpsite --provider <name>
    ```
@@ -251,7 +251,7 @@ The correct upgrade path is to update the image tag and rebuild.
    # before
    FROM wordpress:6.7-php8.3-apache
    # after (check Docker Hub for the actual available tag)
-   FROM wordpress:7.0-php8.4-apache
+   FROM wordpress:7.0-php8.3-apache
    ```
    Before committing: check Docker Hub for the exact tag and verify PHP compatibility with your installed plugins.
 
@@ -259,20 +259,30 @@ The correct upgrade path is to update the image tag and rebuild.
    ```
    dapsman local build --build --project mywpsite
    ```
-   WordPress detects the version change and runs its database migration automatically on first page load. Test the front end, WP Admin, and any plugins that had PHP compatibility notes.
+   Then log into the local site (e.g. `mywpsite.localhost`).
+
+   WordPress will prompt you to run its database migration on first page load — complete it. Then upgrade any plugins with pending updates via WP Admin. Test the front end and admin thoroughly.
 
 6. **Deploy to prod**:
    ```
    dapsman prod deploy --build --project mywpsite --provider <name>
    ```
-   This rebuilds the image, exports it as a tarball, uploads it to the remote server, and restarts the container. WordPress runs the same database migration on prod automatically.
+   Rebuilds the image from the new tag, exports it, uploads it, and restarts the container. WordPress will auto-migrate prod's database on first page load.
 
-7. **Bring prod back online**:
+7. **Sync local to prod** (optional: see **alternative** below):
    ```
-   dapsman prod online --provider <name>
+   dapsman prod sync-from-local --project mywpsite --provider <name>
+   ```
+   Since you ran the DB migration and upgraded plugins locally, local is now ahead of prod. This pushes the migrated database and updated `wp-content/` to the remote server.
+
+8. **Bring prod back online**:
+   ```
+   dapsman prod online --project mywpsite [--provider <name>]
    ```
 
 WordPress handles its own database schema migrations — no manual SQL needed.
+
+> **Alternative:** If you prefer, you can skip step 7 and run the DB migration and plugin upgrades directly in prod WP Admin after step 6. Both paths work — the local-first approach keeps prod offline for less time and lets you catch problems before they reach prod.
 
 ### Plugins and themes
 

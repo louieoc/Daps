@@ -247,7 +247,7 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
 			sb.AppendLine($"  {docker} load -i \"$image_file\"");
 			sb.AppendLine("done");
 			var projectComposeArgs = string.Join(" ", projectPlan.ComposeFileNamesForRemoteRun.Select(f => $"-f /srv/projects/{projectPlan.ProjectName}/_docker/{f}"));
-			sb.AppendLine($"{docker} compose {projectComposeArgs} up -d --force-recreate");
+			sb.AppendLine($"{docker} compose {projectComposeArgs} up -d --force-recreate --renew-anon-volumes");
 		}
 		sb.AppendLine("REMOTE_DOCKER");
 

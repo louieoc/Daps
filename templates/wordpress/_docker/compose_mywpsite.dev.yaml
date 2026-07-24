@@ -13,7 +13,7 @@ services:
       - "127.0.0.1:3306:3306"
 
   phpmyadmin:
-    image: phpmyadmin:latest
+    image: phpmyadmin:5.2
     depends_on:
       - db
     restart: unless-stopped
