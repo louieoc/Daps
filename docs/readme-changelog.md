@@ -1,0 +1,28 @@
+---
+title: Changelog
+sidebar:
+  order: 99
+---
+
+Changes are listed newest first. For history prior to `0.1.0`, see `git log`.
+
+---
+
+## 0.1.0 — 2026-07-24
+
+### Added
+
+- Version tracking: `<Version>0.1.0</Version>` added to `Dapsman.Cli.csproj`
+- Upgrade instructions added to all template READMEs (WordPress, Grist, Astro, Static)
+- `WP_AUTO_UPDATE_CORE false` set in WordPress template compose files to prevent silent background core upgrades
+- `/daps-dryrun` and `/daps-pr` Claude Code slash commands for health checking and pre-merge review
+
+### Changed
+
+- `dapsman local build --build` now passes `--renew-anon-volumes` to `docker compose up`, ensuring that image upgrades (e.g. WordPress) take effect immediately rather than being shadowed by stale anonymous volumes
+- `dapsman prod deploy` now passes `--renew-anon-volumes` to `docker compose up` on the remote server for the same reason
+- WordPress template base image upgraded from `wordpress:6.7-php8.3-apache` to `wordpress:7.0-php8.3-apache`
+- All template images pinned to specific versions:
+  - `phpmyadmin:latest` → `phpmyadmin:5.2`
+  - `nginx:alpine` → `nginx:1.31-alpine`
+  - `gristlabs/grist:latest` → `gristlabs/grist:1.7`
