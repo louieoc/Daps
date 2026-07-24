@@ -4,6 +4,16 @@ sidebar:
   order: 11
 ---
 
+## Graduation note
+
+When the implementation items below are complete, this doc should be split and graduated:
+
+1. Move the user-facing content (update mechanism, version pinning, branching) into a new section in `docs/readme-setup.md` — that's where users will look for "how do I update Daps?"
+2. Rename this file to `docs/developer-versioning.md` to cover the maintainer-facing content: semver strategy, release process, distribution options, OSS practices.
+3. Add `developer-` to the prefix map in `dapster/_scripts/sync-docs.mjs` and add a Developer sidebar section in `dapster/astro.config.mjs`.
+
+---
+
 ## Context
 
 Daps has no versioning yet: no version number in the CLI, no changelog, no formal update mechanism. This doc establishes the strategy across three areas: versioning Daps itself, how users receive Daps updates, and how users upgrade project dependencies (WordPress, Grist).
