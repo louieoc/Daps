@@ -107,7 +107,7 @@ yourprojectname/
 
 | Service | Dev port | Description |
 |---|---|---|
-| nginx | 8080 | nginx:alpine static file server |
+| nginx | 8080 | nginx:1.31-alpine static file server |
 
 ---
 
@@ -122,6 +122,30 @@ yourprojectname/
 | Placeholder content | `public/index.html` | `dist/index.html` (replaced on first build) |
 
 Use `static` when you have hand-authored HTML. Use `astro` when you have an existing Astro project and want to build, preview, and deploy it via Daps.
+
+---
+
+## Upgrading nginx
+
+The nginx version is pinned in `_docker/compose_myastrosite.yaml`. To upgrade:
+
+1. Update the image tag:
+   ```yaml
+   image: nginx:1.31-alpine  →  nginx:1.32-alpine
+   ```
+2. Test locally:
+   ```
+   npm run build
+   dapsman local build --project yourprojectname
+   ```
+3. Deploy:
+   ```
+   dapsman prod deploy --project yourprojectname --provider <name>
+   ```
+
+No backup needed — your built files live in `dist/`, not in the container, so they are unaffected by the image change.
+
+**Upgrading Astro itself** (npm packages) is separate from Daps — run `npm update` or edit `package.json` in your project directory as you normally would. Daps only cares about the `dist/` output.
 
 ---
 

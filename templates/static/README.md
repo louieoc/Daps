@@ -138,7 +138,28 @@ mystaticsite/
 
 | Service | Dev port | Description |
 |---|---|---|
-| nginx | 8080 | nginx:alpine static file server |
+| nginx | 8080 | nginx:1.31-alpine static file server |
+
+---
+
+## Upgrading nginx
+
+The nginx version is pinned in `_docker/compose_mystaticsite.yaml`. To upgrade:
+
+1. Update the image tag:
+   ```yaml
+   image: nginx:1.31-alpine  →  nginx:1.32-alpine
+   ```
+2. Test locally:
+   ```
+   dapsman local build --project mystaticsite
+   ```
+3. Deploy:
+   ```
+   dapsman prod deploy --project mystaticsite --provider <name>
+   ```
+
+No backup needed — your site files live in `public/`, not in the container, so they are unaffected by the image change.
 
 ---
 

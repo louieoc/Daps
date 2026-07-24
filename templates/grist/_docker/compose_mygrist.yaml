@@ -18,7 +18,7 @@ networks:
 
 services:
   grist:
-    image: gristlabs/grist:latest
+    image: gristlabs/grist:1.7
     restart: unless-stopped
     env_file:
       - ../_secrets/.env

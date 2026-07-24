@@ -2,7 +2,7 @@ name: myastrosite
 
 services:
   nginx:
-    image: nginx:alpine
+    image: nginx:1.31-alpine
     restart: unless-stopped
     networks:
       daps_net:

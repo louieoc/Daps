@@ -13,7 +13,7 @@ services:
       - "127.0.0.1:3306:3306"
 
   phpmyadmin:
-    image: phpmyadmin:latest
+    image: phpmyadmin:5.2
     depends_on:
       - db
     restart: unless-stopped
@@ -37,6 +37,9 @@ services:
       # Bind-mount wp-content for live editing of themes and plugins
       - ../wp-content:/var/www/html/wp-content
     environment:
+      # Note: WORDPRESS_CONFIG_EXTRA settings may be duplicated between dev and prod 
+      # compose files because Docker Compose doesn't merge multi-line strings.
       WORDPRESS_CONFIG_EXTRA: |
         define( 'WP_REDIS_HOST', 'redis' );
         define( 'WP_REDIS_PORT', 6379 );
+        define( 'WP_AUTO_UPDATE_CORE', false );

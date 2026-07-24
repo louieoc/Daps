@@ -175,7 +175,7 @@ mywpsite/
 
 ## Custom WordPress image
 
-The template builds a custom image (`_docker/wordpress.dockerfile`) that extends the official `wordpress:6.7-php8.3-apache` image with wp-cli baked in. wp-cli is used in the sync and restore scripts for URL rewriting and Redis cache flushing after database imports.
+The template builds a custom image (`_docker/wordpress.dockerfile`) that extends the official WordPress image with wp-cli baked in. wp-cli is used in the sync and restore scripts for URL rewriting and Redis cache flushing after database imports.
 
 The image must be built before the first remote deploy. `dapsman prod deploy` handles this via `_scripts/build-docker-images.toolkit.sh`, which builds the image inside the toolkit container and exports it as a tar to `_docker/image-exports/` for upload to the remote server.
 
@@ -218,6 +218,75 @@ Secrets are bind-mounted as files into containers at `/run/secrets/` and must be
 **`sync-local-to-remote.toolkit.sh`** — pushes the local WordPress state to the remote server. Rsyncs `wp-content/`, dumps the local database, imports it on the remote, runs `wp search-replace` to rewrite local URLs (`mywpsite.localhost`) to the production domain, then flushes the Redis object cache. Cache flush is required after a DB import, otherwise WordPress reads stale cached options from Redis.
 
 **`sync-remote-to-local.toolkit.sh`** — the reverse: pulls `wp-content/` and a DB dump from the remote server to local dev, then rewrites URLs to the `.localhost` domain. Useful for working with real production content locally.
+
+---
+
+## Upgrading WordPress core
+
+WordPress core files live inside the container image, not in a bind-mounted directory. **Do not use the WordPress dashboard to upgrade WordPress core.** The dashboard upgrade modifies files inside the container's writable layer, which works until the container is recreated.
+
+To prevent this from happening silently, the template sets `WP_AUTO_UPDATE_CORE false` in `WORDPRESS_CONFIG_EXTRA`, which disables WordPress's background auto-update feature. Core updates go through the image tag flow below. On the next `dapsman local build --build`, `dapsman prod deploy`, or `docker compose down` + `up`, the container is rebuilt from the image — and all those in-container changes are gone. If the database was migrated to the newer WP schema but the running core reverts to the old version, the mismatch can cause PHP errors, broken admin screens, or unpredictable behavior.
+
+The correct upgrade path is to update the image tag and rebuild.
+
+### Steps
+
+1. **Put prod offline** if the site has active traffic (prevents writes during the upgrade):
+   ```
+   dapsman prod offline --project mywpsite [--provider <name>]
+   ```
+
+2. **Sync prod to local** (prod is canonical for WordPress — don't lose any recent content):
+   ```
+   dapsman local sync-from-prod --project mywpsite [--provider <name>]
+   ```
+
+3. **Back up prod** (good to have in case something goes wrong and you need to restore the site):
+   ```
+   dapsman prod backup --project mywpsite --provider <name>
+   ```
+
+4. **Update the image tag** in `_docker/wordpress.dockerfile`:
+   ```dockerfile
+   # before
+   FROM wordpress:6.7-php8.3-apache
+   # after (check Docker Hub for the actual available tag)
+   FROM wordpress:7.0-php8.3-apache
+   ```
+   Before committing: check Docker Hub for the exact tag and verify PHP compatibility with your installed plugins.
+
+5. **Rebuild and test locally**:
+   ```
+   dapsman local build --build --project mywpsite
+   ```
+   Then log into the local site (e.g. `mywpsite.localhost`).
+
+   WordPress will prompt you to run its database migration on first page load — complete it. Then upgrade any plugins with pending updates via WP Admin. Test the front end and admin thoroughly.
+
+6. **Deploy to prod**:
+   ```
+   dapsman prod deploy --build --project mywpsite --provider <name>
+   ```
+   Rebuilds the image from the new tag, exports it, uploads it, and restarts the container. WordPress will auto-migrate prod's database on first page load.
+
+7. **Sync local to prod** (optional: see **alternative** below):
+   ```
+   dapsman prod sync-from-local --project mywpsite --provider <name>
+   ```
+   Since you ran the DB migration and upgraded plugins locally, local is now ahead of prod. This pushes the migrated database and updated `wp-content/` to the remote server.
+
+8. **Bring prod back online**:
+   ```
+   dapsman prod online --project mywpsite [--provider <name>]
+   ```
+
+WordPress handles its own database schema migrations — no manual SQL needed.
+
+> **Alternative:** If you prefer, you can skip step 7 and run the DB migration and plugin upgrades directly in prod WP Admin after step 6. Both paths work — the local-first approach keeps prod offline for less time and lets you catch problems before they reach prod.
+
+### Plugins and themes
+
+Plugins and themes live in `wp-content/`, which is bind-mounted. These **can** be updated via WP Admin. Recommended flow: update on prod (since prod has the live data), then sync back to local with `dapsman local sync-from-prod`.
 
 ---
 

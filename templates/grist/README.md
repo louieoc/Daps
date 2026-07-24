@@ -169,6 +169,34 @@ mygrist/
 
 ---
 
+## Upgrading Grist
+
+The Grist version is pinned in `_docker/compose_mygrist.yaml`. Grist documents are stored as SQLite files in the `/persist` directory, which is bind-mounted from the host — they are not inside the container and are safe across image upgrades.
+
+1. **Back up first** (Grist may migrate document schemas on startup):
+   ```
+   dapsman prod backup --project mygrist --provider <name>
+   ```
+
+2. **Update the image tag** in `_docker/compose_mygrist.yaml`:
+   ```yaml
+   image: gristlabs/grist:1.7  →  gristlabs/grist:1.8
+   ```
+
+3. **Test locally**:
+   ```
+   dapsman local build --project mygrist
+   ```
+   Open `https://mygrist.localhost` and confirm your documents open correctly.
+
+4. **Deploy**:
+   ```
+   dapsman prod deploy --project mygrist --provider <name>
+   ```
+   Grist applies any necessary document migrations on first startup.
+
+---
+
 ## Using Grist as a data backend
 
 Grist exposes a REST API at `https://mygrist.example.com/api/`. You can read and write table data, making Grist useful as a lightweight backend where you manage data in the Grist UI and consume it from other applications.
