@@ -438,5 +438,5 @@ hosting/*
 
 daps.yaml
 .dapsman
-.claude
+.claude/settings.local.json
 /src/Dapsman.Cli/Properties/launchSettings.json
