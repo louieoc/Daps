@@ -1,4 +1,4 @@
-# Plan: `dapsman local restore`
+# Workflow: `dapsman local restore`
 
 ## Context
 

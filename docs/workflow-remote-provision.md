@@ -1,4 +1,4 @@
-# Planning: `dapsman prod provision`
+# Workflow: `dapsman prod provision`
 
 ## What Prod Provision Does
 

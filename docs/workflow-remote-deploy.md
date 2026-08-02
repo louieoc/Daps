@@ -1,4 +1,4 @@
-# Planning: `dapsman prod deploy`
+# Workflow: `dapsman prod deploy`
 
 ## Purpose
 

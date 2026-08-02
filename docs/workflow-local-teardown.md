@@ -1,4 +1,4 @@
-# Plan: `dapsman local teardown`
+# Workflow: `dapsman local teardown`
 
 ## Context
 
