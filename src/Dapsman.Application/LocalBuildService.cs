@@ -54,6 +54,11 @@ public sealed class LocalBuildService
 		}
 	}
 
+	public void ExecuteProjectComposeDown(LocalProjectComposePlan projectPlan)
+	{
+		_composeExecutor.RunComposeDown(projectPlan.ComposeFiles, removeVolumes: true, projectPlan.ProjectPath);
+	}
+
 	public void ExecuteProjectCompose(LocalProjectComposePlan projectPlan, LocalBuildOptions options)
 	{
 		_composeExecutor.RunComposeUp(projectPlan.ComposeFiles, options.BuildImages, projectPlan.ProjectPath);

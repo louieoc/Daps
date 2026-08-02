@@ -141,9 +141,15 @@ internal sealed class DapsmanRunner
 			new WorkstationDockerComposeExecutor(),
 			_workstationBashRunner);
 
+		if (_parsed.Rebuild && _parsed.ProjectFilters.Count == 0)
+		{
+			throw new ArgumentException("--project <name> is required for --rebuild, so that volumes are never destroyed for every project at once.");
+		}
+
 		var options = new LocalBuildOptions
 		{
 			BuildImages = _parsed.BuildImages,
+			Rebuild = _parsed.Rebuild,
 			DryRun = _parsed.DryRun,
 			ProjectFilters = _parsed.ProjectFilters,
 		};
@@ -155,6 +161,12 @@ internal sealed class DapsmanRunner
 
 		if (!options.DryRun)
 		{
+			if (options.Rebuild && !ConfirmRebuild(plan))
+			{
+				Console.WriteLine("Rebuild cancelled.");
+				return Task.FromResult(1);
+			}
+
 			Console.WriteLine();
 			Console.WriteLine("Step: sync-caddy");
 			service.SyncCaddySites(plan);
@@ -177,6 +189,19 @@ internal sealed class DapsmanRunner
 			Console.WriteLine($"- executing: {dapsCommand}");
 			service.ExecuteDapsCompose(plan, options);
 			Console.WriteLine("- done");
+
+			if (options.Rebuild)
+			{
+				Console.WriteLine();
+				Console.WriteLine("Step: rebuild-teardown");
+				foreach (var projectPlan in plan.ProjectComposePlans)
+				{
+					var downCommand = WorkstationDockerComposeExecutor.BuildDockerComposeDownCommand(projectPlan.ComposeFiles, removeVolumes: true);
+					Console.WriteLine($"- {projectPlan.ProjectName}: executing: {downCommand}");
+					service.ExecuteProjectComposeDown(projectPlan);
+					Console.WriteLine($"- {projectPlan.ProjectName}: done");
+				}
+			}
 
 			Console.WriteLine();
 			Console.WriteLine("Step: compose-project");
@@ -202,6 +227,22 @@ internal sealed class DapsmanRunner
 		}
 
 		return Task.FromResult(0);
+	}
+
+	private bool ConfirmRebuild(LocalBuildPlan plan)
+	{
+		if (_parsed.AssumeYes)
+		{
+			return true;
+		}
+
+		var projectNames = string.Join(", ", plan.ProjectComposePlans.Select(p => p.ProjectName));
+
+		Console.WriteLine();
+		Console.Write($"This will DELETE all containers and volumes for '{projectNames}', including the database. Type 'yes' to confirm: ");
+		var confirm = Console.ReadLine()?.Trim();
+
+		return string.Equals(confirm, "yes", StringComparison.OrdinalIgnoreCase);
 	}
 
 	private Task<int> RunRemoteProvision()

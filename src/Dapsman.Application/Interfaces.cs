@@ -20,6 +20,7 @@ public interface ICaddySiteSync
 public interface IDockerComposeExecutor
 {
 	void RunComposeUp(IReadOnlyList<string> composeFiles, bool buildImages, string workingDirectory);
+	void RunComposeDown(IReadOnlyList<string> composeFiles, bool removeVolumes, string workingDirectory);
 }
 
 public interface IRemoteProvisionPlanBuilder

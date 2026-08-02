@@ -18,9 +18,13 @@ Creates a new project from a template. Copies the template directory to the dest
 
 ### `dapsman local build`
 ```
-dapsman local build [--build] [--dry-run] [--project <name>...] [--config <path>]
+dapsman local build [--build] [--rebuild [--yes]] [--dry-run] [--project <name>...] [--config <path>]
 ```
 Brings up the local dev Docker environment. This combines, for the local environment, what are handled separately for prod as "provision" and "deploy" workflows. Steps: syncs project caddy site files to `caddy_sites/`, runs each project's prerequisite scripts (e.g. `prerequisites.sh`, `prerequisites.dev.sh`), composes DAPS services (Caddy, toolkit), then composes each project's containers. `--build` forces Docker image rebuilds. Omitting `--project` runs all configured projects (except those with `disabled: true` in `daps.yaml`).
+
+`--rebuild` starts the selected projects over from scratch: before composing them back up it runs `docker compose down -v`, destroying their containers **and named volumes**. Use it when a project's data volume is unusable — most commonly a database whose data directory was left half-written by an interrupted first build, which shows up as a container restart loop rather than a clean error. It implies `--build`, requires `--project` (so a stray `--rebuild` can never wipe every project at once), and prompts for a typed `yes` before doing anything. `--yes` skips that prompt for scripted use.
+
+`--rebuild` only touches the projects you name — DAPS shared services (Caddy, toolkit) and their volumes are left alone. It destroys data with no backup step, so use `dapsman local restore` afterwards if you need the contents back.
 
 ### `dapsman local caddy restart`
 ```

@@ -55,6 +55,30 @@ public sealed class LocalBuildServiceTests
         Assert.True(compose.Called);
     }
 
+    [Fact]
+    public void ExecuteProjectComposeDown_RemovesVolumes()
+    {
+        var loader = new FakeLoader();
+        var builder = new FakeBuilder();
+        var caddySync = new FakeCaddySync();
+        var compose = new FakeComposeExecutor();
+        var runner = new FakeBashRunner();
+        var service = new LocalBuildService(loader, builder, caddySync, compose, runner);
+
+        var projectPlan = new LocalProjectComposePlan
+        {
+            ProjectName = "myproject",
+            ProjectPath = "..\\myproject",
+            ComposeFiles = new[] { Path.Combine("_docker", "compose_myproject.yaml") },
+            PrerequisiteScripts = Array.Empty<string>(),
+        };
+
+        service.ExecuteProjectComposeDown(projectPlan);
+
+        Assert.True(compose.DownCalled);
+        Assert.True(compose.DownRemovedVolumes);
+    }
+
     private sealed class FakeLoader : IDapsConfigLoader
     {
         public bool Called { get; private set; }
@@ -103,10 +127,18 @@ public sealed class LocalBuildServiceTests
     private sealed class FakeComposeExecutor : IDockerComposeExecutor
     {
         public bool Called { get; private set; }
+        public bool DownCalled { get; private set; }
+        public bool DownRemovedVolumes { get; private set; }
 
         public void RunComposeUp(IReadOnlyList<string> composeFiles, bool buildImages, string workingDirectory)
         {
             Called = true;
+        }
+
+        public void RunComposeDown(IReadOnlyList<string> composeFiles, bool removeVolumes, string workingDirectory)
+        {
+            DownCalled = true;
+            DownRemovedVolumes = removeVolumes;
         }
     }
 }

@@ -13,12 +13,25 @@ public sealed class WorkstationDockerComposeExecutor : IDockerComposeExecutor
 			throw new ArgumentException("At least one compose file is required.", nameof(composeFiles));
 		}
 
-		var argsBuilder = BuildDockerComposeCommand(composeFiles, buildImages);
+		RunDocker(BuildDockerComposeCommand(composeFiles, buildImages), workingDirectory);
+	}
 
+	public void RunComposeDown(IReadOnlyList<string> composeFiles, bool removeVolumes, string workingDirectory)
+	{
+		if (composeFiles.Count == 0)
+		{
+			throw new ArgumentException("At least one compose file is required.", nameof(composeFiles));
+		}
+
+		RunDocker(BuildDockerComposeDownCommand(composeFiles, removeVolumes), workingDirectory);
+	}
+
+	private static void RunDocker(string arguments, string workingDirectory)
+	{
 		var startInfo = new ProcessStartInfo
 		{
 			FileName = "docker",
-			Arguments = argsBuilder.ToString(),
+			Arguments = arguments,
 			WorkingDirectory = workingDirectory,
 			RedirectStandardOutput = true,
 			RedirectStandardError = true,
@@ -54,6 +67,32 @@ public sealed class WorkstationDockerComposeExecutor : IDockerComposeExecutor
 
 	public static string BuildDockerComposeCommand(IReadOnlyList<string> composeFiles, bool buildImages)
 	{
+		var argsBuilder = BuildComposeFileArgs(composeFiles);
+
+		argsBuilder.Append(" up -d");
+		if (buildImages)
+		{
+			argsBuilder.Append(" --build --renew-anon-volumes");
+		}
+
+		return argsBuilder.ToString();
+	}
+
+	public static string BuildDockerComposeDownCommand(IReadOnlyList<string> composeFiles, bool removeVolumes)
+	{
+		var argsBuilder = BuildComposeFileArgs(composeFiles);
+
+		argsBuilder.Append(" down");
+		if (removeVolumes)
+		{
+			argsBuilder.Append(" -v");
+		}
+
+		return argsBuilder.ToString();
+	}
+
+	private static StringBuilder BuildComposeFileArgs(IReadOnlyList<string> composeFiles)
+	{
 		var argsBuilder = new StringBuilder("compose");
 		foreach (var file in composeFiles)
 		{
@@ -63,12 +102,6 @@ public sealed class WorkstationDockerComposeExecutor : IDockerComposeExecutor
 			argsBuilder.Append('"');
 		}
 
-		argsBuilder.Append(" up -d");
-		if (buildImages)
-		{
-			argsBuilder.Append(" --build --renew-anon-volumes");
-		}
-
-		return argsBuilder.ToString();
+		return argsBuilder;
 	}
 }
