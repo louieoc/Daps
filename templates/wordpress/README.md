@@ -99,6 +99,8 @@ PhpMyAdmin is available at `http://localhost:8082`.
 
 Note that it can take a few minutes for the db server to finish booting up. If you see "Error establishing a database connection" right after running the local build the first time, this could be why. If it persists beyond a few minutes, however, then something else is wrong.
 
+You may also see warnings in WP Admin about "Action Scheduler" actions being past due (specifically `wp_mail_smtp_admin_notifications_update` and `action_scheduler_run_recurring_actions_schedule_hook`). This is normal in a local dev environment — WP Mail SMTP checks for admin notifications on a schedule, and without real SMTP credentials configured locally, those checks fail and queue up. This does not affect site functionality and will not cause problems in prod.
+
 ### 4. Complete the WordPress setup wizard
 
 Open your site in a browser. WordPress will walk you through choosing a title, admin username, and password.
@@ -287,6 +289,27 @@ WordPress handles its own database schema migrations — no manual SQL needed.
 ### Plugins and themes
 
 Plugins and themes live in `wp-content/`, which is bind-mounted. These **can** be updated via WP Admin. Recommended flow: update on prod (since prod has the live data), then sync back to local with `dapsman local sync-from-prod`.
+
+---
+
+## Security hardening
+
+The template includes two `wp-config.php` constants that significantly reduce the attack surface of a WordPress installation:
+
+### `WP_AUTO_UPDATE_CORE false`
+
+Prevents WordPress from silently upgrading its own core files inside the running container. Without this, WordPress's background auto-update can update the container's writable layer to a newer (potentially vulnerable) WordPress version while the Docker image tag stays at the old version. If that auto-updated version has a known exploit, the container is vulnerable with no visible indication. Always keep this set to `false` and manage WordPress version upgrades through the image tag flow described above.
+
+### `DISALLOW_FILE_MODS true`
+
+Prevents WordPress from modifying its own files at runtime. Specifically:
+
+- **Disables plugin and theme installation from WP Admin** — attackers who obtain WP Admin credentials (or exploit an unauthenticated API bug) cannot install plugins or upload files through the dashboard
+- **Disables the built-in theme/plugin file editor** — no in-browser code editing
+
+Trade-off: you can no longer install or update plugins from WP Admin **in prod**. Manage plugins by adding or updating them locally, then syncing the changes to prod using `dapsman prod sync-from-local --project <name>`. Depending on how heavily-trafficked your site is, you may want to take it offline in prod first to avoid losing data such as from comments.
+
+`WP_AUTO_UPDATE_CORE false` is set in both dev and prod compose files. `DISALLOW_FILE_MODS true` is set in the prod compose file only — dev leaves this off so you can freely install and test plugins locally.
 
 ---
 

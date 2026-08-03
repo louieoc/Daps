@@ -14,6 +14,12 @@ Changes are listed newest first. For history prior to `0.1.0`, see `git log`.
 
 - `dapsman local build --rebuild` recreates the selected projects from scratch, running `docker compose down -v` before `up`. Recovers a project whose named volumes are unusable — e.g. a MySQL data directory left half-initialized by an interrupted first build, which fails with `MY-012960: Cannot create redo log files because data files are corrupt`. Implies `--build`, requires `--project`, and prompts for a typed `yes`.
 - `--yes` flag to skip the `--rebuild` confirmation prompt for scripted use
+- `DISALLOW_FILE_MODS true` added to WordPress template prod compose file, blocking plugin/theme installation and the file editor from WP Admin. Paired with the existing `WP_AUTO_UPDATE_CORE false`, these two constants close the main in-container file-write attack surfaces.
+- `postmortem-2026-07-loccom-compromise.md` doc
+
+### Changed
+- fix titles of workflow docs
+- misc documentation updates
 
 ---
 
