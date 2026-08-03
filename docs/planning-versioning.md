@@ -36,6 +36,19 @@ Starting version: `0.1.0` (pre-release; no stability guarantees).
 
 Git tag `v0.1.0` on Codeberg mirrors the csproj version.
 
+**Git tagging:** first, find the commit you want to tag:
+
+```
+git log --oneline -8 main; git tag; git remote -v
+```
+
+Then, create the tag locally and push it to the remote repo, e.g.:
+
+```
+git tag -a v0.1.0 2b5a753 -m "Daps 0.1.0"
+git push origin v0.1.0
+```
+
 **`dapsman --version`:** Prints the version (from `Assembly.GetName().Version`) and exits. (Not yet implemented — tracked as an implementation item below.)
 
 **Changelog:** `docs/readme-changelog.md` — one entry per release, newest first. Each entry: version header, release date, bullet points grouped as Added / Changed / Fixed / Breaking. Synced to dapster.org automatically.

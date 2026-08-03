@@ -151,8 +151,11 @@ Every workflow follows: `CreatePlan()` → print plan → `Execute()`. `--dry-ru
 
 ```csharp
 interface IBashRunner {
-    void RunScript(string scriptPath, string workingDirectory, string? arguments = null, bool interactive=false);
-    void RunShell(string shellExpression, string workingDirectory, bool interactive=false);
+    void RunScript(string scriptPath, string workingDirectory, string? arguments = null, bool interactive = false, IReadOnlyDictionary<string, string>? env = null);
+    void RunShell(string shellExpression, string workingDirectory, bool interactive = false);
+
+    /// <summary>Runs a script and returns its stdout. Stderr is not captured (still shown to user).</summary>
+    string CaptureScript(string scriptPath, string workingDirectory, IReadOnlyDictionary<string, string>? env = null);
 }
 ```
 
@@ -168,16 +171,25 @@ Secret files in `_secrets/` are bind-mounted into containers. They must be `chmo
 
 ## CLI Command Structure
 
+**`docs/readme-cli-commands.md` is the single source of truth for the CLI — every command, flag, and its behavior. Read it before answering questions about flags or adding a command. Do not restate its flag lists here; a second copy only drifts.**
+
+The workflows, listed here as an index only:
+
 ```
-dapsman init --template <name> --name <project-name> [--path <dest>] [--dry-run]
-dapsman local build [--build] [--dry-run] [--project <name>...] [--config <path>]
-dapsman local caddy restart [--dry-run] [--config <path>]
-dapsman prod provision [--dry-run] [--provider <name>] [--upgrade] [--set-vars-script <path>] [--create-script <path>] [--config <path>]
-dapsman prod deploy [--dry-run] [--project <name>...] [--provider <name>] [--build] [--config <path>]
-dapsman prod caddy restart [--dry-run] [--provider <name>] [--config <path>]
+init
+local build · local caddy restart · local restore · local teardown · local sync-from-prod
+prod provision · prod deploy · prod caddy restart · prod sync-from-local
+prod backup · prod offline · prod online · prod teardown · prod unprovision
 ```
 
-Commands use `group action` token pairs (e.g. `local build`, `prod deploy`) except `init` which is a single token.
+Commands use `group action` token pairs (e.g. `local build`, `prod deploy`) except `init` which is a single token. Parsing lives in `CliArguments.Parse`.
+
+When adding or changing a workflow, update in this order:
+1. `CliArguments.Parse` — the actual behavior
+2. `docs/readme-cli-commands.md` — the reference
+3. `docs/readme-changelog.md` — the change entry
+4. The index above, **only if a command was added or removed** (never for flag changes)
+5. `.claude/commands/daps-dryrun.md` — add an invocation so the new workflow is health-checked
 
 ## Init / Template Convention
 
@@ -221,9 +233,9 @@ Notes on security trade-offs in the current design. DAPS is a local dev tool for
 - Remote and toolkit project root: `/srv/projects/<name>/`
 - Remote and toolkit Daps root: `/srv/daps/`
 
-## README Accuracy
+## Documentation Accuracy
 
-The `README.md` "Dapsman Workflows" section documents every workflow. When adding a new workflow or changing an existing one (flags, behavior, steps), update the README to match. Keep entries concise and consistent with the surrounding style.
+The "Dapsman Workflows" section lives in `docs/readme-cli-commands.md`, not in `README.md` (which is only an index into `docs/`). It documents every workflow, and must be updated whenever a workflow's flags, behavior, or steps change — see the update order under "CLI Command Structure". Keep entries concise and consistent with the surrounding style.
 
 ## Workflow Planning Docs
 
