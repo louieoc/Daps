@@ -8,7 +8,7 @@ Changes are listed newest first. For history prior to `0.1.0`, see `git log`.
 
 ---
 
-## Unreleased
+## 0.2.0 - 2026-08-04
 
 ### Added
 
@@ -17,9 +17,16 @@ Changes are listed newest first. For history prior to `0.1.0`, see `git log`.
 - `DISALLOW_FILE_MODS true` added to WordPress template prod compose file, blocking plugin/theme installation and the file editor from WP Admin. Paired with the existing `WP_AUTO_UPDATE_CORE false`, these two constants close the main in-container file-write attack surfaces.
 - `postmortem-2026-07-loccom-compromise.md` doc
 
-### Changed
+### Fixed
+
+- First-run chicken-and-egg: `dapsman init` and `dapsman local build` failed on a workstation where Daps had never been built, because every command resolved the toolkit container at startup and errored with "No running toolkit container found. Start local Daps first (dapsman local build)". The toolkit is now resolved only by the workflows that use it, and the caddy container name is resolved by convention when no container is running. Workflows that genuinely need the toolkit (all `prod` workflows, `local restore`, `local sync-from-prod`) still report a clear error, and `--dry-run` no longer needs any container to exist.
+- `dapsman local build` now creates the shared `daps_net` Docker network if it is missing, in a new `docker-network` step. Compose files declare it as external, so a fresh workstation previously failed with "network daps_net declared as external, but could not be found".
+- `dapsman init` no longer requires Docker to be running — it copies a template and runs the template's init script, so it now checks only for bash.
+- The missing-`daps.yaml` error now says to copy `daps.yaml.example`.
 - `dapsman prod offline` now generates its offline Caddy config from every site address in the project's `*.prod.caddy` file, not just the first. Previously a file with a comma-separated address list (`example.com, www.example.com {`) produced an invalid site address with a trailing comma, and any additional site blocks (e.g. a `www` redirect or an `api` subdomain) were dropped from the offline config entirely.
 - fix titles of workflow docs
+
+### Changed
 - misc documentation updates
 
 ---

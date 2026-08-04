@@ -2,6 +2,32 @@
 
 Design notes for the `dapsman local build` workflow. See `readme-cli-commands.md` for user-facing documentation.
 
+## First run on a fresh workstation
+
+`local build` is the workflow that *creates* local Daps, so it must not require anything local Daps
+provides. Three things used to make it fail on a machine where Daps had never been built:
+
+- **The toolkit container.** Startup wiring resolved `daps-toolkit-1` for every command, so any
+  workflow — including `init` and `local build`, which never use the toolkit — died with "No running
+  toolkit container found. Start local Daps first (dapsman local build)." That instruction was
+  impossible to follow. The toolkit bash runner is now resolved on first use, and only the workflows
+  that actually run commands in the toolkit require it to exist.
+- **The caddy container.** The caddy resolver threw when no caddy container was running, but
+  `local build` resolves its plan (including the closing caddy reload) *before* compose creates that
+  container. Both resolvers now fall back to the conventional name (`daps-caddy-1`,
+  `daps-toolkit-1`) with `IsRunning = false` instead of throwing, and the caller decides whether a
+  running container is required. `local caddy restart` still errors out, because unlike `local
+  build` it cannot create the container it reloads.
+- **The `daps_net` network.** Every Daps and project compose file declares it as `external`, so
+  compose fails with "network daps_net declared as external, but could not be found" until something
+  creates it. Prod already handled this — the generated remote `deploy.sh` creates the network if
+  missing — but nothing did locally. `local build` now has a `docker-network` step that creates it
+  if absent, before any compose runs.
+
+Related: `init` no longer requires Docker to be running at all. It copies a template and runs the
+template's init script, so it checks for bash only — a first-time user can create a project before
+Daps itself has ever been built.
+
 ## Volume handling
 
 Three levels of destruction are available, deliberately kept distinct:

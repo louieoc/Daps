@@ -1,4 +1,4 @@
-﻿using Dapsman.Application;
+using Dapsman.Application;
 using Dapsman.Domain;
 using Dapsman.Infrastructure;
 
@@ -15,7 +15,13 @@ internal sealed class DapsmanRunner
 	private readonly IProjectResolver _projectResolver;
 	private readonly IBashRunner _workstationBashRunner;
 
-	private IBashRunner _toolkitBashRunner = null!;
+	private IBashRunner? _lazyToolkitBashRunner;
+
+	/// <summary>
+	/// Resolved on first use, not at startup: workflows that do not need the toolkit (init, local
+	/// build) must work on a fresh workstation where the toolkit container does not exist yet.
+	/// </summary>
+	private IBashRunner _toolkitBashRunner => _lazyToolkitBashRunner ??= new ContainerBashRunner(RequireToolkitContainerName());
 
 	private readonly CliArguments _parsed;
 	private readonly DapsConfig _config;
@@ -40,10 +46,30 @@ internal sealed class DapsmanRunner
 	public void ResolveDependencies()
 	{
 		var localPrerequisiteChecker = new LocalPrerequisiteChecker();
-		localPrerequisiteChecker.EnsureLocalBuildPrerequisites();
 
-		var toolkitDefinition = _toolkitResolver.Resolve().ContainerName;
-		_toolkitBashRunner = new ContainerBashRunner(toolkitDefinition);
+		// init only copies a template and runs a bash script; requiring Docker to be running would
+		// block a first-time user from creating a project before Daps itself is built.
+		if (_parsed.IsInit)
+		{
+			localPrerequisiteChecker.EnsureInitPrerequisites();
+			return;
+		}
+
+		localPrerequisiteChecker.EnsureLocalBuildPrerequisites();
+	}
+
+	private string RequireToolkitContainerName()
+	{
+		var toolkit = _toolkitResolver.Resolve();
+
+		// A dry run only prints a plan, so it can name a container that does not exist yet.
+		if (!toolkit.IsRunning && !_parsed.DryRun)
+		{
+			throw new InvalidOperationException(
+				$"The Daps toolkit container ('{toolkit.ContainerName}') is not running. Run 'dapsman local build' first.");
+		}
+
+		return toolkit.ContainerName;
 	}
 
 	public async Task<int> RunAsync()
@@ -181,6 +207,11 @@ internal sealed class DapsmanRunner
 				service.ExecutePrerequisites(projectPlan);
 				Console.WriteLine($"- {projectPlan.ProjectName}: done");
 			}
+
+			Console.WriteLine();
+			Console.WriteLine("Step: docker-network");
+			service.EnsureSharedNetwork(plan, _config.DapsRootPath);
+			Console.WriteLine($"- '{plan.SharedNetworkName}' exists");
 
 			Console.WriteLine();
 			Console.WriteLine("Step: compose-daps");
@@ -408,6 +439,14 @@ internal sealed class DapsmanRunner
 		}
 		else
 		{
+			// Unlike local build, this workflow cannot create the container it reloads.
+			var caddy = _workstationCaddyResolver.Resolve();
+			if (!caddy.IsRunning && !_parsed.DryRun)
+			{
+				throw new InvalidOperationException(
+					$"The Daps caddy container ('{caddy.ContainerName}') is not running. Run 'dapsman local build' first.");
+			}
+
 			planBuilder = new LocalCaddyRestartPlanBuilder(_config, _workstationCaddyResolver);
 			bashRunner = _workstationBashRunner;
 		}

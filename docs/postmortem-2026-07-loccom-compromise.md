@@ -1,3 +1,4 @@
+<!-- no index -->
 # Postmortem: loccom WordPress Compromise — July 2026
 
 ## Summary
