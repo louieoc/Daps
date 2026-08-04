@@ -63,7 +63,7 @@ Reloads Caddy's configuration on the remote server via SSH from the toolkit cont
 ```
 dapsman prod offline [--project <name>...] [--dry-run] [--provider <name>] [--config <path>]
 ```
-Takes one or more projects offline by replacing the prod Caddy site file with a 503 maintenance page. If the project has a `_caddy_sites/<name>.offline.caddy`, that file is used; otherwise a generic page is generated from the domain in the prod caddy file. Omitting `--project` runs against all configured projects.
+Takes one or more projects offline by replacing the prod Caddy site file with a 503 maintenance page. If the project has a `_caddy_sites/<name>.offline.caddy`, that file is used; otherwise a generic page is generated, covering every domain the prod caddy file serves. Omitting `--project` runs against all configured projects.
 
 ### `dapsman prod online`
 ```

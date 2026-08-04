@@ -222,7 +222,7 @@ Notes on security trade-offs in the current design. DAPS is a local dev tool for
 
 ## Caddy Notes
 
-- **`respond` directive does not set `Content-Type` automatically.** Always add `header Content-Type "text/html; charset=utf-8"` before `respond` when returning HTML, otherwise browsers display the markup as plain text. This applies to both generated offline responses (see `ConventionProjectStatusPlanBuilder.GenerateOfflineResponse`) and any hand-authored `.offline.caddy` files.
+- **`respond` directive does not set `Content-Type` automatically.** Always add `header Content-Type "text/html; charset=utf-8"` before `respond` when returning HTML, otherwise browsers display the markup as plain text. This applies to both generated offline responses (see `RemoteOfflineStatusPlanBuilder.GenerateOfflineResponse`) and any hand-authored `.offline.caddy` files.
 
 ## Known Conventions in Practice
 

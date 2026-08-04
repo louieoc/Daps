@@ -194,5 +194,5 @@ The same hardening has been applied to the WordPress template for all future pro
 - [ ] Check prod content for attacker-added posts/pages via wp-cli
 - [ ] Rotate all loccom secrets (MySQL password, WordPress security keys) — the attacker could read these from `/run/secrets/`
 - [ ] Investigate wp.dapster.org TLS cert renewal failures visible in Caddy logs (separate issue, unrelated to this incident)
-- [ ] Fix `dapsman prod offline` bug: multiple Caddy site entries are collapsed to one with a trailing comma, producing invalid Caddyfile syntax
+- [x] Fix `dapsman prod offline` bug: multiple Caddy site entries are collapsed to one with a trailing comma, producing invalid Caddyfile syntax
 - [ ] Consider site availability monitoring for all prod projects

@@ -18,6 +18,7 @@ Changes are listed newest first. For history prior to `0.1.0`, see `git log`.
 - `postmortem-2026-07-loccom-compromise.md` doc
 
 ### Changed
+- `dapsman prod offline` now generates its offline Caddy config from every site address in the project's `*.prod.caddy` file, not just the first. Previously a file with a comma-separated address list (`example.com, www.example.com {`) produced an invalid site address with a trailing comma, and any additional site blocks (e.g. a `www` redirect or an `api` subdomain) were dropped from the offline config entirely.
 - fix titles of workflow docs
 - misc documentation updates
 
