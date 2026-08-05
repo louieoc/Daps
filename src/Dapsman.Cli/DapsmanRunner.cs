@@ -20,6 +20,8 @@ internal sealed class DapsmanRunner
 	/// <summary>
 	/// Resolved on first use, not at startup: workflows that do not need the toolkit (init, local
 	/// build) must work on a fresh workstation where the toolkit container does not exist yet.
+	/// I recognize this is a property named like a field. It might make sense to change all local 
+	/// dependencies to properties and lazy load all of them.
 	/// </summary>
 	private IBashRunner _toolkitBashRunner => _lazyToolkitBashRunner ??= new ContainerBashRunner(RequireToolkitContainerName());
 

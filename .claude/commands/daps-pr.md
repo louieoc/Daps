@@ -17,6 +17,8 @@ git diff main...HEAD -- src/
 git diff main...HEAD -- docs/ README.md .claude/
 ```
 
+Review only what is committed on the branch. Uncommitted and untracked files — typically `docs/planning-*.md` drafts and unfinished `.claude/commands/` entries — are usually ideational, kept out of git deliberately while an idea is still forming. Do not flag them as missing from the PR.
+
 ---
 
 ## 2. Version and changelog check
@@ -40,7 +42,7 @@ Read `docs/readme-changelog.md`. Confirm there is an entry for the new version. 
 
 ## 3. README check
 
-Read `README.md`'s "Dapsman Workflows" section.
+Read `docs/readme-cli-commands.md`.
 
 If any CLI command was added, removed, renamed, or had its flags changed in this PR, confirm the README reflects the current state. Flag any discrepancy.
 
