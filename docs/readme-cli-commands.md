@@ -30,7 +30,7 @@ Brings up the local dev Docker environment. This combines, for the local environ
 ```
 dapsman local caddy restart [--dry-run] [--config <path>]
 ```
-Reloads Caddy's configuration on the local Docker instance (`docker exec daps-caddy-1 caddy reload`). Useful after changing site files without doing a full local build.
+Reloads Caddy's configuration on the local Docker instance (`docker exec daps-caddy-1 caddy reload --force`). Useful after changing site files without doing a full local build. `--force` means the reload happens even when the config is unchanged.
 
 ### `dapsman prod provision`
 ```
@@ -58,6 +58,8 @@ Image build behavior:
 dapsman prod caddy restart [--dry-run] [--provider <name>] [--config <path>]
 ```
 Reloads Caddy's configuration on the remote server via SSH from the toolkit container. Useful after a caddy site file change without a full redeploy.
+
+The reload passes `--force`, so it runs even when the config is unchanged. This matters when a site is waiting on a TLS certificate: Caddy requests certificates for the domains named in its config when that config loads, and retries with an increasing backoff if issuance fails. After pointing a domain's DNS at the server, run this command to make Caddy retry immediately instead of waiting out the backoff.
 
 ### `dapsman prod offline`
 ```

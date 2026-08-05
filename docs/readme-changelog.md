@@ -27,6 +27,7 @@ Changes are listed newest first. For history prior to `0.1.0`, see `git log`.
 - fix titles of workflow docs
 
 ### Changed
+- `dapsman local caddy restart` and `dapsman prod caddy restart` now pass `--force` to `caddy reload`. Caddy skips a reload when the incoming config is byte-identical to the running one, which made both commands a no-op in the case they are most needed: forcing Caddy to retry TLS certificate issuance after a domain's DNS was pointed at the server. The caddy file is unchanged in that scenario, so the reload was silently skipped and the site stayed uncertified until Caddy's own retry backoff elapsed.
 - misc documentation updates
 
 ---

@@ -126,6 +126,65 @@ In WP Admin, go to **Plugins > Add New**, search for **Redis Object Cache**, ins
 
 ---
 
+## Deploy to prod
+
+### Daps host definition
+
+Before you can deploy to production you need to define and provision a host in Daps. That process is covered in the Daps readme deployment document (`daps/docs/readme-deployment.md`).
+
+If multiple hosts are defined in the `daps.yaml` file, then the project entry may need a `provider` entry referencing the target host, e.g.:
+
+```yaml
+  mywpsite:
+    path: ../mywpsite
+    provider: ovhcloud
+```
+
+If you omit this then Daps will assume the target is the first host in the list.
+
+### DNS
+
+Before you deploy, confirm `_caddy_sites/mywpsite.prod.caddy` names your real domain (not the `mywpsite.example.com` placeholder).
+
+Now you have a choice for how to handle DNS.
+
+**New site:** for a new website you should create an A record for your domain, pointing at your host's IP address, before running the next set of steps. This is because Caddy, which Daps provides to refer domain names to the specific containers that handles them (acting as a "reverse proxy"), requests an HTTPS/TLS certificate from [Let's Encrypt](https://letsencrypt.org/) as soon as it starts. If DNS is already in place then this request will succeed and HTTPS will work as soon as the site comes up.
+
+**Moving an existing live site:** if your domain name is already hosting traffic, you will want to reduce down time during the cutover. In this case it makes sense to run these deploy steps to the new host first, and then flip DNS so users will keep hitting the old site until the DNS change propagates and they start hitting the new site.
+
+The problem with deploying first, however, while DNS is still aimed at the old site, is that Caddy's certificate requests will fail. Caddy will wait before retrying, and wait for longer and longer periods as it continues to fail. This leaves a period of uncertainty while DNS is propagating and HTTPS on the new site is still unavailable.
+
+Once DNS does propagate, you can run `dapsman prod caddy restart` which will force it to retry obtaining a certificate immediately, if it doesn't do so on its own in a timely fashion.
+
+### Deploying
+
+To deploy, execute this command:
+
+```bash
+dapsman prod deploy --project mywpsite
+```
+
+Prod generates its own secrets on the remote server — they are never copied from your
+local `_secrets/` folder, so the two environments have different passwords and keys.
+Deploy only creates secrets that don't already exist on the remote, so re-deploying an
+existing site leaves them untouched.
+
+`dapsman prod deploy` will create your Wordpress containers on the remote site. To get your files and data there as well, you also need to run:
+
+```bash
+dapsman prod sync-from-local --project mywpsite
+```
+
+### DNS, revisited
+
+If you had opted to update DNS after deployment, now's the time to point DNS at your host's IP address and possibly restart Caddy (see above).
+
+### All done
+
+Once DNS is propagated and HTTPS/TLS is working, your site should load, looking exactly as it does running locally.
+
+---
+
 ## Backing up your site
 
 From the DAPS root folder:

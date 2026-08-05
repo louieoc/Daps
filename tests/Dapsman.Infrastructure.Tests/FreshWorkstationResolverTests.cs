@@ -53,7 +53,7 @@ public sealed class FreshWorkstationResolverTests
 
 		var plan = new LocalCaddyRestartPlanBuilder(config, new CaddyResolver(config, containerManager)).BuildPlan();
 
-		Assert.Equal("docker exec daps-caddy-1 caddy reload --config /etc/caddy/Caddyfile", plan.ReloadCommand);
+		Assert.Equal("docker exec daps-caddy-1 caddy reload --force --config /etc/caddy/Caddyfile", plan.ReloadCommand);
 	}
 
 	[Fact]
