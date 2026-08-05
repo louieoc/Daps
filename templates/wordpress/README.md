@@ -146,13 +146,9 @@ If you omit this then Daps will assume the target is the first host in the list.
 
 Before you deploy, confirm `_caddy_sites/mywpsite.prod.caddy` names your real domain, not the `mywpsite.example.com` placeholder.
 
-Daps uses Caddy as a reverse proxy: it receives incoming traffic and routes each domain to the container that serves it. Caddy also requests an HTTPS certificate from [Let's Encrypt](https://letsencrypt.org/) for every domain in its config, as soon as it starts. Let's Encrypt will only issue that certificate if the domain already points at your server — which leaves you a choice about when to update DNS.
+Caddy requests an HTTPS certificate for that domain as soon as it starts, and Let's Encrypt only issues one if the domain already points at your server. So for a new site, create the A record before deploying; when moving a live site, deploy first and flip DNS after, to keep downtime short.
 
-Either way, DNS changes are not instant. Every record has a TTL telling other servers how long to cache it, and the old value stays in circulation until that expires. If your domain already has an A record, lower its TTL to 300 seconds a day or two before you change it, so the switch takes minutes rather than hours.
-
-**New site** — create an A record for your domain, pointing at the host's IP address, before deploying. Caddy gets its certificate on startup and HTTPS works as soon as the site comes up. Nothing to revisit later.
-
-**Moving a live site** — deploy to the new host first, then flip DNS, so visitors keep hitting the old server until the new one is ready. The trade-off is that Caddy's first certificate request fails, since DNS still points at the old host, and it then retries on a backoff that grows longer with each failure. Once DNS has propagated, run `dapsman prod caddy restart` to make Caddy retry immediately instead of waiting that backoff out.
+Read **DNS and HTTPS** in `daps/docs/readme-deployment.md` before you pick — it covers TTLs, what to do when a certificate doesn't arrive, and why the hosts-file trick for previewing the new server doesn't work.
 
 ### Deploying
 
