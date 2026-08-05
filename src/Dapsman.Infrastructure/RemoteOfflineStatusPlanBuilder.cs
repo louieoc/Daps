@@ -46,7 +46,9 @@ public sealed class RemoteOfflineStatusPlanBuilder : IOfflineStatusPlanBuilder
 				$"Project '{project.Definition.Name}' prod Caddy site file not found at '{prodCaddySitePath}'.");
 		}
 
-		var provider = _hostingResolver.Resolve(_providerName ?? options.ProviderName);
+		// Falls back to the project's own provider when none was given on the command line —
+		// without it, a project targeting a non-default provider is acted on against the wrong host.
+		var provider = _hostingResolver.Resolve(_providerName ?? options.ProviderName, project.Definition.Provider);
 		var toolkitDef = _toolkitResolver.Resolve();
 		var caddySiteContent = _offline ? BuildOfflineContent(projectCaddyDef, prodCaddySitePath) : File.ReadAllText(prodCaddySitePath);
 		var dockerPrefix = string.Equals(provider.RemoteUser, "root", StringComparison.OrdinalIgnoreCase) ? "docker" : "sudo docker";

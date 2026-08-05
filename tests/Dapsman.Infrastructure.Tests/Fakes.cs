@@ -17,8 +17,24 @@ public sealed class FakeContainerManager(IReadOnlyList<string>? names) : IContai
 
 public sealed class FakeHostingProviderResolver(HostingProvider provider) : IHostingProviderResolver
 {
-	public HostingProvider Resolve(string? providerName) => provider;
-	public HostingProvider Resolve(string? cliProviderName, string? projectProviderName) => provider;
+	/// <summary>The project provider passed to the two-argument overload, or null if it was never called.</summary>
+	public string? ObservedProjectProviderName { get; private set; }
+
+	/// <summary>True when resolution went through the overload that ignores the project's own provider.</summary>
+	public bool ResolvedWithoutProjectProvider { get; private set; }
+
+	public HostingProvider Resolve(string? providerName)
+	{
+		ResolvedWithoutProjectProvider = true;
+		return provider;
+	}
+
+	public HostingProvider Resolve(string? cliProviderName, string? projectProviderName)
+	{
+		ObservedProjectProviderName = projectProviderName;
+		return provider;
+	}
+
 	public HostingProvider ResolveExplicit(string? providerName) => provider;
 }
 

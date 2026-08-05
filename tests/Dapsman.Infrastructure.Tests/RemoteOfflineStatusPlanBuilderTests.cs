@@ -77,7 +77,41 @@ example.com, www.example.com {
 		Assert.False(plan.IsOffline);
 	}
 
-	private static OfflineStatusPlan BuildOfflinePlan(string prodCaddyContent, string? offlineContent = null, bool offline = true)
+	[Fact]
+	public void BuildPlan_NoProviderOnCommandLine_UsesTheProjectsOwnProvider()
+	{
+		var resolver = new FakeHostingProviderResolver(TestProvider());
+
+		BuildOfflinePlan(
+			"""
+example.com {
+	reverse_proxy alpha:80
+}
+""",
+			cliProviderName: null,
+			projectProvider: "ovhcloud",
+			hostingResolver: resolver);
+
+		Assert.False(resolver.ResolvedWithoutProjectProvider);
+		Assert.Equal("ovhcloud", resolver.ObservedProjectProviderName);
+	}
+
+	private static HostingProvider TestProvider() => new()
+	{
+		ConfigDefinition = new GenericVpsProviderDefinition { Name = "ovhcloud1", Hostname = "vps.example.com", User = "ubuntu" },
+		Options = new GenericVpsProviderOptions(),
+		RemoteHost = "vps.example.com",
+		RemoteUser = "ubuntu",
+		KeyName = "daps-key-ovhcloud1",
+	};
+
+	private static OfflineStatusPlan BuildOfflinePlan(
+		string prodCaddyContent,
+		string? offlineContent = null,
+		bool offline = true,
+		string? cliProviderName = "ramnode",
+		string? projectProvider = null,
+		FakeHostingProviderResolver? hostingResolver = null)
 	{
 		var root = Path.Combine(Path.GetTempPath(), "dapsman-tests", Guid.NewGuid().ToString("N"));
 		var projectRoot = Path.Combine(root, "alpha-project");
@@ -103,26 +137,18 @@ services:
 		{
 			DapsRootPath = root,
 			FullYamlPath = Path.Combine(root, "daps.yaml"),
-			Projects = new[] { new ProjectDefinition { Name = "alpha", Path = projectRoot } },
+			Projects = new[] { new ProjectDefinition { Name = "alpha", Path = projectRoot, Provider = projectProvider } },
 		};
 
 		var containerManager = new FakeContainerManager(null);
-		var provider = new HostingProvider
-		{
-			ConfigDefinition = new GenericVpsProviderDefinition { Name = "ovhcloud1", Hostname = "vps.example.com", User = "ubuntu" },
-			Options = new GenericVpsProviderOptions(),
-			RemoteHost = "vps.example.com",
-			RemoteUser = "ubuntu",
-			KeyName = "daps-key-ovhcloud1",
-		};
 
 		var builder = new RemoteOfflineStatusPlanBuilder(
 			offline,
-			"ramnode",
+			cliProviderName,
 			new ToolkitResolver(config, containerManager),
 			new ProjectResolver(config),
 			new CaddyResolver(config, containerManager),
-			new FakeHostingProviderResolver(provider));
+			hostingResolver ?? new FakeHostingProviderResolver(TestProvider()));
 
 		var result = builder.BuildPlan(config, new OfflineStatusOptions { ProjectName = "alpha" });
 		Assert.True(result.IsSupported, string.Join("; ", result.Warnings));

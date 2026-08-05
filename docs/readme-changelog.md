@@ -8,7 +8,7 @@ Changes are listed newest first. For history prior to `0.1.0`, see `git log`.
 
 ---
 
-## 0.2.0 - 2026-08-04
+## 0.2.0 - 2026-08-05
 
 ### Added
 
@@ -24,6 +24,7 @@ Changes are listed newest first. For history prior to `0.1.0`, see `git log`.
 - `dapsman init` no longer requires Docker to be running — it copies a template and runs the template's init script, so it now checks only for bash.
 - The missing-`daps.yaml` error now says to copy `daps.yaml.example`.
 - `dapsman prod offline` now generates its offline Caddy config from every site address in the project's `*.prod.caddy` file, not just the first. Previously a file with a comma-separated address list (`example.com, www.example.com {`) produced an invalid site address with a trailing comma, and any additional site blocks (e.g. a `www` redirect or an `api` subdomain) were dropped from the offline config entirely.
+- `dapsman prod offline` and `dapsman prod online` now fall back to the project's own `provider:` from `daps.yaml` when no `--provider` is given. They were resolving to the first provider in the file instead, so a project hosted elsewhere was taken offline against the wrong server — the command reported success while the real site stayed up. Every other per-project prod workflow already did this; these two were the exception.
 - fix titles of workflow docs
 
 ### Changed
