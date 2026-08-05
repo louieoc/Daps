@@ -35,9 +35,23 @@ After either path, you may verify the remote host by SSHing to it from the toolk
 
 ### Deploying projects
 
+1. Confirm the project's `_caddy_sites/<name>.prod.caddy` names your real domain, not a template's `example.com` placeholder
+1. Point DNS at your host — see [DNS and HTTPS](#dns-and-https) below for whether to do this before or after the next step
 1. run deploy: `dapsman prod deploy --project <project name>` (or omit the project name to deploy everything)
 
 For some projects, that's it. For the Wordpress template, if you customized your local instance, run `dapsman prod sync-from-local --project dapster-wp`
+
+### DNS and HTTPS
+
+Daps uses Caddy as a reverse proxy: it receives incoming traffic and routes each domain to the container that serves it. Caddy also requests an HTTPS certificate from [Let's Encrypt](https://letsencrypt.org/) for every domain in its config, as soon as it starts. Let's Encrypt will only issue that certificate if the domain already points at your server — which leaves you a choice about when to update DNS.
+
+Either way, DNS changes are not instant. Every record has a TTL telling other servers how long to cache it, and the old value stays in circulation until that expires. If your domain already has an A record, lower its TTL to 300 seconds a day or two before you change it, so the switch takes minutes rather than hours.
+
+**New site** — create an A record for your domain, pointing at the host's IP address, before deploying. Caddy gets its certificate on startup and HTTPS works as soon as the site comes up. Nothing to revisit later.
+
+**Moving a live site** — deploy to the new host first, then flip DNS, so visitors keep hitting the old server until the new one is ready. The trade-off is that Caddy's first certificate request fails, since DNS still points at the old host, and it then retries on a backoff that grows longer with each failure. Once DNS has propagated, run `dapsman prod caddy restart` to make Caddy retry immediately instead of waiting that backoff out.
+
+Editing your workstation's hosts file does not let you preview the new server over HTTPS beforehand. Let's Encrypt validates from its own servers using public DNS, so a local override cannot produce a certificate, and Caddy will redirect you to HTTPS and fail the handshake. To verify a site before flipping DNS, add a temporary subdomain (e.g. `new.yourdomain.com`) with its own A record and site block, then remove it after the cutover.
 
 
 ## Toolkit and SSH to remote host

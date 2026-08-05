@@ -14,7 +14,9 @@ Documents the design rationale, constraints, and decisions for the `prod deploy`
 
 ### Decision
 
-Run the prod Caddy reload automatically as the final step of `prod deploy`, mirroring `local build`. The implementation reuses `ConventionRemoteCaddyRestartPlanBuilder` + `CaddyRestartService` with the toolkit bash runner — exactly the same code path as `prod caddy restart`, just called internally after the deploy step.
+Run the prod Caddy reload automatically as the final step of `prod deploy`, mirroring `local build`. The implementation reuses `RemoteCaddyRestartPlanBuilder` + `CaddyRestartService` with the toolkit bash runner — exactly the same code path as `prod caddy restart`, just called internally after the deploy step.
+
+The reload passes `--force`. Caddy skips a reload when the incoming config is byte-identical to the running one, which would make `prod caddy restart` a no-op in the case it is most needed: forcing a retry of TLS certificate issuance after a domain's DNS was pointed at the server, where the caddy file has not changed at all. `prod deploy` inherits `--force` by sharing the code path; it is redundant there, since a deploy has usually just uploaded a changed caddy file, but harmless.
 
 ### Step order
 

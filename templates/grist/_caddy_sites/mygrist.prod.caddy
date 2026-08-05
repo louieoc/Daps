@@ -7,7 +7,10 @@
 #   2. Replace "admin" with your chosen username.
 #   3. Replace the hash with one generated for your password:
 #      docker run --rm caddy:latest caddy hash-password --plaintext 'yourpassword'
-#   4. Make sure your domain's DNS A record points to your server's IP address.
+#   4. Point your domain's DNS A record at your server's IP address. Caddy requests the
+#      certificate when it starts, and Let's Encrypt only issues it once that record
+#      resolves — see "DNS and HTTPS" in daps/docs/readme-deployment.md for whether to
+#      do this before or after deploying.
 
 mygrist.example.com {
 	encode gzip zstd

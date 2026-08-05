@@ -51,6 +51,8 @@ Your site will be available at `https://yourprojectname.localhost` (via Caddy) o
 
 ### First deploy
 
+Before deploying, confirm `_caddy_sites/yourprojectname.prod.caddy` names your real domain, not the `example.com` placeholder, and read "DNS and HTTPS" in `daps/docs/readme-deployment.md` — whether you point DNS at the host before or after this step depends on whether the domain is already serving a live site.
+
 ```bash
 npm run build
 dapsman prod deploy --project yourprojectname --provider <name>
