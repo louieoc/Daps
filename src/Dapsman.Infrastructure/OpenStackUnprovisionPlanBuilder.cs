@@ -20,7 +20,10 @@ public sealed class OpenStackUnprovisionPlanBuilder : IUnprovisionPlanBuilder
 
 	public UnprovisionPlan BuildPlan(DapsConfig config, UnprovisionOptions options)
 	{
-		var hostingProvider = _providerResolver.Resolve(options.ProviderName);
+		// ResolveExplicit, not Resolve: this destroys a VM and there is no project to infer a
+		// provider from, so an omitted --provider must be an error rather than silently falling
+		// back to the first provider in daps.yaml. Mirrors prod provision.
+		var hostingProvider = _providerResolver.ResolveExplicit(options.ProviderName);
 		var provider = hostingProvider.ConfigDefinition as OpenstackProviderDefinition
 			?? throw new InvalidOperationException("No OpenStack provider configured in daps.yaml.");
 		var providerOptions = hostingProvider.Options as OpenStackProviderOptions

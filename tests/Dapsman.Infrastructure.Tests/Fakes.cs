@@ -35,7 +35,14 @@ public sealed class FakeHostingProviderResolver(HostingProvider provider) : IHos
 		return provider;
 	}
 
-	public HostingProvider ResolveExplicit(string? providerName) => provider;
+	/// <summary>True when resolution went through the overload that refuses to guess a provider.</summary>
+	public bool ResolvedExplicitly { get; private set; }
+
+	public HostingProvider ResolveExplicit(string? providerName)
+	{
+		ResolvedExplicitly = true;
+		return provider;
+	}
 }
 
 public sealed class FakeHostPortManager : IHostPortManager

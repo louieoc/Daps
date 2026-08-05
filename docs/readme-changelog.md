@@ -25,6 +25,7 @@ Changes are listed newest first. For history prior to `0.1.0`, see `git log`.
 - The missing-`daps.yaml` error now says to copy `daps.yaml.example`.
 - `dapsman prod offline` now generates its offline Caddy config from every site address in the project's `*.prod.caddy` file, not just the first. Previously a file with a comma-separated address list (`example.com, www.example.com {`) produced an invalid site address with a trailing comma, and any additional site blocks (e.g. a `www` redirect or an `api` subdomain) were dropped from the offline config entirely.
 - `dapsman prod offline` and `dapsman prod online` now fall back to the project's own `provider:` from `daps.yaml` when no `--provider` is given. They were resolving to the first provider in the file instead, so a project hosted elsewhere was taken offline against the wrong server — the command reported success while the real site stayed up. Every other per-project prod workflow already did this; these two were the exception.
+- `dapsman prod unprovision` now requires `--provider` when more than one provider is configured, instead of silently defaulting to the first one in `daps.yaml`. It destroys a VM and its keypair and has no project to infer a provider from, so guessing was the wrong default — `dapsman prod provision` already worked this way.
 - fix titles of workflow docs
 
 ### Changed

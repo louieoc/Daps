@@ -124,3 +124,5 @@ Deletes a project from the remote deployment. Requires specifying a project. Req
 dapsman prod unprovision [--dry-run] [--provider <name>] [--config <path>]
 ```
 OpenStack providers only. Deletes the OpenStack instance and SSH keypair from the remote host, the SSH key files from the toolkit, and the instance vars file from the workstation. Requires confirmation ("are you sure?") and re-confirmation ("really really sure?"). Generic-vps providers have no instance-creation API, so there is no corresponding unprovision workflow for them.
+
+`--provider` is optional only when a single provider is configured. With more than one it is required, and omitting it is an error rather than a default — the same rule as `prod provision`.
