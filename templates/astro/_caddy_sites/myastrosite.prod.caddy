@@ -3,8 +3,10 @@
 # Caddy will automatically obtain and renew a TLS certificate for your domain.
 #
 # SETUP: Replace "myastrosite.example.com" with your actual domain name.
-# Make sure your domain's DNS A record points to your server's IP address
-# before deploying, so Caddy can obtain a certificate.
+# Caddy requests the certificate when it starts, and Let's Encrypt only issues it once
+# your domain's DNS A record points at your server. For a new site, add that record
+# before deploying. When moving a live site, deploy first and flip DNS after — see
+# "DNS and HTTPS" in daps/docs/readme-deployment.md.
 #
 # www: If you want www.yourdomain.com to work, add a DNS A record for it too,
 # then uncomment the redirect block below.

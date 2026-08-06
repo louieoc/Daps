@@ -17,7 +17,7 @@ public class CaddyResolver : ICaddyResolver
 	public CaddyDefinition Resolve()
 	{
 		var warnings = new List<string>();
-		var containerName = ResolveContainerName();
+		var (containerName, isRunning) = ResolveContainerName();
 		var caddyfileSourcePath = Path.Combine(_config.DapsRootPath, "caddy", "Caddyfile");
 		var siteFileFolder = Path.Combine(_config.DapsRootPath, "caddy_sites");
 		var prodSiteFileNames = CollectExpectedProdCaddyFileNames(warnings);
@@ -25,6 +25,7 @@ public class CaddyResolver : ICaddyResolver
 		return new CaddyDefinition
 		{
 			ContainerName = containerName,
+			IsRunning = isRunning,
 			WorkstationCaddyFilePath = caddyfileSourcePath,
 			WorkstationSitesPath = siteFileFolder,
 			AllWorkstationProdSiteFileNames = prodSiteFileNames,
@@ -60,21 +61,19 @@ public class CaddyResolver : ICaddyResolver
 
 	// Container name follows Docker Compose convention: <compose-project-name>-<service>-<index>
 	// DAPS names its compose project "daps" (default), so the Caddy container should be daps-caddy-1.
-	private string ResolveContainerName()
+	// A missing caddy container is not an error here: local build resolves the plan before the
+	// container exists and creates it along the way. It resolves to the conventional name with
+	// IsRunning false, and the caller decides whether to require a running container.
+	private (string ContainerName, bool IsRunning) ResolveContainerName()
 	{
+		var expected = $"{_config.DapsComposeProjectName}-caddy-1";
 		var containers = _manager.GetContainerNames();
 
-		var expected = $"{_config.DapsComposeProjectName}-caddy-1";
 		var preferred = containers.FirstOrDefault(n => n.Equals(expected, StringComparison.OrdinalIgnoreCase))
 			?? containers.FirstOrDefault(n => n.EndsWith("caddy-1", StringComparison.OrdinalIgnoreCase))
 			?? containers.FirstOrDefault(n => n.Contains("caddy", StringComparison.OrdinalIgnoreCase));
 
-		if (preferred is null)
-		{
-			throw new InvalidOperationException("No running caddy container found.");
-		}
-
-		return preferred;
+		return preferred is null ? (expected, false) : (preferred, true);
 	}
 
 	private List<string> CollectExpectedProdCaddyFileNames(List<string> warnings)

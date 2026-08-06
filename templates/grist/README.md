@@ -117,7 +117,11 @@ Copy the output hash into `_caddy_sites/mygrist.prod.caddy`, replacing `$2a$14$R
 
 You can also change the username from `admin` to anything you like.
 
-### 3. Deploy
+### 3. Point DNS at your host
+
+Confirm `_caddy_sites/mygrist.prod.caddy` names your real domain, not the `mygrist.example.com` placeholder, then read "DNS and HTTPS" in `daps/docs/readme-deployment.md` — whether you create the A record before or after deploying depends on whether the domain is already serving a live site.
+
+### 4. Deploy
 
 ```bash
 dapsman prod deploy --project mygrist --provider <name>

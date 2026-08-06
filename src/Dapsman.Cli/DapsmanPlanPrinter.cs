@@ -75,9 +75,24 @@ internal static class DapsmanPlanPrinter
 		}
 
 		Console.WriteLine();
+		Console.WriteLine("Step: docker-network");
+		Console.WriteLine($"- docker network create {plan.SharedNetworkName} (if missing)");
+
+		Console.WriteLine();
 		Console.WriteLine("Step: compose-daps");
 		var dapsCommand = WorkstationDockerComposeExecutor.BuildDockerComposeCommand(plan.DapsComposeFiles, options.BuildImages);
 		Console.WriteLine($"- {dapsCommand}");
+
+		if (options.Rebuild)
+		{
+			Console.WriteLine();
+			Console.WriteLine("Step: rebuild-teardown");
+			foreach (var projectPlan in plan.ProjectComposePlans)
+			{
+				var downCommand = WorkstationDockerComposeExecutor.BuildDockerComposeDownCommand(projectPlan.ComposeFiles, removeVolumes: true);
+				Console.WriteLine($"- {projectPlan.ProjectName}: {downCommand}");
+			}
+		}
 
 		Console.WriteLine();
 		Console.WriteLine("Step: compose-project");

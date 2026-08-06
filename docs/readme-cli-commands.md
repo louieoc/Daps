@@ -18,15 +18,19 @@ Creates a new project from a template. Copies the template directory to the dest
 
 ### `dapsman local build`
 ```
-dapsman local build [--build] [--dry-run] [--project <name>...] [--config <path>]
+dapsman local build [--build] [--rebuild [--yes]] [--dry-run] [--project <name>...] [--config <path>]
 ```
-Brings up the local dev Docker environment. This combines, for the local environment, what are handled separately for prod as "provision" and "deploy" workflows. Steps: syncs project caddy site files to `caddy_sites/`, runs each project's prerequisite scripts (e.g. `prerequisites.sh`, `prerequisites.dev.sh`), composes DAPS services (Caddy, toolkit), then composes each project's containers. `--build` forces Docker image rebuilds. Omitting `--project` runs all configured projects (except those with `disabled: true` in `daps.yaml`).
+Brings up the local dev Docker environment. This combines, for the local environment, what are handled separately for prod as "provision" and "deploy" workflows. Steps: syncs project caddy site files to `caddy_sites/`, runs each project's prerequisite scripts (e.g. `prerequisites.sh`, `prerequisites.dev.sh`), creates the shared `daps_net` Docker network if it is missing, composes DAPS services (Caddy, toolkit), then composes each project's containers. It works on a workstation where Daps has never been built — this is the workflow that creates the toolkit and Caddy containers. `--build` forces Docker image rebuilds. Omitting `--project` runs all configured projects (except those with `disabled: true` in `daps.yaml`).
+
+`--rebuild` starts the selected projects over from scratch: before composing them back up it runs `docker compose down -v`, destroying their containers **and named volumes**. Use it when a project's data volume is unusable — most commonly a database whose data directory was left half-written by an interrupted first build, which shows up as a container restart loop rather than a clean error. It implies `--build`, requires `--project` (so a stray `--rebuild` can never wipe every project at once), and prompts for a typed `yes` before doing anything. `--yes` skips that prompt for scripted use.
+
+`--rebuild` only touches the projects you name — DAPS shared services (Caddy, toolkit) and their volumes are left alone. It destroys data with no backup step, so use `dapsman local restore` afterwards if you need the contents back.
 
 ### `dapsman local caddy restart`
 ```
 dapsman local caddy restart [--dry-run] [--config <path>]
 ```
-Reloads Caddy's configuration on the local Docker instance (`docker exec daps-caddy-1 caddy reload`). Useful after changing site files without doing a full local build.
+Reloads Caddy's configuration on the local Docker instance (`docker exec daps-caddy-1 caddy reload --force`). Useful after changing site files without doing a full local build. `--force` means the reload happens even when the config is unchanged.
 
 ### `dapsman prod provision`
 ```
@@ -55,11 +59,13 @@ dapsman prod caddy restart [--dry-run] [--provider <name>] [--config <path>]
 ```
 Reloads Caddy's configuration on the remote server via SSH from the toolkit container. Useful after a caddy site file change without a full redeploy.
 
+The reload passes `--force`, so it runs even when the config is unchanged. This matters when a site is waiting on a TLS certificate: Caddy requests certificates for the domains named in its config when that config loads, and retries with an increasing backoff if issuance fails. After pointing a domain's DNS at the server, run this command to make Caddy retry immediately instead of waiting out the backoff.
+
 ### `dapsman prod offline`
 ```
 dapsman prod offline [--project <name>...] [--dry-run] [--provider <name>] [--config <path>]
 ```
-Takes one or more projects offline by replacing the prod Caddy site file with a 503 maintenance page. If the project has a `_caddy_sites/<name>.offline.caddy`, that file is used; otherwise a generic page is generated from the domain in the prod caddy file. Omitting `--project` runs against all configured projects.
+Takes one or more projects offline by replacing the prod Caddy site file with a 503 maintenance page. If the project has a `_caddy_sites/<name>.offline.caddy`, that file is used; otherwise a generic page is generated, covering every domain the prod caddy file serves. Omitting `--project` runs against all configured projects.
 
 ### `dapsman prod online`
 ```
@@ -118,3 +124,5 @@ Deletes a project from the remote deployment. Requires specifying a project. Req
 dapsman prod unprovision [--dry-run] [--provider <name>] [--config <path>]
 ```
 OpenStack providers only. Deletes the OpenStack instance and SSH keypair from the remote host, the SSH key files from the toolkit, and the instance vars file from the workstation. Requires confirmation ("are you sure?") and re-confirmation ("really really sure?"). Generic-vps providers have no instance-creation API, so there is no corresponding unprovision workflow for them.
+
+`--provider` is optional only when a single provider is configured. With more than one it is required, and omitting it is an error rather than a default — the same rule as `prod provision`.

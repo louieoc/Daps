@@ -99,6 +99,8 @@ PhpMyAdmin is available at `http://localhost:8082`.
 
 Note that it can take a few minutes for the db server to finish booting up. If you see "Error establishing a database connection" right after running the local build the first time, this could be why. If it persists beyond a few minutes, however, then something else is wrong.
 
+You may also see warnings in WP Admin about "Action Scheduler" actions being past due (specifically `wp_mail_smtp_admin_notifications_update` and `action_scheduler_run_recurring_actions_schedule_hook`). This is normal in a local dev environment — WP Mail SMTP checks for admin notifications on a schedule, and without real SMTP credentials configured locally, those checks fail and queue up. This does not affect site functionality and will not cause problems in prod.
+
 ### 4. Complete the WordPress setup wizard
 
 Open your site in a browser. WordPress will walk you through choosing a title, admin username, and password.
@@ -121,6 +123,54 @@ docker exec mywpsite-wordpress-1 wp user update <username> --user_pass=<newpassw
 ### 6. Install the Redis Object Cache plugin
 
 In WP Admin, go to **Plugins > Add New**, search for **Redis Object Cache**, install and activate it. Then go to **Settings > Redis** and click **Enable Object Cache**.
+
+---
+
+## Deploy to prod
+
+### Daps host definition
+
+Before you can deploy to production you need to define and provision a host in Daps. That process is covered in the Daps readme deployment document (`daps/docs/readme-deployment.md`).
+
+If multiple hosts are defined in the `daps.yaml` file, then the project entry may need a `provider` entry referencing the target host, e.g.:
+
+```yaml
+  mywpsite:
+    path: ../mywpsite
+    provider: ovhcloud
+```
+
+If you omit this then Daps will assume the target is the first host in the list.
+
+### DNS
+
+Before you deploy, confirm `_caddy_sites/mywpsite.prod.caddy` names your real domain, not the `mywpsite.example.com` placeholder.
+
+Caddy requests an HTTPS certificate for that domain as soon as it starts, and Let's Encrypt only issues one if the domain already points at your server. So for a new site, create the A record before deploying; when moving a live site, deploy first and flip DNS after, to keep downtime short.
+
+Read **DNS and HTTPS** in `daps/docs/readme-deployment.md` before you pick — it covers TTLs, what to do when a certificate doesn't arrive, and why the hosts-file trick for previewing the new server doesn't work.
+
+### Deploying
+
+To deploy, execute this command:
+
+```bash
+dapsman prod deploy --project mywpsite
+```
+
+A note about secrets: prod generates its own secrets on the remote server — they are never copied from your local `_secrets/` folder, so the two environments have different passwords and keys. Deploy only creates secrets that don't already exist on the remote, so re-deploying an existing site leaves them untouched.
+
+`dapsman prod deploy` will create your Wordpress containers on the remote site. If you set up and customized Wordpress locally before deploying to prod, you'll want to get your files and data there as well. Do that by running:
+
+```bash
+dapsman prod sync-from-local --project mywpsite
+```
+
+### Finishing up
+
+If you chose to update DNS after deploying, point your A record at the host's IP address now. Once it propagates, run `dapsman prod caddy restart` if HTTPS isn't working yet.
+
+Your site should then load, looking exactly as it does running locally.
 
 ---
 
@@ -287,6 +337,27 @@ WordPress handles its own database schema migrations — no manual SQL needed.
 ### Plugins and themes
 
 Plugins and themes live in `wp-content/`, which is bind-mounted. These **can** be updated via WP Admin. Recommended flow: update on prod (since prod has the live data), then sync back to local with `dapsman local sync-from-prod`.
+
+---
+
+## Security hardening
+
+The template includes two `wp-config.php` constants that significantly reduce the attack surface of a WordPress installation:
+
+### `WP_AUTO_UPDATE_CORE false`
+
+Prevents WordPress from silently upgrading its own core files inside the running container. Without this, WordPress's background auto-update can update the container's writable layer to a newer (potentially vulnerable) WordPress version while the Docker image tag stays at the old version. If that auto-updated version has a known exploit, the container is vulnerable with no visible indication. Always keep this set to `false` and manage WordPress version upgrades through the image tag flow described above.
+
+### `DISALLOW_FILE_MODS true`
+
+Prevents WordPress from modifying its own files at runtime. Specifically:
+
+- **Disables plugin and theme installation from WP Admin** — attackers who obtain WP Admin credentials (or exploit an unauthenticated API bug) cannot install plugins or upload files through the dashboard
+- **Disables the built-in theme/plugin file editor** — no in-browser code editing
+
+Trade-off: you can no longer install or update plugins from WP Admin **in prod**. Manage plugins by adding or updating them locally, then syncing the changes to prod using `dapsman prod sync-from-local --project <name>`. Depending on how heavily-trafficked your site is, you may want to take it offline in prod first to avoid losing data such as from comments.
+
+`WP_AUTO_UPDATE_CORE false` is set in both dev and prod compose files. `DISALLOW_FILE_MODS true` is set in the prod compose file only — dev leaves this off so you can freely install and test plugins locally.
 
 ---
 

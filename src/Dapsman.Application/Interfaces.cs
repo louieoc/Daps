@@ -20,6 +20,10 @@ public interface ICaddySiteSync
 public interface IDockerComposeExecutor
 {
 	void RunComposeUp(IReadOnlyList<string> composeFiles, bool buildImages, string workingDirectory);
+	void RunComposeDown(IReadOnlyList<string> composeFiles, bool removeVolumes, string workingDirectory);
+
+	/// <summary>Creates the named Docker network if it does not already exist.</summary>
+	void EnsureNetworkExists(string networkName, string workingDirectory);
 }
 
 public interface IRemoteProvisionPlanBuilder

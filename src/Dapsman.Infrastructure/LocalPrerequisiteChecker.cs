@@ -5,6 +5,15 @@ namespace Dapsman.Infrastructure;
 
 public sealed class LocalPrerequisiteChecker
 {
+	/// <summary>
+	/// init copies a template and runs its init script, so it needs bash but not Docker. Keeping the
+	/// check this narrow lets a first-time user create a project before Daps has ever been built.
+	/// </summary>
+	public void EnsureInitPrerequisites()
+	{
+		EnsureBashExists();
+	}
+
 	public void EnsureLocalBuildPrerequisites()
 	{
 		EnsureCommandExists("docker", "Docker Desktop");

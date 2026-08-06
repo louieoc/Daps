@@ -16,13 +16,14 @@ public class ToolkitResolver : IToolkitResolver
 
 	public ToolkitDefinition Resolve()
 	{
-		var containerName = ResolveContainerName();
+		var (containerName, isRunning) = ResolveContainerName();
 		var sshPath = $"/root/.ssh";
 
 		return new ToolkitDefinition
 		{
 			ContainerName = containerName,
-			SshPath = sshPath
+			SshPath = sshPath,
+			IsRunning = isRunning
 		};
 	}
 
@@ -43,21 +44,18 @@ public class ToolkitResolver : IToolkitResolver
 	}
 
 
-	private string ResolveContainerName()
+	// On a fresh workstation no toolkit container exists yet, and workflows that do not need it
+	// (init, local build) must still run. So a missing container is not an error here: it resolves
+	// to the conventional name with IsRunning false, and the caller decides whether to require it.
+	private (string ContainerName, bool IsRunning) ResolveContainerName()
 	{
-		var names = _containerManager.GetContainerNames();
-
 		var expected = $"{_config.DapsComposeProjectName}-toolkit-1";
+		var names = _containerManager.GetContainerNames();
 
 		var preferred = names.FirstOrDefault(n => n.Equals(expected, StringComparison.OrdinalIgnoreCase))
 			?? names.FirstOrDefault(n => n.EndsWith("toolkit-1", StringComparison.OrdinalIgnoreCase))
 			?? names.FirstOrDefault(n => n.Contains("toolkit", StringComparison.OrdinalIgnoreCase));
 
-		if (preferred is null)
-		{
-			throw new InvalidOperationException("No running toolkit container found. Start local Daps first (dapsman local build).");
-		}
-
-		return preferred;
+		return preferred is null ? (expected, false) : (preferred, true);
 	}
 }

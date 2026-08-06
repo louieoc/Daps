@@ -55,6 +55,47 @@ public sealed class LocalBuildServiceTests
         Assert.True(compose.Called);
     }
 
+    [Fact]
+    public void EnsureSharedNetwork_DelegatesToComposeExecutor()
+    {
+        var loader = new FakeLoader();
+        var builder = new FakeBuilder();
+        var caddySync = new FakeCaddySync();
+        var compose = new FakeComposeExecutor();
+        var runner = new FakeBashRunner();
+        var service = new LocalBuildService(loader, builder, caddySync, compose, runner);
+
+        var plan = builder.BuildLocalPlan(new LocalBuildOptions());
+
+        service.EnsureSharedNetwork(plan, ".");
+
+        Assert.Equal("daps_net", compose.EnsuredNetworkName);
+    }
+
+    [Fact]
+    public void ExecuteProjectComposeDown_RemovesVolumes()
+    {
+        var loader = new FakeLoader();
+        var builder = new FakeBuilder();
+        var caddySync = new FakeCaddySync();
+        var compose = new FakeComposeExecutor();
+        var runner = new FakeBashRunner();
+        var service = new LocalBuildService(loader, builder, caddySync, compose, runner);
+
+        var projectPlan = new LocalProjectComposePlan
+        {
+            ProjectName = "myproject",
+            ProjectPath = "..\\myproject",
+            ComposeFiles = new[] { Path.Combine("_docker", "compose_myproject.yaml") },
+            PrerequisiteScripts = Array.Empty<string>(),
+        };
+
+        service.ExecuteProjectComposeDown(projectPlan);
+
+        Assert.True(compose.DownCalled);
+        Assert.True(compose.DownRemovedVolumes);
+    }
+
     private sealed class FakeLoader : IDapsConfigLoader
     {
         public bool Called { get; private set; }
@@ -84,6 +125,7 @@ public sealed class LocalBuildServiceTests
                     ShouldCreatePlaceholder = true,
                     PlaceholderFilePath = Path.Combine("caddy_sites", "000-empty.dev.caddy"),
                 },
+                SharedNetworkName = "daps_net",
                 Warnings = Array.Empty<string>(),
                 HasProjectsConfigured = false,
             };
@@ -103,10 +145,24 @@ public sealed class LocalBuildServiceTests
     private sealed class FakeComposeExecutor : IDockerComposeExecutor
     {
         public bool Called { get; private set; }
+        public bool DownCalled { get; private set; }
+        public bool DownRemovedVolumes { get; private set; }
+        public string? EnsuredNetworkName { get; private set; }
+
+        public void EnsureNetworkExists(string networkName, string workingDirectory)
+        {
+            EnsuredNetworkName = networkName;
+        }
 
         public void RunComposeUp(IReadOnlyList<string> composeFiles, bool buildImages, string workingDirectory)
         {
             Called = true;
+        }
+
+        public void RunComposeDown(IReadOnlyList<string> composeFiles, bool removeVolumes, string workingDirectory)
+        {
+            DownCalled = true;
+            DownRemovedVolumes = removeVolumes;
         }
     }
 }

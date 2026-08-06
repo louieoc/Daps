@@ -1,4 +1,4 @@
-﻿using Dapsman.Application;
+using Dapsman.Application;
 using Dapsman.Domain;
 using Dapsman.Infrastructure;
 
@@ -15,7 +15,15 @@ internal sealed class DapsmanRunner
 	private readonly IProjectResolver _projectResolver;
 	private readonly IBashRunner _workstationBashRunner;
 
-	private IBashRunner _toolkitBashRunner = null!;
+	private IBashRunner? _lazyToolkitBashRunner;
+
+	/// <summary>
+	/// Resolved on first use, not at startup: workflows that do not need the toolkit (init, local
+	/// build) must work on a fresh workstation where the toolkit container does not exist yet.
+	/// I recognize this is a property named like a field. It might make sense to change all local 
+	/// dependencies to properties and lazy load all of them.
+	/// </summary>
+	private IBashRunner _toolkitBashRunner => _lazyToolkitBashRunner ??= new ContainerBashRunner(RequireToolkitContainerName());
 
 	private readonly CliArguments _parsed;
 	private readonly DapsConfig _config;
@@ -40,10 +48,30 @@ internal sealed class DapsmanRunner
 	public void ResolveDependencies()
 	{
 		var localPrerequisiteChecker = new LocalPrerequisiteChecker();
-		localPrerequisiteChecker.EnsureLocalBuildPrerequisites();
 
-		var toolkitDefinition = _toolkitResolver.Resolve().ContainerName;
-		_toolkitBashRunner = new ContainerBashRunner(toolkitDefinition);
+		// init only copies a template and runs a bash script; requiring Docker to be running would
+		// block a first-time user from creating a project before Daps itself is built.
+		if (_parsed.IsInit)
+		{
+			localPrerequisiteChecker.EnsureInitPrerequisites();
+			return;
+		}
+
+		localPrerequisiteChecker.EnsureLocalBuildPrerequisites();
+	}
+
+	private string RequireToolkitContainerName()
+	{
+		var toolkit = _toolkitResolver.Resolve();
+
+		// A dry run only prints a plan, so it can name a container that does not exist yet.
+		if (!toolkit.IsRunning && !_parsed.DryRun)
+		{
+			throw new InvalidOperationException(
+				$"The Daps toolkit container ('{toolkit.ContainerName}') is not running. Run 'dapsman local build' first.");
+		}
+
+		return toolkit.ContainerName;
 	}
 
 	public async Task<int> RunAsync()
@@ -141,9 +169,15 @@ internal sealed class DapsmanRunner
 			new WorkstationDockerComposeExecutor(),
 			_workstationBashRunner);
 
+		if (_parsed.Rebuild && _parsed.ProjectFilters.Count == 0)
+		{
+			throw new ArgumentException("--project <name> is required for --rebuild, so that volumes are never destroyed for every project at once.");
+		}
+
 		var options = new LocalBuildOptions
 		{
 			BuildImages = _parsed.BuildImages,
+			Rebuild = _parsed.Rebuild,
 			DryRun = _parsed.DryRun,
 			ProjectFilters = _parsed.ProjectFilters,
 		};
@@ -155,6 +189,12 @@ internal sealed class DapsmanRunner
 
 		if (!options.DryRun)
 		{
+			if (options.Rebuild && !ConfirmRebuild(plan))
+			{
+				Console.WriteLine("Rebuild cancelled.");
+				return Task.FromResult(1);
+			}
+
 			Console.WriteLine();
 			Console.WriteLine("Step: sync-caddy");
 			service.SyncCaddySites(plan);
@@ -171,12 +211,30 @@ internal sealed class DapsmanRunner
 			}
 
 			Console.WriteLine();
+			Console.WriteLine("Step: docker-network");
+			service.EnsureSharedNetwork(plan, _config.DapsRootPath);
+			Console.WriteLine($"- '{plan.SharedNetworkName}' exists");
+
+			Console.WriteLine();
 			Console.WriteLine("Step: compose-daps");
 			// todo: make this a responsibility of the plan builder
 			var dapsCommand = WorkstationDockerComposeExecutor.BuildDockerComposeCommand(plan.DapsComposeFiles, options.BuildImages);
 			Console.WriteLine($"- executing: {dapsCommand}");
 			service.ExecuteDapsCompose(plan, options);
 			Console.WriteLine("- done");
+
+			if (options.Rebuild)
+			{
+				Console.WriteLine();
+				Console.WriteLine("Step: rebuild-teardown");
+				foreach (var projectPlan in plan.ProjectComposePlans)
+				{
+					var downCommand = WorkstationDockerComposeExecutor.BuildDockerComposeDownCommand(projectPlan.ComposeFiles, removeVolumes: true);
+					Console.WriteLine($"- {projectPlan.ProjectName}: executing: {downCommand}");
+					service.ExecuteProjectComposeDown(projectPlan);
+					Console.WriteLine($"- {projectPlan.ProjectName}: done");
+				}
+			}
 
 			Console.WriteLine();
 			Console.WriteLine("Step: compose-project");
@@ -202,6 +260,22 @@ internal sealed class DapsmanRunner
 		}
 
 		return Task.FromResult(0);
+	}
+
+	private bool ConfirmRebuild(LocalBuildPlan plan)
+	{
+		if (_parsed.AssumeYes)
+		{
+			return true;
+		}
+
+		var projectNames = string.Join(", ", plan.ProjectComposePlans.Select(p => p.ProjectName));
+
+		Console.WriteLine();
+		Console.Write($"This will DELETE all containers and volumes for '{projectNames}', including the database. Type 'yes' to confirm: ");
+		var confirm = Console.ReadLine()?.Trim();
+
+		return string.Equals(confirm, "yes", StringComparison.OrdinalIgnoreCase);
 	}
 
 	private Task<int> RunRemoteProvision()
@@ -367,6 +441,14 @@ internal sealed class DapsmanRunner
 		}
 		else
 		{
+			// Unlike local build, this workflow cannot create the container it reloads.
+			var caddy = _workstationCaddyResolver.Resolve();
+			if (!caddy.IsRunning && !_parsed.DryRun)
+			{
+				throw new InvalidOperationException(
+					$"The Daps caddy container ('{caddy.ContainerName}') is not running. Run 'dapsman local build' first.");
+			}
+
 			planBuilder = new LocalCaddyRestartPlanBuilder(_config, _workstationCaddyResolver);
 			bashRunner = _workstationBashRunner;
 		}

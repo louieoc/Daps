@@ -19,6 +19,8 @@
 	public required bool IsProdTeardown { get; init; }
 	public required bool IsProdUnprovision { get; init; }
 	public required bool BuildImages { get; init; }
+	public required bool Rebuild { get; init; }
+	public required bool AssumeYes { get; init; }
 	public required bool DryRun { get; init; }
 	public required string ConfigPath { get; init; }
 	public required IReadOnlyList<string> ProjectFilters { get; init; }
@@ -55,6 +57,8 @@
 		var isProdTeardown = false;
 		var isProdUnprovision = false;
 		var buildImages = false;
+		var rebuild = false;
+		var assumeYes = false;
 		var dryRun = false;
 		var overlay = false;
 		var configPath = Path.Combine(Environment.CurrentDirectory, "daps.yaml");
@@ -167,6 +171,15 @@
 				case "--build":
 					buildImages = true;
 					break;
+				case "--rebuild":
+					// --rebuild implies --build: the containers are being recreated from
+					// scratch, so the images should be rebuilt too.
+					rebuild = true;
+					buildImages = true;
+					break;
+				case "--yes":
+					assumeYes = true;
+					break;
 				case "--dry-run":
 					dryRun = true;
 					break;
@@ -271,6 +284,8 @@
 			IsProdTeardown = isProdTeardown,
 			IsProdUnprovision = isProdUnprovision,
 			BuildImages = buildImages,
+			Rebuild = rebuild,
+			AssumeYes = assumeYes,
 			DryRun = dryRun,
 			ConfigPath = configPath,
 			ProjectFilters = projectFilters,

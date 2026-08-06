@@ -9,7 +9,9 @@ public sealed class DapsYamlConfigLoader : IDapsConfigLoader
 	{
 		if (!File.Exists(dapsYamlPath))
 		{
-			throw new FileNotFoundException("Could not find daps.yaml.", dapsYamlPath);
+			throw new FileNotFoundException(
+				$"Could not find daps.yaml at '{dapsYamlPath}'. Copy 'daps.yaml.example' to 'daps.yaml' in the Daps root to create it.",
+				dapsYamlPath);
 		}
 
 		var fullDapsYamlPath = Path.GetFullPath(dapsYamlPath);

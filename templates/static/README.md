@@ -87,6 +87,8 @@ Your site will be available at `https://mystaticsite.localhost` (via Caddy) or `
 
 ### First deploy
 
+Before deploying, confirm `_caddy_sites/mystaticsite.prod.caddy` names your real domain, not the `mystaticsite.example.com` placeholder, and read "DNS and HTTPS" in `daps/docs/readme-deployment.md` — whether you point DNS at the host before or after this step depends on whether the domain is already serving a live site.
+
 ```bash
 dapsman prod deploy --project mystaticsite --provider <name>
 ```

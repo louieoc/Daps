@@ -86,6 +86,7 @@ public sealed class LocalBuildPlanBuilder : ILocalBuildPlanBuilder
 		return new LocalBuildPlan
 		{
 			CaddySync = caddySyncPlan,
+			SharedNetworkName = _config.SharedNetworkName,
 			DapsComposeFiles = dapsComposeFiles,
 			ProjectComposePlans = projectPlans,
 			Warnings = warnings,

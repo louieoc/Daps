@@ -14,6 +14,12 @@ public class CaddyDefinition : Resolved
 	public required string ContainerName { get; init; }
 
 	/// <summary>
+	/// False when no caddy container is currently running; ContainerName is then the
+	/// conventional name the container will have once it is built.
+	/// </summary>
+	public bool IsRunning { get; init; }
+
+	/// <summary>
 	/// The full file path for the Caddyfile, in workstation context
 	/// </summary>
 	public required string WorkstationCaddyFilePath { get; init; }

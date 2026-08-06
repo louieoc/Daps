@@ -35,6 +35,15 @@ public sealed class LocalBuildService
 		_caddySiteSync.SyncLocalSites(plan.CaddySync);
 	}
 
+	/// <summary>
+	/// The Daps and project compose files declare the shared network as external, so it has to exist
+	/// before the first compose runs. On a fresh workstation nothing has created it yet.
+	/// </summary>
+	public void EnsureSharedNetwork(LocalBuildPlan plan, string workingDirectory)
+	{
+		_composeExecutor.EnsureNetworkExists(plan.SharedNetworkName, workingDirectory);
+	}
+
 	public void ExecuteDapsCompose(LocalBuildPlan plan, LocalBuildOptions options)
 	{
 		if (plan.DapsComposeFiles.Count == 0)
@@ -52,6 +61,11 @@ public sealed class LocalBuildService
 		{
 			_bashRunner.RunScript(script, projectPlan.ProjectPath);
 		}
+	}
+
+	public void ExecuteProjectComposeDown(LocalProjectComposePlan projectPlan)
+	{
+		_composeExecutor.RunComposeDown(projectPlan.ComposeFiles, removeVolumes: true, projectPlan.ProjectPath);
 	}
 
 	public void ExecuteProjectCompose(LocalProjectComposePlan projectPlan, LocalBuildOptions options)
