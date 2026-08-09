@@ -286,7 +286,7 @@ The correct upgrade path is to update the image tag and rebuild.
    dapsman prod offline --project mywpsite [--provider <name>]
    ```
 
-2. **Sync prod to local** (prod is canonical for WordPress — don't lose any recent content):
+2. **Sync prod to local** (prod is typically canonical for WordPress — don't lose any recent content):
    ```
    dapsman local sync-from-prod --project mywpsite [--provider <name>]
    ```

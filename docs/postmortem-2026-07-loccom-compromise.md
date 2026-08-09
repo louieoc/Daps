@@ -22,7 +22,7 @@ The `loccom` project (louisocallaghan.com) was compromised via an unauthenticate
 | 2026-08-01 | Unauthorized users 7, 8, 9 deleted via wp-cli; `wp-compat` deactivated; admin password reset |
 | 2026-08-01 | Site remains stopped on prod pending hardening and clean redeploy |
 | 2026-08-02 | Full postmortem written; hardening applied; recovery plan confirmed |
-
+| 2026-08-04 | Site restored via option A: previous site deleted via `prod teardown` and restored via `prod deploy` and `prod sync-from-local` Dapsman workflows |
 ---
 
 ## Findings
@@ -181,7 +181,7 @@ The same hardening has been applied to the WordPress template for all future pro
 
 2. **`DISALLOW_FILE_MODS true` should be standard in prod.** This would have blocked the attacker from installing FileOrganizer even after achieving RCE. It is now part of the WordPress template.
 
-3. **Shared network means shared risk.** `daps_net` connects all project containers. A compromise of one project is a potential pivot to others. Consider whether all projects strictly need to be on the same network, or whether Caddy could route via host ports for greater isolation.
+3. **Shared network means shared risk.** `daps_net` connects all project containers. A compromise of one project is a potential pivot to others. See [planning-security.md](planning-security.md) for the options analysis and the current decision.
 
 4. **Old accounts accumulate.** The 2011 accounts (users 5 and 6) suggest this site was hacked before, years ago, and those accounts were never noticed or cleaned up. Regular user audits are worthwhile on long-running sites.
 

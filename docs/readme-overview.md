@@ -6,7 +6,7 @@ sidebar:
 
 ## Overview
 
-***Daps is still very new and being updated frequently. Versioning isn't set up yet.***
+***Daps is still new and being updated frequently. It's still v0.x.y***
 
 You are an individual artist, hobbyist, or small business. You own one or more websites. You don't want to be locked into a specific hosting provider. You want to own your data and take it with you when you leave.
 

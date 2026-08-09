@@ -155,8 +155,43 @@ Whether an upgrade goes through the Docker image or through a bind-mounted direc
 | WordPress plugins & themes | `wp-content/` (bind-mounted) | WP Admin dashboard |
 | MySQL | Container image | Update tag in compose file, redeploy |
 | Redis | Container image | Update tag in compose file, redeploy |
+| Host OS packages | The prod VM | `unattended-upgrades` (see below) |
+| Host OS release (22.04 → 24.04) | The prod VM | Rebuild the VM from a newer image (see below) |
 
 See [templates/wordpress/README.md](https://codeberg.org/louieoc/Daps/src/branch/main/templates/wordpress) for the step-by-step WordPress core upgrade flow.
+
+### Host OS lifecycle
+
+**Routine patching** is a solved problem in principle and an open gap in practice — provisioning
+does not currently install `unattended-upgrades`, so prod VMs drift. See
+[planning-security.md](planning-security.md) under "Automatic host security updates" for the
+proposed change and implementation items.
+
+**Release upgrades are different, and Daps should not use `do-release-upgrade`.** An in-place
+release upgrade on a remote cloud VM is the riskiest operation available: interactive conffile
+prompts, a Docker apt entry pinned to the old release codename, and no console access if it strands
+partway. Daps has a better answer that is also its core value proposition — **rebuild the VM rather
+than upgrade it:**
+
+```
+dapsman prod backup --project <name> --provider <provider>
+# edit OS_IMAGE_ID in hosting/openstack_<provider>_instance_vars.sh
+dapsman prod unprovision --provider <provider>
+dapsman prod provision --provider <provider>
+dapsman prod deploy --project <name> --provider <provider>
+dapsman prod sync-from-local --project <name> --provider <provider>
+```
+
+Cattle, not pets. This treats the host as disposable, which is the property Daps already promises
+for moving between providers — so a failure in this flow is a portability bug worth finding.
+
+The real cost is a new public IP, which means a DNS record update and propagation delay. Plan it
+deliberately rather than under pressure.
+
+**Timing.** Ubuntu 22.04 LTS is in standard support until **April 2027**, so there is no urgency.
+The instance vars for new provisions (`OS_IMAGE_ID`) should move to 24.04 LTS well before then,
+once the cloud-init path has been tested against it. Existing VMs can be rebuilt onto the new image
+independently, one provider at a time.
 
 ### Is a template image tag bump a MAJOR or MINOR Daps update?
 
@@ -196,4 +231,6 @@ A `dapsman upgrade --project <name>` command could compare a project's image tag
 - [ ] Pin `phpmyadmin`, `nginx`, `gristlabs/grist` to specific versions in templates
 - [ ] Add update instructions and version-pinning guidance to `docs/readme-setup.md`
 - [ ] Set up Codeberg Releases with self-contained binaries on first release
+- [ ] Test `openstack-cloud-init.yaml` against Ubuntu 24.04, then bump `OS_IMAGE_ID` in
+      `hosting/openstack_example_instance_vars.sh` and the per-provider vars files
 - [ ] (Future) `dapsman upgrade --project <name>` workflow
