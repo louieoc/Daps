@@ -214,7 +214,9 @@ WordPress container had network-level access to j-shirt.com containers via `daps
 
 ## Automatic host security updates
 
-**Status: mostly working by default; one real gap (automatic reboot).**
+**Status: implemented in 0.2.1.** `dapsman prod provision` now applies the reboot policy via
+`scripts/configure-host.sh` on both provider paths. The analysis below is retained because it
+explains *why* the fix is one setting rather than a whole patching subsystem.
 
 ### Current state — verified on the ramnode prod VM, 2026-08-08
 
@@ -320,16 +322,22 @@ for this workload.
 
 ### Implementation items
 
-- [ ] Write `Automatic-Reboot` + `Automatic-Reboot-Time` into a Daps-owned drop-in
+- [x] Write `Automatic-Reboot` + `Automatic-Reboot-Time` into a Daps-owned drop-in
       (`/etc/apt/apt.conf.d/52daps-unattended-upgrades`, so it wins over `50unattended-upgrades`
-      without editing a distro-managed file) from `scripts/openstack-cloud-init.yaml`
-- [ ] Add the same to `scripts/provision-generic-vps.sh` so both provider paths match, and have it
-      install and enable `unattended-upgrades` if absent — a generic VPS image may not include it
+      without editing a distro-managed file) — done in `scripts/configure-host.sh` (0.2.1)
+- [x] Apply it from both provider paths, installing `unattended-upgrades` if absent — a generic VPS
+      image may not include it. `prod provision` runs the script over SSH for both provider types.
+
+      Note: this deliberately does **not** live in `scripts/openstack-cloud-init.yaml`. Cloud-init
+      runs only on an instance's first boot, and the OpenStack create script reuses an existing
+      server when one matches — so a cloud-init-only fix would never reach a host provisioned by an
+      earlier version of Daps, which was the whole requirement.
 - [ ] Document the patching and reboot behaviour, and how to disable auto-reboot, in
       `docs/readme-deployment.md` — an unexpected 04:00 reboot should not be a surprise
-- [ ] Apply the drop-in manually to the existing ramnode and ovhcloud VMs
-- [ ] Audit the ovhcloud VM the same way — it was provisioned by a different path
-      (`provision-generic-vps.sh`) and has not been checked
+- [ ] Run `dapsman prod provision` against the existing ramnode and ovhcloud hosts to apply the
+      drop-in to them
+- [ ] Audit the ovhcloud VM the same way the ramnode one was — it was provisioned by a different
+      path (`provision-generic-vps.sh`) and its patching state has not been checked
 
 **To audit patching health on a Daps host:**
 

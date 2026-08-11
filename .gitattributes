@@ -1,0 +1,45 @@
+# Line endings.
+#
+# Daps is developed on Windows but everything it produces runs on Linux — the
+# toolkit container and the remote host. A shell script with CRLF endings fails
+# the moment it runs there:
+#
+#   /tmp/provision-generic-vps.sh: line 1: set: pipefail: invalid option name
+#
+# Git Bash tolerates CRLF, so the failure only ever appears on the far side.
+#
+# This file keeps LF endings on the files in THIS repo. It cannot reach a user's
+# project repos, which are separate repositories in sibling directories — those
+# are handled at the boundary instead, by
+# ConfigUtils.CopyFileAndReplaceLineEndingsForLinux in the deploy and provision
+# executors. The two mechanisms cover different ground; neither replaces the other.
+#
+# Note for template files: `dapsman init` copies templates/ on the workstation, so
+# pinning them to LF here is what stops a new project being born with CRLF scripts.
+
+* text=auto
+
+# Executed on Linux, or read by tools that are strict about endings.
+*.sh            text eol=lf
+*.bash          text eol=lf
+*.yaml          text eol=lf
+*.yml           text eol=lf
+*.caddy         text eol=lf
+Caddyfile       text eol=lf
+*.dockerfile    text eol=lf
+Dockerfile      text eol=lf
+
+# Secret files are bind-mounted into containers and read as credentials; a
+# trailing CR would silently become part of the value.
+*.txt           text eol=lf
+
+# Binary — never touch.
+*.tar           binary
+*.tar.gz        binary
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.ico           binary
+*.woff          binary
+*.woff2         binary

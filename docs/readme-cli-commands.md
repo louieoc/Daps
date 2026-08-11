@@ -37,8 +37,10 @@ Reloads Caddy's configuration on the local Docker instance (`docker exec daps-ca
 dapsman prod provision [--dry-run] [--provider <name>] [--upgrade] [--set-vars-script <path>] [--create-script <path>] [--config <path>]
 ```
 Sets up Docker on a remote host from the toolkit container. Behavior depends on the provider's type in `daps.yaml`:
-- **`openstack` providers** — creates a new instance. Creates an SSH keypair if one doesn't exist, uploads the public key to OpenStack, and runs the instance creation script (`scripts/openstack-create-instance.sh`). Run this once when setting up a new hosting environment.
+- **`openstack` providers** — creates a new instance. Creates an SSH keypair if one doesn't exist, uploads the public key to OpenStack, and runs the instance creation script (`scripts/openstack-create-instance.sh`). Re-running against an existing instance reuses it rather than creating a second one.
 - **`generic-vps` providers** — configures an existing host (e.g. a VPS from a provider with no creation API, like a bare-metal OVHCloud instance) rather than creating one. Creates an SSH keypair if one doesn't exist, copies it to the host with `ssh-copy-id` (prompts for the host's password interactively — the password is never stored by Daps), then installs Docker and sets up swap via `scripts/provision-generic-vps.sh`. Safe to re-run; skips key setup once a working key is in place. `--upgrade` additionally runs `apt-get upgrade -y` on the host.
+
+Both provider types then apply Daps host policy over SSH via `scripts/configure-host.sh`. That script is idempotent, so re-running `prod provision` against a host provisioned by an older version of Daps brings it up to current policy. It currently ensures `unattended-upgrades` is installed and enabled, and writes `/etc/apt/apt.conf.d/52daps-unattended-upgrades` to enable an automatic reboot at 04:00 when an unattended security upgrade requires one. Without that reboot, kernel updates install but never take effect. Containers use `restart: unless-stopped` and return afterwards; anything stopped by `prod offline` stays stopped.
 
 `--set-vars-script` / `--create-script` only apply to `openstack` providers.
 

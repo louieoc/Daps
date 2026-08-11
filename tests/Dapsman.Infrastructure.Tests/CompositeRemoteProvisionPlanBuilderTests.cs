@@ -20,6 +20,7 @@ public sealed class CompositeRemoteProvisionPlanBuilderTests
 		File.WriteAllText(openRc, "#!/usr/bin/env bash\n");
 		File.WriteAllText(setVars, "#!/usr/bin/env bash\n");
 		File.WriteAllText(create, "#!/usr/bin/env bash\n");
+		File.WriteAllText(Path.Combine(scripts, "configure-host.sh"), "#!/usr/bin/env bash\n");
 
 		var config = new DapsConfig
 		{
@@ -60,6 +61,7 @@ public sealed class CompositeRemoteProvisionPlanBuilderTests
 		var scripts = Path.Combine(root, "scripts");
 		Directory.CreateDirectory(scripts);
 		File.WriteAllText(Path.Combine(scripts, "provision-generic-vps.sh"), "#!/usr/bin/env bash\n");
+		File.WriteAllText(Path.Combine(scripts, "configure-host.sh"), "#!/usr/bin/env bash\n");
 
 		var config = new DapsConfig
 		{

@@ -9,7 +9,9 @@ namespace Dapsman.Infrastructure;
 public sealed class GenericVpsRemoteProvisionPlanBuilder : IRemoteProvisionPlanBuilder
 {
 	public const string ProvisionGenericVpsScript = "provision-generic-vps.sh";
+	public const string ConfigureHostScript = "configure-host.sh";
 	private const string RemoteScriptPath = "/tmp/provision-generic-vps.sh";
+	private const string RemoteConfigureScriptPath = "/tmp/configure-host.sh";
 
 	private readonly IToolkitResolver _toolkitResolver;
 	private readonly IHostingProviderResolver _providerResolver;
@@ -33,13 +35,22 @@ public sealed class GenericVpsRemoteProvisionPlanBuilder : IRemoteProvisionPlanB
 		var provisionScriptHostPath = ConfigUtils.RequireFile(
 			Path.Combine(config.DapsRootPath, "scripts", ProvisionGenericVpsScript),
 			"Generic VPS provision script not found.");
-		var provisionScriptInContainer = _toolkitResolver.ToToolkitPath(provisionScriptHostPath);
+		var configureScriptHostPath = ConfigUtils.RequireFile(
+			Path.Combine(config.DapsRootPath, "scripts", ConfigureHostScript),
+			"Host configuration script not found.");
+
+		// Both scripts are scp'd from the staging directory rather than straight from
+		// the repo: a Windows checkout can leave CRLF endings in the working tree, and
+		// a CRLF script fails as soon as it runs on the remote Linux host.
+		var stagedProvisionScript = $"{ToolkitRemoteProvisionExecutor.StagingToolkitPath}/{ProvisionGenericVpsScript}";
+		var stagedConfigureScript = $"{ToolkitRemoteProvisionExecutor.StagingToolkitPath}/{ConfigureHostScript}";
 
 		var toolkitCommand = BuildToolkitCommand(
 			hostingProvider.KeyName,
 			hostingProvider.RemoteUser,
 			hostingProvider.RemoteHost,
-			provisionScriptInContainer,
+			stagedProvisionScript,
+			stagedConfigureScript,
 			options.Upgrade);
 
 		return new RemoteProvisionPlan
@@ -53,6 +64,8 @@ public sealed class GenericVpsRemoteProvisionPlanBuilder : IRemoteProvisionPlanB
 				new("user", hostingProvider.RemoteUser),
 			},
 			ToolkitCommand = toolkitCommand,
+			DapsRootPath = config.DapsRootPath,
+			ScriptFilesToStage = [provisionScriptHostPath, configureScriptHostPath],
 		};
 	}
 
@@ -61,6 +74,7 @@ public sealed class GenericVpsRemoteProvisionPlanBuilder : IRemoteProvisionPlanB
 		string remoteUser,
 		string remoteHost,
 		string provisionScriptInContainer,
+		string configureScriptInContainer,
 		bool upgrade)
 	{
 		var sshTarget = $"{remoteUser}@{remoteHost}";
@@ -79,6 +93,8 @@ public sealed class GenericVpsRemoteProvisionPlanBuilder : IRemoteProvisionPlanB
 				"fi",
 			$"scp {sshOpts} -i {keyPath} \"{provisionScriptInContainer}\" {sshTarget}:{RemoteScriptPath}",
 			$"ssh {sshOpts} -i {keyPath} {sshTarget} \"bash {RemoteScriptPath} {remoteUser}{upgradeArg}\"",
+			$"scp {sshOpts} -i {keyPath} \"{configureScriptInContainer}\" {sshTarget}:{RemoteConfigureScriptPath}",
+			$"ssh {sshOpts} -i {keyPath} {sshTarget} \"bash {RemoteConfigureScriptPath} {ProviderDefinition.AutomaticRebootTime}\"",
 		});
 	}
 }

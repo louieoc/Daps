@@ -111,6 +111,27 @@ public static class ConfigUtils
 		return null;
 	}
 
+	/// <summary>
+	/// Copies a text file, rewriting CRLF line endings as LF.
+	///
+	/// Use this — rather than File.Copy — wherever a text file is being staged for a
+	/// Linux destination: the toolkit container or a remote host. On Windows,
+	/// core.autocrlf can leave CRLF endings in the working tree, and a CRLF shell
+	/// script fails the moment it runs on Linux:
+	///
+	///     /tmp/provision-generic-vps.sh: line 1: set: pipefail: invalid option name
+	///
+	/// Git Bash tolerates CRLF, so the failure only ever appears on the far side.
+	///
+	/// Text only. Never call this on a binary file — Docker image tarballs in
+	/// particular — since the rewrite would corrupt it.
+	/// </summary>
+	public static void CopyFileAndReplaceLineEndingsForLinux(string sourcePath, string destinationPath)
+	{
+		Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+		File.WriteAllText(destinationPath, File.ReadAllText(sourcePath).Replace("\r\n", "\n"));
+	}
+
 	public static string ResolvePath(string root, string path)
 	{
 		if (string.IsNullOrWhiteSpace(path))

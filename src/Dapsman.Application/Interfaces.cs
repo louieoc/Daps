@@ -42,6 +42,11 @@ public interface IRemoteDeployExecutor
 	void Execute(RemoteDeployPlan plan);
 }
 
+public interface IRemoteProvisionExecutor
+{
+	void Execute(RemoteProvisionPlan plan);
+}
+
 public interface IBashRunner
 {
 	void RunScript(string scriptPath, string workingDirectory, string? arguments = null, bool interactive = false, IReadOnlyDictionary<string, string>? env = null);
