@@ -6,16 +6,16 @@ public sealed class RemoteProvisionService
 {
 	private readonly IDapsConfigLoader _configLoader;
 	private readonly IRemoteProvisionPlanBuilder _remotePlanBuilder;
-	private readonly IBashRunner _bashRunner;
+	private readonly IRemoteProvisionExecutor _executor;
 
 	public RemoteProvisionService(
 		IDapsConfigLoader configLoader,
 		IRemoteProvisionPlanBuilder remotePlanBuilder,
-		IBashRunner bashRunner)
+		IRemoteProvisionExecutor executor)
 	{
 		_configLoader = configLoader;
 		_remotePlanBuilder = remotePlanBuilder;
-		_bashRunner = bashRunner;
+		_executor = executor;
 	}
 
 	public RemoteProvisionPlan CreatePlan(string dapsYamlPath, RemoteProvisionOptions options)
@@ -26,6 +26,6 @@ public sealed class RemoteProvisionService
 
 	public void Execute(RemoteProvisionPlan plan)
 	{
-		_bashRunner.RunShell(plan.ToolkitCommand, Environment.CurrentDirectory, interactive: true);
+		_executor.Execute(plan);
 	}
 }

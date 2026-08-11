@@ -287,7 +287,7 @@ internal sealed class DapsmanRunner
 		var service = new RemoteProvisionService(
 			_dapsConfigLoader,
 			planBuilder,
-			_toolkitBashRunner);
+			new ToolkitRemoteProvisionExecutor(_toolkitBashRunner));
 
 		var options = new RemoteProvisionOptions
 		{

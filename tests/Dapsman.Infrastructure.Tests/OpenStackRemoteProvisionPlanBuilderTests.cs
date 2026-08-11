@@ -17,9 +17,11 @@ public sealed class OpenStackRemoteProvisionPlanBuilderTests
 		var openRc = Path.Combine(hosting, "dream_openrc.sh");
 		var setVars = Path.Combine(hosting, "openstack_dream_instance_vars.sh");
 		var create = Path.Combine(scripts, "openstack-create-instance.sh");
+		var configure = Path.Combine(scripts, "configure-host.sh");
 		File.WriteAllText(openRc, "#!/usr/bin/env bash\n");
 		File.WriteAllText(setVars, "#!/usr/bin/env bash\n");
 		File.WriteAllText(create, "#!/usr/bin/env bash\n");
+		File.WriteAllText(configure, "#!/usr/bin/env bash\n");
 
 		var config = new DapsConfig
 		{
@@ -58,6 +60,17 @@ public sealed class OpenStackRemoteProvisionPlanBuilderTests
 		Assert.Equal(create, plan.ProviderDetails.Single(d => d.Key == "create script").Value);
 		Assert.Contains("openstack keypair show", plan.ToolkitCommand, StringComparison.Ordinal);
 		Assert.Contains("ssh-keygen -t rsa -b 4096", plan.ToolkitCommand, StringComparison.Ordinal);
+		Assert.Equal(configure, plan.ProviderDetails.Single(d => d.Key == "configure script").Value);
+
+		// The host configuration step must run after the create script, and must
+		// re-source the vars file first: on a first provision OS_SERVER_IP is only
+		// written there by the create script.
+		var createIndex = plan.ToolkitCommand.IndexOf("openstack-create-instance.sh", StringComparison.Ordinal);
+		var reSourceIndex = plan.ToolkitCommand.LastIndexOf("openstack_dream_instance_vars.sh", StringComparison.Ordinal);
+		var configureIndex = plan.ToolkitCommand.IndexOf("bash /tmp/configure-host.sh 04:00", StringComparison.Ordinal);
+		Assert.True(createIndex >= 0 && reSourceIndex > createIndex && configureIndex > reSourceIndex);
+		Assert.Contains("${OS_SERVER_USER:-ubuntu}@${OS_SERVER_IP}", plan.ToolkitCommand, StringComparison.Ordinal);
+		Assert.Contains("Waiting for SSH", plan.ToolkitCommand, StringComparison.Ordinal);
 	}
 
 	private static string CreateTempDirectory()

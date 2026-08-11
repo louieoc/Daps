@@ -26,6 +26,7 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
 		var staging = CreateDeployStaging(plan);
 		try
 		{
+			// Generated here with \n, but normalized anyway: this file runs in the toolkit.
 			var script = BuildRemoteDeployScript(plan, staging.ToolkitPath).Replace("\r\n", "\n");
 			File.WriteAllText(staging.ScriptHostPath, script);
 			_bashRunner.RunScript(staging.ScriptToolkitPath, plan.DapsRootPath);
@@ -77,7 +78,11 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
 				Directory.CreateDirectory(scriptsPath);
 				foreach (var scriptFile in projectPlan.RemoteScriptFilesToUpload)
 				{
-					CopyFile(scriptFile, Path.Combine(scriptsPath, Path.GetFileName(scriptFile)));
+					// These are uploaded to the remote host and run by bash there, so they
+					// must be LF. A project checked out on Windows can have CRLF endings.
+					ConfigUtils.CopyFileAndReplaceLineEndingsForLinux(
+						scriptFile,
+						Path.Combine(scriptsPath, Path.GetFileName(scriptFile)));
 				}
 			}
 
@@ -108,6 +113,12 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
 		};
 	}
 
+	/// <summary>
+	/// Verbatim copy. Used for files that are carried to the remote but not executed
+	/// there — compose and caddy files (both tolerate CRLF), image tarballs and manifest
+	/// uploads (binary, or of unknown type). For text destined to be run on Linux use
+	/// ConfigUtils.CopyFileAndReplaceLineEndingsForLinux instead.
+	/// </summary>
 	private static void CopyFile(string sourcePath, string destinationPath)
 	{
 		Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);

@@ -9,8 +9,8 @@ public sealed class RemoteProvisionServiceTests
 	{
 		var loader = new FakeLoader();
 		var planner = new FakePlanner();
-		var runner = new FakeBashRunner();
-		var service = new RemoteProvisionService(loader, planner, runner);
+		var executor = new FakeProvisionExecutor();
+		var service = new RemoteProvisionService(loader, planner, executor);
 
 		var plan = service.CreatePlan("daps.yaml", new RemoteProvisionOptions { DryRun = true });
 
@@ -20,17 +20,24 @@ public sealed class RemoteProvisionServiceTests
 	}
 
 	[Fact]
-	public void Execute_DelegatesToToolkitRunner()
+	public void Execute_DelegatesToExecutor()
 	{
 		var loader = new FakeLoader();
 		var planner = new FakePlanner();
-		var runner = new FakeBashRunner();
-		var service = new RemoteProvisionService(loader, planner, runner);
+		var executor = new FakeProvisionExecutor();
+		var service = new RemoteProvisionService(loader, planner, executor);
 
 		var plan = planner.BuildRemotePlan(new DapsConfig { DapsRootPath = ".", FullYamlPath = Path.Combine(".", "daps.yaml"), Projects = Array.Empty<ProjectDefinition>() }, new RemoteProvisionOptions());
 		service.Execute(plan);
 
-		Assert.True(runner.ShellCalls.Any());
+		Assert.Same(plan, executor.ExecutedPlan);
+	}
+
+	private sealed class FakeProvisionExecutor : IRemoteProvisionExecutor
+	{
+		public RemoteProvisionPlan? ExecutedPlan { get; private set; }
+
+		public void Execute(RemoteProvisionPlan plan) => ExecutedPlan = plan;
 	}
 
 	private sealed class FakeLoader : IDapsConfigLoader
@@ -72,6 +79,8 @@ public sealed class RemoteProvisionServiceTests
 					new("create script", "create"),
 				],
 				ToolkitCommand = "echo ok",
+				DapsRootPath = ".",
+				ScriptFilesToStage = [],
 			};
 		}
 	}

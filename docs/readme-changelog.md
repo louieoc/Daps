@@ -8,6 +8,26 @@ Changes are listed newest first. For history prior to `0.1.0`, see `git log`.
 
 ---
 
+## 0.2.1 — 2026-08-09
+
+### Added
+
+- `dapsman prod provision` now applies Daps host policy over SSH via the new `scripts/configure-host.sh`, for both `openstack` and `generic-vps` providers. The script enables an automatic reboot at 04:00 when an unattended security upgrade requires one, by writing a Daps-owned drop-in at `/etc/apt/apt.conf.d/52daps-unattended-upgrades`. Ubuntu already installs security updates unattended, but ships with `Unattended-Upgrade::Automatic-Reboot` unset — so new kernels were installed and never booted into, leaving hosts running a vulnerable kernel indefinitely. The script also installs `unattended-upgrades` if the host image lacks it, and asserts the `apt-daily` timers are enabled.
+
+  The script is idempotent, so running the upgraded `prod provision` against a host provisioned by an earlier version of Daps brings that host up to current policy. For `openstack` providers this adds a post-create SSH step, which waits for the instance to accept connections; the step is also why re-provisioning an existing instance now reaches the host rather than stopping after the create script.
+
+  Containers use `restart: unless-stopped` and return after the reboot. Anything deliberately stopped by `dapsman prod offline` correctly stays stopped.
+
+### Fixed
+
+- Shell scripts uploaded to a remote host are now staged with LF line endings, by both `dapsman prod provision` (`provision-generic-vps.sh`, `configure-host.sh`) and `dapsman prod deploy` (a project's `_scripts/*.sh`). On a Windows checkout, `core.autocrlf` can leave CRLF endings in the working tree, and a CRLF shell script fails as soon as it runs on Linux with `set: pipefail: invalid option name`. Git Bash tolerates CRLF, so this only ever surfaced on the remote. Normalization is done by the new, explicitly named `ConfigUtils.CopyFileAndReplaceLineEndingsForLinux`; other staged files keep a verbatim copy, since image tarballs and manifest uploads may be binary and compose/caddy files tolerate CRLF.
+
+### Changed
+
+- `dapsman prod provision` now runs through a `ToolkitRemoteProvisionExecutor` that stages its scripts under `.dapsman/provision` and runs a generated `provision.sh`, rather than passing one long `&&` chain to `bash -lc`. This matches the executor + staging pattern used by `prod deploy`, and is what makes the line-ending normalization above possible. The staging directory is removed after the run.
+
+---
+
 ## 0.2.0 - 2026-08-05
 
 ### Added
