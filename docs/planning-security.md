@@ -214,9 +214,18 @@ WordPress container had network-level access to j-shirt.com containers via `daps
 
 ## Automatic host security updates
 
-**Status: implemented in 0.2.1.** `dapsman prod provision` now applies the reboot policy via
-`scripts/configure-host.sh` on both provider paths. The analysis below is retained because it
-explains *why* the fix is one setting rather than a whole patching subsystem.
+**Status: implemented in 0.2.1, shipped to the ramnode and ovhcloud hosts on 2026-08-11.**
+
+The user-facing documentation has graduated out of this planning doc:
+
+- [readme-security.md](readme-security.md) — "Host Security Updates": what it does, the 04:00
+  reboot, how to change it, how to verify it
+- [workflow-remote-provision.md](workflow-remote-provision.md) — the provision steps and
+  `configure-host.sh`
+
+What remains here is the investigation that led to the fix. It is retained because the conclusion
+is counter-intuitive — the answer was one setting, not a patching subsystem — and because the
+evidence explains why the obvious health check is misleading.
 
 ### Current state — verified on the ramnode prod VM, 2026-08-08
 
@@ -282,30 +291,24 @@ strategy that depends on the user remembering to do it will not happen. For this
 patching *including the reboot* is not a convenience — it is the only patching that will actually
 complete.
 
-### Proposed change
+### What was deliberately left alone
 
-Set the reboot policy during provisioning, in both the OpenStack cloud-init and the generic-VPS
-script so the two provider paths stay equivalent:
+The mechanics of the fix are documented in
+[workflow-remote-provision.md](workflow-remote-provision.md). What belongs here is the shape of the
+decision: three things that looked like they needed fixing and did not.
 
-```
-Unattended-Upgrade::Automatic-Reboot "true";
-Unattended-Upgrade::Automatic-Reboot-Time "04:00";
-```
+- **Installing the package** — already present and enabled by default on Ubuntu Server and cloud
+  images.
+- **Narrowing the allowed origins** — already effectively security-only, as verified above.
+- **Auto-upgrading Docker.** `docker-ce` comes from Docker's own repository origin and so falls
+  outside the allowed origins already. Left that way on purpose: an unattended daemon restart
+  bounces every container on the host, which is worse than a slightly stale Docker.
 
-Containers use `restart: unless-stopped`, so they return after a reboot — and anything deliberately
-stopped by `prod offline` correctly stays stopped.
-
-Explicitly **not** proposed:
-
-- **Installing the package** — already present and enabled by default.
-- **Narrowing the origins** — already effectively security-only.
-- **Auto-upgrading Docker.** `docker-ce` comes from Docker's own repository origin and is therefore
-  outside the allowed origins already. Leave it that way: an unattended daemon restart bounces every
-  container on the host, which is worse than a slightly stale Docker.
-
-Because the defaults are already mostly right, the honest framing is that Daps should *assert* the
-configuration it depends on rather than assume the distro default will hold across providers and
-images — a generic-VPS provider could well ship an image with it disabled.
+Because the distro defaults are already mostly right, the framing that survived is that Daps should
+*assert* the configuration it depends on rather than assume a default will hold across every
+provider image — a generic-VPS provider could well ship one with it disabled. That is why
+`configure-host.sh` writes the periodic-schedule file and checks the package is installed, even
+though both are usually already correct.
 
 ### Scope limits
 
@@ -332,20 +335,15 @@ for this workload.
       runs only on an instance's first boot, and the OpenStack create script reuses an existing
       server when one matches — so a cloud-init-only fix would never reach a host provisioned by an
       earlier version of Daps, which was the whole requirement.
-- [ ] Document the patching and reboot behaviour, and how to disable auto-reboot, in
-      `docs/readme-deployment.md` — an unexpected 04:00 reboot should not be a surprise
-- [ ] Run `dapsman prod provision` against the existing ramnode and ovhcloud hosts to apply the
-      drop-in to them
-- [ ] Audit the ovhcloud VM the same way the ramnode one was — it was provisioned by a different
-      path (`provision-generic-vps.sh`) and its patching state has not been checked
-
-**To audit patching health on a Daps host:**
-
-```bash
-systemctl list-timers 'apt-daily*' --all
-journalctl -u apt-daily.service -u apt-daily-upgrade.service --since -7d --no-pager
-grep -v '^\s*//' /etc/apt/apt.conf.d/50unattended-upgrades | grep -v '^\s*$'
-cat /var/run/reboot-required 2>/dev/null && echo "REBOOT PENDING"
-```
-
-Not `systemctl status unattended-upgrades` — see the warning above.
+- [x] Document the patching and reboot behaviour, and how to change or disable the auto-reboot —
+      graduated to [readme-security.md](readme-security.md) under "Host Security Updates", and
+      [workflow-remote-provision.md](workflow-remote-provision.md) for the provisioning steps
+- [x] Run `dapsman prod provision` against the existing ramnode and ovhcloud hosts to apply the
+      drop-in to them — done 2026-08-11, both reported success
+- [ ] Verify on both hosts that the drop-in is actually in effect, rather than trusting that the
+      provision run reported success. The audit commands are in
+      [readme-security.md](readme-security.md); the one to confirm is that `apt-config dump` shows
+      `Unattended-Upgrade::Automatic-Reboot "true"`.
+- [ ] Audit the ovhcloud host's patching history the way the ramnode one was audited — it was
+      provisioned by a different path (`provision-generic-vps.sh`) and its `apt-daily` timer history
+      has never been looked at

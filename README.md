@@ -18,7 +18,7 @@ Documentation is in the [`docs/`](docs/) folder and published at [dapster.org](h
 - [Deployment](docs/readme-deployment.md) — provisioning a host (OpenStack and generic VPS), deploying projects, toolkit access
 - [Conventions](docs/readme-conventions.md) — terminology, file naming, folder layout, Docker and Caddy patterns
 - [CLI Commands](docs/readme-cli-commands.md) — all `dapsman` commands with flags and behavior
-- [Security](docs/readme-security.md) — design trade-offs and their implications
+- [Security](docs/readme-security.md) — design trade-offs and their implications, and how hosts stay patched
 - [Principles](docs/readme-principles.md) — governing philosophy, about the authors
 
 ### Other docs: Planning, Workflows, etc.
