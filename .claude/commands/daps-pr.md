@@ -46,6 +46,8 @@ Read `docs/readme-cli-commands.md`.
 
 If any CLI command was added, removed, renamed, or had its flags changed in this PR, confirm the README reflects the current state. Flag any discrepancy.
 
+Changed `docs/*` files should be reviewed for accuracy when they describe a change that would be reflected in the other changed files or in the program execution.
+
 ---
 
 ## 4. daps-dryrun coverage check

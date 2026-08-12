@@ -31,6 +31,10 @@ services:
     build:
       context: ..
       dockerfile: _docker/wordpress.dockerfile
+      # Re-resolve the FROM tag on every build. The dockerfile pins a floating
+      # tag, so without this a rebuild reuses the cached base layer and silently
+      # stays on the WordPress version last pulled.
+      pull: true
     ports:
       - "127.0.0.1:8080:80"
     volumes:

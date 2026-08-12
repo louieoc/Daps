@@ -195,6 +195,14 @@ When adding or changing a workflow, update in this order:
 
 `dapsman init` copies a template directory and runs `_scripts/init-template.toolkit.sh <project-name>` inside the copy. Dapsman is template-agnostic — all placeholder replacement and file renaming logic lives in `init-template.toolkit.sh`, not in Dapsman. This keeps template-specific logic in the template.
 
+**`init-template.toolkit.sh` runs on the workstation, not in the toolkit container** — despite the `.toolkit.sh` suffix, `InitService` is wired with `_workstationBashRunner`. It must therefore be portable across Git Bash (GNU userland), macOS (BSD userland), and Linux. Avoid GNU-only flags:
+
+- **`sed -i` is not portable.** GNU sed takes no argument; BSD sed requires a backup suffix, so `sed -i "s/a/b/g" file` on macOS treats the expression as the suffix and the *filename* as the script (symptom: `command a expects \ followed by text`). Use the `replace_in_file` helper present in each template's init script.
+- **The init script rewrites itself** — its own source contains the placeholder, so the replacement loop edits the file bash is still reading. `replace_in_file` therefore writes a sibling temp file and `mv`s it into place: a rename leaves the running shell's file descriptor on the original inode. Overwriting the file in place (`cat tmp > file`, or `sed -i ''` on BSD, which edits in place without renaming) shifts every later byte offset and bash resumes reading mid-token — symptoms like `ories: command not found` or a syntax error on a line that is plainly valid. This is why GNU `sed -i` appeared to work: it renames.
+- Also avoid `readlink -f`, `find -printf`, `grep -P`, `sort -V`, `date -d`, and GNU long options on `cp`/`mv`.
+
+Scripts run only on remote or in the toolkit (`*.prod.sh`, other `*.toolkit.sh`) target Ubuntu and may use GNU extensions freely.
+
 ## WordPress Template
 
 Located at `templates/wordpress/`. Placeholder project name is `mywpsite`. The init script replaces all occurrences of `mywpsite` with the new project name.

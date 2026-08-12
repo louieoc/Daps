@@ -8,7 +8,20 @@ Changes are listed newest first. For history prior to `0.1.0`, see `git log`.
 
 ---
 
-## 0.2.1 — 2026-08-09
+## 0.2.2 - 2026-08-12
+
+### Fixed
+
+- `dapsman init` now works on macOS. Every template's `init-template.toolkit.sh` used `sed -i "s/…/…/g" "$file"` for placeholder replacement, which is GNU-only: BSD sed (macOS) requires `-i` to take a backup suffix, so it consumed the expression as the suffix and then parsed the *filename* as the sed script, failing with `command a expects \ followed by text`. Replacement now goes through a `replace_in_file` helper that works identically under GNU and BSD sed. Affects the `wordpress`, `grist`, `astro`, and `static` templates.
+
+  The helper writes a sibling temp file (seeded with `cp -p`, so permissions carry over) and `mv`s it into place. The rename matters: the init script's own source contains the placeholder, so the replacement loop rewrites the file bash is still reading. Renaming leaves the running shell's file descriptor on the original inode; overwriting in place shifts every later byte offset and bash resumes mid-token, producing errors like `ories: command not found`. GNU `sed -i` had been getting this right by accident — it renames too.
+
+  Despite the `.toolkit.sh` suffix, `init-template.toolkit.sh` runs on the workstation (`InitService` is wired with `_workstationBashRunner`), so it must stay portable across Git Bash, macOS, and Linux — noted in `CLAUDE.md`.
+- `dapsman local build --build --project mywpsite` and `dapsman prod deploy --project mywpsite` workflows for Wordpress are updated to pull new images when the floating `7.0-php8.3-apache` image receives a new patch update, e.g. 7.0.2 to 7.0.3.
+
+---
+
+## 0.2.1 - 2026-08-09
 
 ### Added
 
@@ -54,7 +67,7 @@ Changes are listed newest first. For history prior to `0.1.0`, see `git log`.
 
 ---
 
-## 0.1.0 — 2026-07-24
+## 0.1.0 - 2026-07-24
 
 ### Added
 
