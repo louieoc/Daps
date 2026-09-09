@@ -24,9 +24,9 @@ public sealed class RemoteDeployService
 		return _remoteDeployPlanBuilder.BuildRemoteDeployPlan(config, options);
 	}
 
-	public void ExecuteBuildImageScripts(IReadOnlyList<BuildImageCommandPlan> commands, string dapsRootPath)
+	public void ExecuteBuildImageScripts(IReadOnlyList<BuildImageCommandPlan> commands, string dapsRootPath, string? targetPlatform)
 	{
-		_remoteDeployExecutor.ExecuteBuildImages(commands, dapsRootPath);
+		_remoteDeployExecutor.ExecuteBuildImages(commands, dapsRootPath, targetPlatform);
 	}
 
 	public void Execute(RemoteDeployPlan plan)

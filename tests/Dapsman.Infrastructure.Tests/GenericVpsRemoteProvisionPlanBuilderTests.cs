@@ -8,7 +8,7 @@ public sealed class GenericVpsRemoteProvisionPlanBuilderTests
 	[Fact]
 	public void BuildRemotePlan_UsesHostnameAndUser_AndBuildsSshChain()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var scripts = Path.Combine(root, "scripts");
 		Directory.CreateDirectory(scripts);
 		File.WriteAllText(Path.Combine(scripts, "provision-generic-vps.sh"), "#!/usr/bin/env bash\n");
@@ -54,7 +54,7 @@ public sealed class GenericVpsRemoteProvisionPlanBuilderTests
 	[Fact]
 	public void BuildRemotePlan_UploadsAndRunsHostConfigurationScript()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var scripts = Path.Combine(root, "scripts");
 		Directory.CreateDirectory(scripts);
 		File.WriteAllText(Path.Combine(scripts, "provision-generic-vps.sh"), "#!/usr/bin/env bash\n");
@@ -92,7 +92,7 @@ public sealed class GenericVpsRemoteProvisionPlanBuilderTests
 	[Fact]
 	public void BuildRemotePlan_WithUpgrade_PassesUpgradeFlagToRemoteScript()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var scripts = Path.Combine(root, "scripts");
 		Directory.CreateDirectory(scripts);
 		File.WriteAllText(Path.Combine(scripts, "provision-generic-vps.sh"), "#!/usr/bin/env bash\n");
@@ -124,12 +124,5 @@ public sealed class GenericVpsRemoteProvisionPlanBuilderTests
 		var plan = planner.BuildRemotePlan(config, new RemoteProvisionOptions { ProviderName = "ovhcloud1", Upgrade = true });
 
 		Assert.Contains("--upgrade", plan.ToolkitCommand, StringComparison.Ordinal);
-	}
-
-	private static string CreateTempDirectory()
-	{
-		var path = Path.Combine(Path.GetTempPath(), "dapsman-tests", Guid.NewGuid().ToString("N"));
-		Directory.CreateDirectory(path);
-		return path;
 	}
 }

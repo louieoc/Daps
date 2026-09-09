@@ -5,23 +5,24 @@ namespace Dapsman.Infrastructure;
 
 public sealed class InitPlanBuilder : IInitPlanBuilder
 {
-	public const string InitTemplateToolkitScript = "init-template.toolkit.sh";
-
 	private readonly DapsConfig _config;
 	private readonly IProjectResolver _projectResolver;
 	private readonly IDockerResolver _dockerResolver;
 	private readonly IHostPortManager _hostPortManager;
+	private readonly ITemplateConfigLoader _templateConfigLoader;
 
 	public InitPlanBuilder(
 		DapsConfig config,
 		IProjectResolver projectResolver,
 		IDockerResolver dockerResolver,
-		IHostPortManager hostPortManager)
+		IHostPortManager hostPortManager,
+		ITemplateConfigLoader templateConfigLoader)
 	{
 		_config = config;
 		_projectResolver = projectResolver;
 		_dockerResolver = dockerResolver;
 		_hostPortManager = hostPortManager;
+		_templateConfigLoader = templateConfigLoader;
 	}
 
 	public InitPlan BuildInitPlan(InitOptions options)
@@ -32,9 +33,9 @@ public sealed class InitPlanBuilder : IInitPlanBuilder
 		if (_config.Projects.Any(p => string.Equals(p.Name, options.ProjectName, StringComparison.OrdinalIgnoreCase)))
 			throw new InvalidOperationException($"Project '{options.ProjectName}' is already registered in daps.yaml. Choose a different name or remove the existing entry first.");
 
-		var templatePath = Path.GetFullPath(Path.Combine(dapsRoot, "templates", options.TemplateName));
-		if (!Directory.Exists(templatePath))
-			throw new InvalidOperationException($"Template not found: {templatePath}");
+		var templateRoot = Path.GetFullPath(Path.Combine(dapsRoot, "templates", options.TemplateName));
+		if (!Directory.Exists(templateRoot))
+			throw new InvalidOperationException($"Template not found: {templateRoot}");
 
 		var destinationPath = options.DestinationPath is not null
 			? Path.GetFullPath(options.DestinationPath)
@@ -46,8 +47,7 @@ public sealed class InitPlanBuilder : IInitPlanBuilder
 		if (!options.Overlay && Directory.Exists(destinationPath))
 			throw new InvalidOperationException($"Destination already exists: {destinationPath}. Use --overlay to add Daps files to an existing directory.");
 
-		var initScriptPath = Path.Combine(templatePath, "_scripts", InitTemplateToolkitScript);
-		var hasInitScript = File.Exists(initScriptPath);
+		TemplateConfig? templateConfig = _templateConfigLoader.Load(templateRoot);
 
 		var relativePath = Path.GetRelativePath(dapsRoot, destinationPath)
 			.Replace(Path.DirectorySeparatorChar, '/');
@@ -56,20 +56,21 @@ public sealed class InitPlanBuilder : IInitPlanBuilder
 		if (!relativePath.StartsWith("..") && !relativePath.StartsWith("./"))
 			relativePath = "./" + relativePath;
 
-		var portAssignments = ComputePortAssignments(templatePath, options.TemplateName);
+		var portAssignments = ComputePortAssignments(templateRoot, options.TemplateName);
 
 		return new InitPlan
 		{
 			TemplateName = options.TemplateName,
-			TemplatePath = templatePath,
+			TemplatePath = templateRoot,
 			ProjectName = options.ProjectName,
 			DestinationPath = destinationPath,
 			DapsYamlPath = _config.FullYamlPath,
 			DapsYamlProjectRelativePath = relativePath,
-			InitScriptPath = hasInitScript ? initScriptPath : null,
 			ProdUrl = NormalizeProdUrl(options.ProdUrl),
 			Overlay = options.Overlay,
 			DevPortAssignments = portAssignments,
+			ExcludedFromTemplateTransform = templateConfig?.ExcludedFromTransformation ?? [],
+			PlaceholderText = templateConfig?.PlaceholderText
 		};
 	}
 

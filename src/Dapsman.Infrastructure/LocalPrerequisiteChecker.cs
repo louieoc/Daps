@@ -16,10 +16,10 @@ public sealed class LocalPrerequisiteChecker
 
 	public void EnsureLocalBuildPrerequisites()
 	{
+		EnsureInitPrerequisites();
 		EnsureCommandExists("docker", "Docker Desktop");
 		EnsureDockerRunning();
 		EnsureCommandExists("git", "Git");
-		EnsureBashExists();
 	}
 
 	private static void EnsureDockerRunning()

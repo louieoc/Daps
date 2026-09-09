@@ -8,8 +8,9 @@ public sealed class InitPlan
 	public required string DestinationPath { get; init; }
 	public required string DapsYamlPath { get; init; }
 	public required string DapsYamlProjectRelativePath { get; init; }
-	public string? InitScriptPath { get; init; }
 	public string? ProdUrl { get; init; }
 	public bool Overlay { get; init; }
 	public IReadOnlyList<PortAssignment> DevPortAssignments { get; init; } = [];
+	public IReadOnlyList<string> ExcludedFromTemplateTransform { get; init; } = [];
+	public string? PlaceholderText { get; init; }
 }

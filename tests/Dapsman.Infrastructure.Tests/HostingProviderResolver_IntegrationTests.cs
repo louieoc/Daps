@@ -1,3 +1,4 @@
+using Dapsman.Application;
 using Dapsman.Domain;
 
 namespace Dapsman.Infrastructure.Tests;
@@ -25,8 +26,8 @@ public sealed class HostingProviderResolver_IntegrationTests
 			]
 		};
 
-		var resolver = new HostingProviderResolver(config);
-		var provider = resolver.Resolve("ramnode");
+		IHostingProviderResolver resolver = new HostingProviderResolver(config);
+		var provider = resolver.Resolve("ramnode", null);
 
 		Assert.NotNull(provider);
 		Assert.Equal("root", provider.RemoteUser);

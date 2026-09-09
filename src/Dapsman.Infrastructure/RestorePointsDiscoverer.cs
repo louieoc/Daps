@@ -22,24 +22,37 @@ public sealed class RestorePointsDiscoverer : IRestorePointsDiscoverer
 		if (!File.Exists(scriptHostPath))
 			return [];
 
-		var backupsPath = Path.Combine(project.WorkstationBackupsPath, "from_prod")
-			.Replace('\\', '/');
-
-		var env = new Dictionary<string, string>
+		// Each source directory is scanned separately; the list script only ever sees one directory.
+		var found = new List<RestorePoint>();
+		foreach (var sourceDirectory in BackupSources.All)
 		{
-			["DAPS_PROJECT"] = project.Definition.Name,
-			["DAPS_BACKUPS_PATH"] = backupsPath,
-		};
+			var backupsPath = Path.Combine(project.WorkstationBackupsPath, sourceDirectory);
+			if (!Directory.Exists(backupsPath))
+				continue;
 
-		var json = _workstationBashRunner.CaptureScript(
-			scriptHostPath,
-			workingDirectory: project.Definition.Path,
-			env: env);
+			var env = new Dictionary<string, string>
+			{
+				["DAPS_PROJECT"] = project.Definition.Name,
+				["DAPS_BACKUPS_PATH"] = backupsPath.Replace('\\', '/'),
+			};
 
-		return ParseJson(json.Trim());
+			var json = _workstationBashRunner.CaptureScript(
+				scriptHostPath,
+				workingDirectory: project.Definition.Path,
+				env: env);
+
+			found.AddRange(ParseJson(json.Trim(), sourceDirectory));
+		}
+
+		// Indexes from the per-directory scans are discarded; the merged list is renumbered
+		// most-recent-first so --restore-point <n> means the same thing across sources.
+		return found
+			.OrderByDescending(r => r.ParsedTimestamp)
+			.Select((r, i) => r with { Index = i + 1 })
+			.ToList();
 	}
 
-	private static IReadOnlyList<RestorePoint> ParseJson(string json)
+	private static IEnumerable<RestorePoint> ParseJson(string json, string sourceDirectory)
 	{
 		var start = json.IndexOf('[');
 		if (start > 0)
@@ -62,6 +75,7 @@ public sealed class RestorePointsDiscoverer : IRestorePointsDiscoverer
 			{
 				Index = el.GetProperty("index").GetInt32(),
 				Env = el.GetProperty("env").GetString()!,
+				SourceDirectory = sourceDirectory,
 				Timestamp = timestamp,
 				ParsedTimestamp = parsed,
 				IsComplete = el.GetProperty("complete").GetBoolean(),

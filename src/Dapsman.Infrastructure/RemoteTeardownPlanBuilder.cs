@@ -30,7 +30,7 @@ public sealed class RemoteTeardownPlanBuilder : IRemoteTeardownPlanBuilder
 		var project = _projectResolver.Resolve(options.ProjectName);
 		var provider = _hostingResolver.Resolve(_providerName ?? options.ProviderName, project.Definition.Provider);
 		var toolkitDef = _toolkitResolver.Resolve();
-		var dockerPrefix = string.Equals(provider.RemoteUser, "root", StringComparison.OrdinalIgnoreCase) ? "docker" : "sudo docker";
+		var dockerPrefix = ConfigUtils.GetDockerCommandPrefix(provider.RemoteUser);
 
 		string? caddySiteFileName = null;
 		string? removedContent = null;

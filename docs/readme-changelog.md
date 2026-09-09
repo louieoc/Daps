@@ -8,6 +8,45 @@ Changes are listed newest first. For history prior to `0.1.0`, see `git log`.
 
 ---
 
+## 0.3.0 - 2026-08-19
+
+### Added
+
+- `dapsman --version` to show the current version of the dapsman CLI and by extension the version of Daps itself.
+- `dapsman prod system [--verbose]` — reports how the remote server is doing: architecture, CPU cores and load, memory, disk, and whether a reboot is pending. Read-only; it collects values over SSH from the toolkit and writes nothing to the host. `--verbose` adds uptime, per-container CPU and memory, per-project disk usage, and total Docker disk consumption.
+
+  Architecture is reported as `uname -m` alongside the Docker daemon's own platform: `x86_64 (docker linux/amd64)`. The two are collected separately because they can legitimately disagree, and the Docker value is the authoritative one — it is what will actually execute an image.
+
+  Memory "used" comes from `MemAvailable` rather than `MemFree`, so page cache is not counted against the user — `MemFree` would show a perfectly healthy long-running server as almost out of memory.
+
+  A pending reboot is reported with an explanation rather than a command, because there is no Dapsman workflow that reboots a host: `prod provision` configures unattended-upgrades to reboot automatically at 04:00, so the flag normally clears overnight, and the manual route is the hosting provider's control panel.
+
+  The remote half is `scripts/remote-system-status.sh`, which only collects — it emits tab-separated records and does no arithmetic, unit conversion, or percentages. Dapsman interprets those in C#. It uses only coreutils and `/proc`, so nothing needs installing on the host, and each optional section is individually fault-tolerant: a host without Docker, or with nothing deployed yet, loses that section rather than failing the command.
+- `dapsman local backup [--project <name>...]` — snapshots the local dev instance to `_backups/from_local/`, for taking a checkpoint before an upgrade or a risky change to a site still in development. Runs `_scripts/backup-local.toolkit.sh` from the toolkit container; projects without that script are skipped with a message, the same convention `prod backup` uses. Implemented in the `wordpress` and `grist` templates. Not implemented for `astro` or `static`, which are tracked in git and already have history.
+
+  Unlike Grist's `prod backup` — an rsync mirror that only ever holds one copy — the Grist local backup writes a timestamped archive per run, and stops the Grist container while it archives so the open SQLite files can't be caught mid-write.
+
+### Changed
+
+- WordPress template base image upgraded from `wordpress:7.0-php8.3-apache` to `wordpress:7.1-php8.3-apache`
+- `dapsman local restore` now finds restore points in `_backups/from_local/` as well as `_backups/from_prod/`. Both directories are scanned, merged, and renumbered most-recent-first, so `--restore-point <n>` counts across both; the existing environment label on each entry says which one it came from. Restoring a `local` backup skips the prod→dev URL replacement (the URLs are already dev URLs) but still flushes the cache, which is required after any database import.
+- `DapsmanRunner` class now lazy-loads all dependencies, e.g. `IToolkitResolver`, `ICaddyResolver`, `IBashRunner`, `DapsConfig`, etc. That way workflows that are supported before certain dependencies exist, e.g. `dapsman local build`, which installs the toolkit container on first run, needs to be able to run before the toolkit container exists.
+- `dapsman prod deploy` now builds project images for the remote host's architecture instead of the workstation's, passing it to `build-docker-images.toolkit.sh` as `DAPS_TARGET_PLATFORM`. Previously the image inherited the workstation's architecture -- harmless from Windows or an Intel Mac to an x86_64 VPS, but from an Apple Silicon Mac the deploy reported success and the container restart-looped on the remote with `exec format error`. Scripts that don't read the variable keep working unchanged. See [Deploying to production](readme-deployment.md) and [workflow-remote-deploy.md](workflow-remote-deploy.md).
+- `dapsman prod deploy` now verifies each image against the host after `docker load` and fails with both platforms named if they differ, catching tarballs built before `DAPS_TARGET_PLATFORM` existed.
+- Refactor: removed the single-argument IHostingProviderResolver.Resolve.
+- Refactor: workstation docker compose commands are built once and included as properties in LocalBuildPlan, to ensure that the dry run describes exactly what the real run will do, and to stop repeated calls to the command builder.
+- Refactor: `dapsman init` no longer supports `_scripts/init-template.toolkit.sh` scripts, obviating the fixes from v0.2.2. The logic for placeholder substitution and line ending consistency is now in dapsman itself. A `template.yaml` file now contains template-specific configuration info, currently only supporting the list of folders to exclude from transformation. The `template.yaml` and any `_secrets` folder that might exist are excluded from being copied to the destination.
+- Refactor: the readme cli commands page now lists cli commands in alphabetical order
+- Refactor: the toolkit's `.bashrc` no longer sources per-project `*.bashrc` files. The feature came from an early idea that projects would need shell-level environment variables, which was never needed, and its glob (`/srv/projects/*/scripts/`) predated the `_scripts/` convention — so it had silently matched nothing for some time.
+
+### Fixed
+
+- `.gitattributes` now pins `*.bashrc` to LF endings. `docker/toolkit.bashrc` is copied into the toolkit image at build time, and with `core.autocrlf=true` a Windows checkout converted it to CRLF, so every command running through the toolkit printed carriage-return and syntax errors first. Note that fixing the file's endings does not fix a running container — the copy inside it is baked into the image, so it takes `dapsman local build --build`.
+- The `wordpress` template's `.gitignore` ignored `backups/`, but the folder is `_backups/` — database dumps and content archives were not actually being ignored.
+- Backup scripts now write each artifact to a `.partial` file and rename it only once the command producing it has succeeded, in `backup-local.toolkit.sh` (`wordpress`, `grist`) and `backup-remote.toolkit.sh` (`wordpress`). The shell creates a redirect's output file before `mysqldump` or `tar` ever runs, and `scp` writes as it goes, so a dump that failed part-way left a truncated file sitting in `_backups/` looking like a usable backup — and `dapsman local restore` would offer it as a restore point. An interrupted run now leaves the backup directory as it found it.
+
+---
+
 ## 0.2.2 - 2026-08-12
 
 ### Fixed

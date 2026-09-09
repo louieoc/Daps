@@ -12,6 +12,16 @@ Deploying to prod is accomplished with 2 workflows: provisioning a host, and dep
 
 When you're ready to go live to the public with your projects, you need to set up remote hosting. Daps supports two provider types configured in `daps.yaml`.
 
+#### Generic VPS providers (OVHCloud bare-metal VPS, Hostinger, etc.)
+
+Generic VPS providers have no API, so Daps can't create an instance for you. You subscribe to a plan, receive a hostname and username, and the host already exists when you provision with Daps.
+
+1. Subscribe to a VPS plan and note the hostname and username (possibly this involves a welcome email)
+1. Add a provider entry in `daps.yaml` (type `generic-vps`, with `hostname:` and `user:`)
+1. Run `dapsman prod provision --provider <name>` — this will prompt once for the host's password to copy an SSH key, then install Docker and set up swap
+
+After either path, you may verify the remote host by SSHing to it from the toolkit. See [Toolkit and SSH to remote host](#toolkit-and-ssh-to-remote-host) below.
+
 #### OpenStack providers (DreamCompute, RamNode, etc.)
 
 OpenStack providers have an API — Daps creates the VM for you.
@@ -22,17 +32,6 @@ OpenStack providers have an API — Daps creates the VM for you.
 1. Pick the OpenStack instance size and OS image; create an instance vars file at `hosting/openstack_<name>_instance_vars.sh`
 1. Run `dapsman prod provision --provider <name>`
 
-#### Generic VPS providers (OVHCloud bare-metal VPS, Hostinger, etc.)
-
-Generic VPS providers have no API. You subscribe to a plan, receive a hostname and username, and the host already exists when you provision with Daps.
-
-1. Subscribe to a VPS plan and note the hostname and username (possibly this involves a welcome email)
-1. Add a provider entry in `daps.yaml` (type `generic-vps`, with `hostname:` and `user:`)
-1. Run `dapsman prod provision --provider <name>` — this will prompt once for the host's password to copy an SSH key, then install Docker and set up swap
-
-After either path, you may verify the remote host by SSHing to it from the toolkit. See [Toolkit and SSH to remote host](#toolkit-and-ssh-to-remote-host) below.
-
-
 ### Deploying projects
 
 1. Confirm the project's `_caddy_sites/<name>.prod.caddy` names your real domain, not a template's `example.com` placeholder
@@ -40,6 +39,20 @@ After either path, you may verify the remote host by SSHing to it from the toolk
 1. run deploy: `dapsman prod deploy --project <project name>` (or omit the project name to deploy everything)
 
 For some projects, that's it. For the Wordpress template, if you customized your local instance, run `dapsman prod sync-from-local --project dapster-wp`
+
+### Building for your server's architecture
+
+A Docker image only runs on the kind of processor it was built for, and your workstation and your server may not agree — an Apple Silicon Mac builds ARM images by default, while a typical VPS is x86_64. Because Daps builds images on your workstation and ships them to the server as files, a mismatch would otherwise only surface once the container reached the server, where it fails to start with `exec format error`.
+
+`dapsman prod deploy` handles this for you: before building, it asks your server which platform it runs and builds for that. After the images arrive, it checks each one against the server and stops the deploy if they still don't match, rather than leaving a container restarting in a loop.
+
+Building for a different architecture than your own uses emulation, which Docker Desktop includes on Windows, Mac, and Linux — so if you followed the setup instructions there is nothing to install. If you use Docker Engine directly on Linux instead of Docker Desktop, register the emulators once:
+
+```bash
+docker run --privileged --rm tonistiigi/binfmt --install all
+```
+
+Without them, the build fails on your workstation with an `exec format error` while running the image's build steps. Nothing reaches the server.
 
 ### DNS and HTTPS
 
@@ -72,4 +85,4 @@ e.g.
 
 `ssh -i .ssh/daps-key-ramnode root@111.222.333.444`
 
-At this point you'll be 3 terminal levels deep: once for your workstation, second for the toolkit then third for the remote VM -- wow
+At this point you'll be 3 terminal levels deep: once for your workstation, second for the toolkit then third for the remote VM -- wow.

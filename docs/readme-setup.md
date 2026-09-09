@@ -40,20 +40,27 @@ Daps has 2 templates currently, Wordpress (`daps/templates/wordpress`) and Grist
 In this example I'll create the Wordpress site at `wp.dapster.org`.
 Assume that the setup steps above have been completed and Daps is cloned at `C:\repos\daps`.
 
-1. run init: `dapsman init --template wordpress --name dapster-wp`
+1. run init: `dapsman init --template wordpress --name dapster-wp --prod-url https://mywebsite.com`
     - This creates a folder at `C:\repos\dapster-wp`
-1. edit caddy site files
-    - Open `C\repos\dapster-wp\_caddy_sites\dapster-wp.prod.caddy` and `dapster-wp.offline.caddy`
-    - replace text of `dapster-wp.example.com` with the actual domain, e.g. `wp.dapster.org`
-1. edit docker files
-    - Open `C\repos\dapster-wp\_docker\compose_dapster-wp.prod.yaml`
-    - set `WP_HOME` and `WP_SITEURL` URLs to `https://wp.dapster.org`
+    - it also replaces placeholder values in Caddy and Docker files for the project name and production URLs.
+    - see below for next steps if you omit the `--prod-url` switch
 1. run local build: `dapsman local build`
     - dapsman will try to update your local `hosts` file to add this entry, but if you're not running as administrator you will need to do it manually: `127.0.0.1 dapster-wp.localhost`
     - you may need to run `dapsman local caddy restart` depending on whether you're adding a project to an existing setup
 1. visit `https://dapster-wp.localhost` and set up your local Wordpress installation (e.g. themes, plugins, posts, etc.)
 
 For production, see [Deployment](readme-deployment).
+
+#### Omitting the --prod-url switch
+
+If you run init without specifying the production URL, you'll need to edit some files manually:
+
+1. edit caddy site files
+    - Open `C\repos\dapster-wp\_caddy_sites\dapster-wp.prod.caddy` and `dapster-wp.offline.caddy`
+    - replace text of `dapster-wp.example.com` with the actual domain, e.g. `wp.dapster.org`
+1. edit docker files
+    - Open `C\repos\dapster-wp\_docker\compose_dapster-wp.prod.yaml`
+    - set `WP_HOME` and `WP_SITEURL` URLs to `https://wp.dapster.org`
 
 
 ### Initializing a project without a template

@@ -8,7 +8,7 @@ public sealed class OpenStackUnprovisionPlanBuilderTests
 	[Fact]
 	public void BuildPlan_ResolvesProviderExplicitly_SoAnOmittedProviderCannotDestroyTheWrongHost()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var hosting = Path.Combine(root, "hosting");
 		Directory.CreateDirectory(hosting);
 
@@ -40,16 +40,8 @@ public sealed class OpenStackUnprovisionPlanBuilderTests
 		var plan = builder.BuildPlan(config, new UnprovisionOptions { ProviderName = null });
 
 		// Unprovision destroys a VM and has no project to infer a provider from, so it must go
-		// through the overload that throws on ambiguity rather than defaulting to the first provider.
+		// through the method that throws on ambiguity rather than defaulting to the first provider.
 		Assert.True(providerResolver.ResolvedExplicitly);
-		Assert.False(providerResolver.ResolvedWithoutProjectProvider);
 		Assert.Equal("daps-key-dream", plan.DefaultKeyName);
-	}
-
-	private static string CreateTempDirectory()
-	{
-		var path = Path.Combine(Path.GetTempPath(), "dapsman-tests", Guid.NewGuid().ToString("N"));
-		Directory.CreateDirectory(path);
-		return path;
 	}
 }

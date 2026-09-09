@@ -46,6 +46,92 @@ The `caddy-reload` step is included in the dry-run plan output (shows the reload
 
 The old `--skip-build-images` flag was removed; the lazy default makes it redundant.
 
+### Target platform
+
+Image tarballs carry the architecture of the machine that built them. A Windows or Intel-Mac
+workstation and an x86_64 VPS happen to agree, so this went unnoticed for a long time; an Apple
+Silicon workstation does not. The failure is quiet in every place you would look for it: the build
+succeeds, `docker save`/`docker load` transfer the image without complaint, `prod deploy` reports
+success, and the only symptom is a container restart-looping on the remote with
+`exec format error: /usr/local/bin/docker-entrypoint.sh` — a message that names neither
+architecture nor the image. This cost a real user most of a debugging session, arrived at only
+after ruling out DNS, TLS, Caddy, and the database.
+
+So `prod deploy` asks the host what to build for, immediately before building:
+
+```
+docker version --format '{{.Server.Os}}/{{.Server.Arch}}'   # → linux/amd64
+```
+
+**Why `docker version` and not `uname -m`.** `uname -m` reports the kernel (`x86_64`, `aarch64`)
+and would need a mapping table to become a `--platform` value — one more thing to maintain as
+architectures appear. `docker version` reports the daemon's own Go platform, which *is* a valid
+`--platform` value verbatim, and it stays correct on a host whose kernel and userland
+architectures differ (a 64-bit kernel running a 32-bit userland runs `arm` images and reports
+`aarch64`). The daemon is the thing that will execute the image, so the daemon is what to ask.
+
+**No chicken-and-egg.** The reading needs no image on either side, so it can run before the first
+build has ever happened. It is a plain SSH command against a host that `prod provision` has
+already put Docker on.
+
+**It reuses the `prod system` collection path.** Deploy builds a `SystemStatusPlan` and calls
+`ToolkitSystemStatusCollector`, reading `DockerPlatform` off the result. Staging a script into the
+toolkit, running it over SSH and escaping bash on the way is work that collector already does; a
+second path for one field would have duplicated all of it.
+
+Two details make the reuse work:
+
+- **Summary, not verbose.** `docker_platform` sits in the always-collected section of
+  `remote-system-status.sh`, so deploy pays one SSH round trip. The verbose pass adds `docker
+  stats` and a `du -sb` walk over every project directory — bounded by nothing, and growing with
+  the size of the sites. A `du` over a large `wp-content` on a cold cache is not a cost a build
+  should carry. The script's comment says as much, because the record's placement is now
+  load-bearing for a second workflow.
+- **A provider-free plan factory.** Deploy cannot call `ISystemStatusPlanBuilder.BuildPlan`: that
+  resolves through `ResolveExplicit`, which deliberately refuses to guess between several
+  configured providers, whereas deploy infers its provider from the selected projects and arrives
+  with the host already decided. `RemoteSystemStatusPlanBuilder.BuildPlanForHost` takes the
+  resolved host directly and keeps the plan's shape and constants in one place.
+
+**Not cached.** One SSH round trip per deploy, and only when a build will actually run. A stored
+value would go stale the moment a provider's host is replaced — silently, and in the direction
+that breaks the deploy. There is nothing to invalidate if there is nothing to store.
+
+**Fails closed.** If the host cannot answer, the deploy stops. Falling back to an unpinned build
+would reintroduce exactly the silent mismatch this step exists to prevent, and would do it at the
+moment the user has least reason to suspect it. Two failures to cover: the collector already
+throws when SSH fails, and deploy adds a guard for the host that answered but reported no docker
+platform, which the fault-tolerant script reports as an empty value rather than an error.
+
+The value reaches the build script as the `DAPS_TARGET_PLATFORM` environment variable, which the
+script turns into `docker build --platform`. An environment variable rather than a positional
+argument, because `build-docker-images.toolkit.sh` lives in every project folder created before
+this change: a script that does not read the variable keeps working exactly as it did, whereas a
+new positional argument would have shifted arguments underneath it. Unset means "build native",
+which is correct for a local build, where the workstation is the target.
+
+### Verification after load
+
+The probe fixes new builds. It cannot fix a tarball built last month by a project whose
+`build-docker-images.toolkit.sh` predates `DAPS_TARGET_PLATFORM`, and those tarballs are reused by
+default whenever one already exists. So the remote deploy script also compares each loaded image
+against the host after `docker load`:
+
+```
+docker image inspect <ref> --format '{{.Os}}/{{.Architecture}}'
+```
+
+A mismatch fails the deploy with a message naming both platforms and the fix, instead of leaving a
+restart loop behind. Two lines of bash, and it is the only part of this that protects projects
+whose scripts were never updated.
+
+### Cross-building needs QEMU
+
+`docker build --platform` for a foreign architecture is emulated. Docker Desktop ships the
+binfmt/QEMU support, so Mac and Windows workstations are fine; a bare Linux Docker install may
+not have it, and `docker build` says so. The WordPress image only layers a `wp-cli.phar` download
+onto the official base, so the emulation cost is negligible.
+
 ---
 
 ## Stale Caddy File Cleanup

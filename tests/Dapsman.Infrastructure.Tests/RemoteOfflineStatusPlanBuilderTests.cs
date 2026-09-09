@@ -92,7 +92,6 @@ example.com {
 			projectProvider: "ovhcloud",
 			hostingResolver: resolver);
 
-		Assert.False(resolver.ResolvedWithoutProjectProvider);
 		Assert.Equal("ovhcloud", resolver.ObservedProjectProviderName);
 	}
 

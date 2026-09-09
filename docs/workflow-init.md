@@ -12,18 +12,23 @@ Documents the design rationale, constraints, and decisions for the `init` workfl
 
 1. **Resolving** the template directory under `daps/templates/<template>/`
 2. **Copying** the template to the destination directory (defaults to a sibling of `daps/`, i.e. `../<project-name>`)
-3. **Running** `_scripts/init-template.toolkit.sh <project-name>` inside the copy (if the script exists), which handles all placeholder substitution and file renaming — Dapsman is template-agnostic
+3. **Transforming** dapsman handles all placeholder substitution, file renaming, dev port substitution and prod url replacement.
 4. **Registering** the new project in `daps.yaml` with a relative path
 
 ---
 
 ## Template Convention
 
-Dapsman is template-agnostic: all placeholder replacement and file renaming lives in `init-template.toolkit.sh`, not in Dapsman. This keeps template-specific logic inside the template itself.
+Dapsman is template-agnostic, but executes a number of actions depending on Daps and template conventions, such as placeholder replacement, dev port assignment and prod URL replacement.
 
-The script is optional — if absent, Dapsman copies the template as-is without error. This supports simple templates that need no customization.
+Previously each template supplied a shell script that handled template-specific actions but it turned out the only real difference among them was which folders to ignore during file transformation. So that's now handled in a `template.yaml` file in the template root that looks like this, e.g. for Wordpress:
 
-The script receives the project name as `$1` and runs in the copied project directory.
+```yaml
+placeholder: mywpsite
+exclude-from-transform: [wp-content, _secrets, _backup]
+```
+
+Note that `template.yaml` is still optional. If no folders need to be excluded then you don't need it. Daps will attempt to derive the placeholder value from the Docker compose file that should exist for all Daps projects: `compose_daps_placeholder.dev.yaml`, which is what makes the project visible to the Daps Toolkit container.
 
 ---
 
@@ -92,14 +97,7 @@ By default, `dapsman init` throws if the destination directory already exists. T
 - **Normal mode** (no `--overlay`): throws if destination exists.
 - **Overlay mode** (`--overlay`): throws if destination does **not** exist. Copies template files into the existing directory, skipping any file that already exists. Never overwrites.
 
-The destination check is done at plan-time in `ConventionInitPlanBuilder` (before any files are touched), keeping it consistent with the "duplicate name" and "template not found" guards.
-
-### Init script forwarding
-
-Dapsman passes `--overlay` as a second argument to `init-template.toolkit.sh`: `bash <script> <project-name> --overlay`. Templates that need to restrict their placeholder replacement to DAPS directories (to avoid touching the user's files) check `$2` and act accordingly.
-
-- **`templates/static`** — in normal mode processes all project files; in overlay mode restricts to `_docker/`, `_caddy_sites/`, `_scripts/`.
-- **`templates/astro`** — always restricts to DAPS dirs unconditionally (it is only ever used with `--overlay`).
+The destination check is done at plan-time in `InitPlanBuilder` (before any files are touched), keeping it consistent with the "duplicate name" and "template not found" guards.
 
 ### `--prod-url`
 

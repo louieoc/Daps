@@ -3,6 +3,7 @@
 	public required bool IsInit { get; init; }
 	public required bool IsLocalBuild { get; init; }
 	public required bool IsLocalCaddyRestart { get; init; }
+	public required bool IsLocalBackup { get; init; }
 	public required bool IsLocalRestore { get; init; }
 	public required bool IsLocalTeardown { get; init; }
 	public required bool ListRestorePoints { get; init; }
@@ -18,6 +19,8 @@
 	public required bool IsProdOnline { get; init; }
 	public required bool IsProdTeardown { get; init; }
 	public required bool IsProdUnprovision { get; init; }
+	public required bool IsProdSystem { get; init; }
+	public required bool Verbose { get; init; }
 	public required bool BuildImages { get; init; }
 	public required bool Rebuild { get; init; }
 	public required bool AssumeYes { get; init; }
@@ -32,6 +35,7 @@
 	public string? SetVarsScriptPath { get; init; }
 	public string? CreateScriptPath { get; init; }
 	public bool Upgrade { get; init; }
+	public bool IsGetVersion { get; init; }
 
 	public static CliArguments Parse(string[] args)
 	{
@@ -41,6 +45,7 @@
 		var isInit = false;
 		var isLocalBuild = false;
 		var isLocalCaddyRestart = false;
+		var isLocalBackup = false;
 		var isLocalRestore = false;
 		var isLocalTeardown = false;
 		var listRestorePoints = false;
@@ -56,6 +61,8 @@
 		var isProdOnline = false;
 		var isProdTeardown = false;
 		var isProdUnprovision = false;
+		var isProdSystem = false;
+		var verbose = false;
 		var buildImages = false;
 		var rebuild = false;
 		var assumeYes = false;
@@ -69,6 +76,7 @@
 		string? setVarsScriptPath = null;
 		string? createScriptPath = null;
 		var upgrade = false;
+		var isGetVersion = false;
 
 		if (tokens.Count >= 1)
 		{
@@ -78,6 +86,11 @@
 			{
 				tokens.Dequeue();
 				isInit = true;
+			}
+			else if (string.Equals(first, "--version", StringComparison.OrdinalIgnoreCase))
+			{
+				tokens.Dequeue();
+				isGetVersion = true;
 			}
 			else if (tokens.Count >= 2)
 			{
@@ -96,6 +109,11 @@
 				{
 					tokens.Dequeue(); // consume "restart"
 					isLocalCaddyRestart = true;
+				}
+				else if (string.Equals(group, "local", StringComparison.OrdinalIgnoreCase) &&
+						 string.Equals(action, "backup", StringComparison.OrdinalIgnoreCase))
+				{
+					isLocalBackup = true;
 				}
 				else if (string.Equals(group, "local", StringComparison.OrdinalIgnoreCase) &&
 						 string.Equals(action, "restore", StringComparison.OrdinalIgnoreCase))
@@ -160,6 +178,11 @@
 				{
 					isProdUnprovision = true;
 				}
+				else if (string.Equals(group, "prod", StringComparison.OrdinalIgnoreCase) &&
+						 string.Equals(action, "system", StringComparison.OrdinalIgnoreCase))
+				{
+					isProdSystem = true;
+				}
 			}
 		}
 
@@ -188,6 +211,9 @@
 					break;
 				case "--upgrade":
 					upgrade = true;
+					break;
+				case "--verbose":
+					verbose = true;
 					break;
 				case "--list-restore-points":
 					listRestorePoints = true;
@@ -268,6 +294,7 @@
 			IsInit = isInit,
 			IsLocalBuild = isLocalBuild,
 			IsLocalCaddyRestart = isLocalCaddyRestart,
+			IsLocalBackup = isLocalBackup,
 			IsLocalRestore = isLocalRestore,
 			IsLocalTeardown = isLocalTeardown,
 			ListRestorePoints = listRestorePoints,
@@ -283,6 +310,8 @@
 			IsProdOnline = isProdOnline,
 			IsProdTeardown = isProdTeardown,
 			IsProdUnprovision = isProdUnprovision,
+			IsProdSystem = isProdSystem,
+			Verbose = verbose,
 			BuildImages = buildImages,
 			Rebuild = rebuild,
 			AssumeYes = assumeYes,
@@ -297,6 +326,7 @@
 			SetVarsScriptPath = setVarsScriptPath,
 			CreateScriptPath = createScriptPath,
 			Upgrade = upgrade,
+			IsGetVersion = isGetVersion
 		};
 	}
 }

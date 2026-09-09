@@ -47,7 +47,7 @@ public sealed class RemoteBackupPlanBuilder : IRemoteBackupPlanBuilder
 			RemoteUser = provider.RemoteUser,
 			SshKeyToolkitPath = $"{toolkitDef.SshPath}/{provider.KeyName}",
 			BackupScriptToolkitPath = $"{project.ToolkitScriptsPath}/{BackupRemoteToLocal}",
-			BackupDestinationToolkitPath = $"{project.ToolkitBackupsPath}/from_prod",
+			BackupDestinationToolkitPath = $"{project.ToolkitBackupsPath}/{BackupSources.FromProd}",
 		});
 	}
 }

@@ -37,7 +37,7 @@ public sealed class LocalRestorePlanBuilder : IRestorePlanBuilder
 		if (restorePoints.Count == 0)
 		{
 			return PlanResult<RestorePlan>.NotSupported(
-				$"No backup files found. Run 'dapsman prod backup' first, or check '{Path.Combine(project.WorkstationBackupsPath, "from_prod")}'.");
+				$"No backup files found. Run 'dapsman prod backup' or 'dapsman local backup' first, or check '{project.WorkstationBackupsPath}'.");
 		}
 
 		var selected = SelectRestorePoint(restorePoints, options.SelectedRestorePoint);
@@ -54,7 +54,7 @@ public sealed class LocalRestorePlanBuilder : IRestorePlanBuilder
 			ToolkitContainerName = toolkitDef.ContainerName,
 			RestorePoint = selected,
 			RestoreScriptToolkitPath = $"{project.ToolkitScriptsPath}/{RestoreLocalScript}",
-			BackupsToolkitPath = $"{project.ToolkitBackupsPath}/from_prod",
+			BackupsToolkitPath = $"{project.ToolkitBackupsPath}/{selected.SourceDirectory}",
 			ProdUrl = options.ProdUrl,
 		});
 	}

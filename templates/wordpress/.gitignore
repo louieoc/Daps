@@ -8,8 +8,8 @@ wp-content/plugins/
 wp-content/upgrade/
 wp-content/cache/
 
-# Local backups
-backups/
+# Backups — pulled from prod, or snapshots of the local instance
+_backups/
 
 # Docker image exports
 _docker/image-exports/

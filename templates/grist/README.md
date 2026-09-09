@@ -137,6 +137,16 @@ dapsman prod backup --project mygrist --provider <name>
 
 This rsyncs the remote `/persist` directory (where all Grist documents live as SQLite files) to `_backups/from_prod/persist/` inside the project folder.
 
+To snapshot the local instance instead:
+
+```bash
+dapsman local backup --project mygrist
+```
+
+This saves a timestamped `persist/` archive to `_backups/from_local/`, keeping every snapshot rather than mirroring the latest one. Grist holds its SQLite documents open, so the container is stopped for the few seconds it takes to write the archive and restarted afterwards.
+
+To roll back, stop the container, replace `persist/` with the contents of the archive, and start it again — `dapsman local restore` does not yet support Grist.
+
 ---
 
 ## Project structure
@@ -155,11 +165,13 @@ mygrist/
 │   ├── generate-secrets.sh             # Shared secret generation library
 │   ├── prerequisites.dev.sh            # Dev-only setup: secret + hosts entry (run automatically by dapsman)
 │   ├── prerequisites.prod.sh           # Prod setup: secret on remote (run automatically by dapsman)
-│   ├── init-template.toolkit.sh        # One-time init script run by dapsman init
-│   └── backup-remote.toolkit.sh        # Backup script run from toolkit container
+│   ├── backup-remote.toolkit.sh        # Pulls a backup down from prod (run from toolkit container)
+│   └── backup-local.toolkit.sh         # Snapshots the local instance (run from toolkit container)
 ├── _secrets/                            # Generated secrets — gitignored, never commit
 │   └── .env                            # Contains GRIST_SESSION_SECRET
-├── _backups/                            # Local backup archive — gitignored
+├── _backups/                            # Backup archive — gitignored
+│   ├── from_prod/                       # Pulled down by `dapsman prod backup`
+│   └── from_local/                      # Snapshots taken by `dapsman local backup`
 └── persist/                             # Grist data directory — gitignored, dev only
 ```
 

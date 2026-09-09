@@ -7,20 +7,20 @@ public sealed class LocalBuildService
 	private readonly IDapsConfigLoader _configLoader;
 	private readonly ILocalBuildPlanBuilder _composePlanBuilder;
 	private readonly ICaddySiteSync _caddySiteSync;
-	private readonly IDockerComposeExecutor _composeExecutor;
+	private readonly IDockerExecutor _dockerExecutor;
 	private readonly IBashRunner _bashRunner;
 
 	public LocalBuildService(
 		IDapsConfigLoader configLoader,
 		ILocalBuildPlanBuilder composePlanBuilder,
 		ICaddySiteSync caddySiteSync,
-		IDockerComposeExecutor composeExecutor,
+		IDockerExecutor composeExecutor,
 		IBashRunner bashRunner)
 	{
 		_configLoader = configLoader;
 		_composePlanBuilder = composePlanBuilder;
 		_caddySiteSync = caddySiteSync;
-		_composeExecutor = composeExecutor;
+		_dockerExecutor = composeExecutor;
 		_bashRunner = bashRunner;
 	}
 
@@ -41,18 +41,13 @@ public sealed class LocalBuildService
 	/// </summary>
 	public void EnsureSharedNetwork(LocalBuildPlan plan, string workingDirectory)
 	{
-		_composeExecutor.EnsureNetworkExists(plan.SharedNetworkName, workingDirectory);
+		_dockerExecutor.EnsureNetworkExists(plan.SharedNetworkName, workingDirectory);
 	}
 
-	public void ExecuteDapsCompose(LocalBuildPlan plan, LocalBuildOptions options)
+	public void ExecuteDapsCompose(LocalBuildPlan plan)
 	{
-		if (plan.DapsComposeFiles.Count == 0)
-		{
-			return;
-		}
-
 		var workingDirectory = Path.GetDirectoryName(plan.DapsComposeFiles[0]) ?? Environment.CurrentDirectory;
-		_composeExecutor.RunComposeUp(plan.DapsComposeFiles, options.BuildImages, workingDirectory);
+		_dockerExecutor.RunDocker(plan.DapsComposeCommand, workingDirectory);
 	}
 
 	public void ExecutePrerequisites(LocalProjectComposePlan projectPlan)
@@ -65,11 +60,15 @@ public sealed class LocalBuildService
 
 	public void ExecuteProjectComposeDown(LocalProjectComposePlan projectPlan)
 	{
-		_composeExecutor.RunComposeDown(projectPlan.ComposeFiles, removeVolumes: true, projectPlan.ProjectPath);
+		var command = projectPlan.ComposeDownCommand ?? throw new InvalidOperationException(
+			$"No down command was planned for '{projectPlan.ProjectName}'. This plan was not built with --rebuild."
+		);
+
+		_dockerExecutor.RunDocker(command, projectPlan.ProjectPath);
 	}
 
-	public void ExecuteProjectCompose(LocalProjectComposePlan projectPlan, LocalBuildOptions options)
+	public void ExecuteProjectCompose(LocalProjectComposePlan projectPlan)
 	{
-		_composeExecutor.RunComposeUp(projectPlan.ComposeFiles, options.BuildImages, projectPlan.ProjectPath);
+		_dockerExecutor.RunDocker(projectPlan.ComposeUpCommand, projectPlan.ProjectPath);
 	}
 }

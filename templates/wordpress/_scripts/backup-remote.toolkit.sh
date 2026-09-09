@@ -44,30 +44,49 @@ remote_tmp_wpcontent="/tmp/${wpcontent_file}"
 
 mkdir -p "${BACKUP_DIR}"
 
+# Each artifact is written to a .partial file and renamed only once the command producing it
+# has succeeded. The shell creates the local output file before the remote mysqldump ever runs,
+# and scp writes as it goes, so a failure part-way leaves a truncated file behind -- which
+# _backups/from_prod would then offer as a restore point. list-restore-points.toolkit.sh matches
+# *.sql exactly, so a .partial is invisible to it, and the trap clears it on the way out.
+partial=""
+cleanup_partial() {
+  if [[ -n "${partial}" ]]; then
+    rm -f "${partial}"
+  fi
+}
+trap cleanup_partial EXIT
+
 echo "Backing up ${DAPS_PROJECT} (${ENV}) from ${DAPS_REMOTE_USER}@${DAPS_REMOTE_HOST}"
 echo "Destination: ${BACKUP_DIR}"
 echo ""
 
 # --- Step 1: DB dump streamed through SSH ---
 echo "Step 1/2: dumping database..."
+partial="${BACKUP_DIR}/${db_file}.partial"
 ssh "${SSH_OPTS[@]}" "${DAPS_REMOTE_USER}@${DAPS_REMOTE_HOST}" \
   "remote_pw=\$(cat /srv/projects/${DAPS_PROJECT}/_secrets/mysql_root_password.txt) && \
    docker exec ${remote_db_container} mysqldump \
      -uroot -p\"\${remote_pw}\" \
      --default-character-set=utf8mb4 \
      --add-drop-table \
-     ${db_name}" > "${BACKUP_DIR}/${db_file}"
+     ${db_name}" > "${partial}"
+mv "${partial}" "${BACKUP_DIR}/${db_file}"
+partial=""
 echo "- ${db_file}"
 
 # --- Step 2: wp-content tar created on remote, SCP'd down, cleaned up ---
 echo "Step 2/2: archiving wp-content..."
+partial="${BACKUP_DIR}/${wpcontent_file}.partial"
 ssh "${SSH_OPTS[@]}" "${DAPS_REMOTE_USER}@${DAPS_REMOTE_HOST}" \
   "tar -czf '${remote_tmp_wpcontent}' -C /srv/projects/${DAPS_PROJECT} wp-content"
 scp "${SSH_OPTS[@]}" \
   "${DAPS_REMOTE_USER}@${DAPS_REMOTE_HOST}:${remote_tmp_wpcontent}" \
-  "${BACKUP_DIR}/${wpcontent_file}"
+  "${partial}"
 ssh "${SSH_OPTS[@]}" "${DAPS_REMOTE_USER}@${DAPS_REMOTE_HOST}" \
   "rm -f '${remote_tmp_wpcontent}'"
+mv "${partial}" "${BACKUP_DIR}/${wpcontent_file}"
+partial=""
 echo "- ${wpcontent_file}"
 
 echo ""

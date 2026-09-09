@@ -127,7 +127,6 @@ mystaticsite/
 │   ├── compose_mystaticsite.prod.yaml      # Prod overrides (volume path)
 │   └── compose_daps_mystaticsite.dev.yaml  # Toolkit extension (mounts project into toolkit)
 ├── _scripts/                               # Utility scripts
-│   ├── init-template.toolkit.sh            # Placeholder replacement (run by dapsman init)
 │   ├── post-remote-deploy.toolkit.sh       # Auto-run after prod deploy: rsyncs public/
 │   └── sync-local-to-remote.toolkit.sh     # Content-only sync: run manually from toolkit
 └── public/                                 # Your site files — put everything here

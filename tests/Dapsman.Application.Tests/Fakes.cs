@@ -32,3 +32,21 @@ public sealed class FakeDapsYamlEditor : IDapsYamlEditor
 	public void RemoveProject(string yamlPath, string projectName)
 		=> RemoveCalls.Add((yamlPath, projectName));
 }
+
+public sealed class FakeDockerExecutor : IDockerExecutor
+{
+	public bool Called { get; private set; }
+	public string? LastArguments { get; private set; }
+	public string? EnsuredNetworkName { get; private set; }
+
+	public void EnsureNetworkExists(string networkName, string workingDirectory)
+	{
+		EnsuredNetworkName = networkName;
+	}
+
+	public void RunDocker(string arguments, string workingDirectory)
+    {
+		Called = true;
+		LastArguments = arguments;
+    }
+}

@@ -1,6 +1,5 @@
 using Dapsman.Application;
 using Dapsman.Domain;
-using Dapsman.Infrastructure;
 
 internal static class DapsmanPlanPrinter
 {
@@ -16,13 +15,6 @@ internal static class DapsmanPlanPrinter
 		Console.WriteLine(plan.Overlay
 			? "- mode: overlay (add Daps files to existing directory, skip existing files)"
 			: "- mode: normal (create new directory)");
-		if (plan.InitScriptPath is not null)
-		{
-			var scriptArgs = plan.Overlay ? $"{plan.ProjectName} --overlay" : plan.ProjectName;
-			Console.WriteLine($"- init script: bash \"{plan.InitScriptPath}\" {scriptArgs}");
-		}
-		else
-			Console.WriteLine("- no init-template.toolkit.sh found in template");
 		Console.WriteLine($"- register in daps.yaml: {plan.ProjectName}: path: {plan.DapsYamlProjectRelativePath}");
 		if (plan.ProdUrl is not null)
 			Console.WriteLine($"- set prod url in _caddy_sites/*.prod.caddy and _docker/*.prod.yaml: {plan.ProdUrl}");
@@ -80,8 +72,7 @@ internal static class DapsmanPlanPrinter
 
 		Console.WriteLine();
 		Console.WriteLine("Step: compose-daps");
-		var dapsCommand = WorkstationDockerComposeExecutor.BuildDockerComposeCommand(plan.DapsComposeFiles, options.BuildImages);
-		Console.WriteLine($"- {dapsCommand}");
+		Console.WriteLine($"- {plan.DapsComposeCommand}");
 
 		if (options.Rebuild)
 		{
@@ -89,8 +80,7 @@ internal static class DapsmanPlanPrinter
 			Console.WriteLine("Step: rebuild-teardown");
 			foreach (var projectPlan in plan.ProjectComposePlans)
 			{
-				var downCommand = WorkstationDockerComposeExecutor.BuildDockerComposeDownCommand(projectPlan.ComposeFiles, removeVolumes: true);
-				Console.WriteLine($"- {projectPlan.ProjectName}: {downCommand}");
+				Console.WriteLine($"- {projectPlan.ProjectName}: {projectPlan.ComposeDownCommand}");
 			}
 		}
 
@@ -104,8 +94,7 @@ internal static class DapsmanPlanPrinter
 		{
 			foreach (var projectPlan in plan.ProjectComposePlans)
 			{
-				var projectCommand = WorkstationDockerComposeExecutor.BuildDockerComposeCommand(projectPlan.ComposeFiles, options.BuildImages);
-				Console.WriteLine($"- {projectPlan.ProjectName}: {projectCommand}");
+				Console.WriteLine($"- {projectPlan.ProjectName}: {projectPlan.ComposeUpCommand}");
 			}
 		}
 
@@ -160,25 +149,40 @@ internal static class DapsmanPlanPrinter
 		Console.WriteLine($"- remote user: {plan.RemoteUser}");
 		Console.WriteLine($"- ssh key: {plan.SshKeyName}");
 
-		Console.WriteLine();
-		Console.WriteLine("Step: build-images");
-		if (plan.BuildImageCommands.Count == 0)
+		if (plan.SystemStatusPlan is not null)
 		{
-			Console.WriteLine("- no project image build scripts found");
+			Console.WriteLine();
+			Console.WriteLine("Step: probe-platform");
+			Console.WriteLine($"- ask {plan.RemoteHost} which docker platform it runs (value determined at run time)");
+			Console.WriteLine("- skipped when no image build runs");
+
+			Console.WriteLine();
+			Console.WriteLine("Step: build-images");
+			if (plan.BuildImageCommands.Count == 0)
+			{
+				Console.WriteLine("- no project image build scripts found");
+			}
+			else
+			{
+				foreach (var command in plan.BuildImageCommands)
+				{
+					string disposition;
+					if (options.BuildImages)
+						disposition = "will build (--build)";
+					else if (!command.HasExistingExports)
+						disposition = "will build (no existing tar)";
+					else
+						disposition = "skipped (tar exists; use --build to rebuild)";
+					Console.WriteLine($"- {command.ProjectName}: {disposition}");
+				}
+			}
 		}
 		else
 		{
-			foreach (var command in plan.BuildImageCommands)
-			{
-				string disposition;
-				if (options.BuildImages)
-					disposition = "will build (--build)";
-				else if (!command.HasExistingExports)
-					disposition = "will build (no existing tar)";
-				else
-					disposition = "skipped (tar exists; use --build to rebuild)";
-				Console.WriteLine($"- {command.ProjectName}: {disposition}");
-			}
+			Console.WriteLine();
+			Console.WriteLine("Step: probe-platform SKIPPED");
+			Console.WriteLine();
+			Console.WriteLine("Step: build-images SKIPPED");
 		}
 
 		Console.WriteLine();
@@ -238,6 +242,7 @@ internal static class DapsmanPlanPrinter
 			foreach (var prereqName in projectPlan.RemotePrerequisiteScriptNames)
 				Console.WriteLine($"- {projectPlan.ProjectName}: run {prereqName} on remote");
 			Console.WriteLine($"- {projectPlan.ProjectName}: docker load each file in /srv/projects/{projectPlan.ProjectName}/_docker/image-exports");
+			Console.WriteLine($"- {projectPlan.ProjectName}: verify each loaded image matches the host platform (deploy fails if not)");
 			Console.WriteLine($"- {projectPlan.ProjectName}: compose up project (prod/shared files)");
 		}
 
@@ -267,6 +272,17 @@ internal static class DapsmanPlanPrinter
 		Console.WriteLine($"- toolkit container: {plan.ToolkitContainerName}");
 		Console.WriteLine($"- remote: {plan.RemoteUser}@{plan.RemoteHost}");
 		Console.WriteLine($"- caddy site file: {plan.CaddySiteFileName}");
+	}
+
+	public static void PrintLocalBackup(LocalBackupPlan plan)
+	{
+		Console.WriteLine($"- toolkit container: {plan.ToolkitContainerName}");
+		Console.WriteLine("Step: backup");
+		Console.WriteLine($"- script: {plan.BackupScriptToolkitPath}");
+		Console.WriteLine($"- destination: {plan.BackupDestinationToolkitPath}");
+		Console.WriteLine($"- args: {plan.ScriptArguments}");
+		foreach (var (key, value) in plan.EnvVars)
+			Console.WriteLine($"  {key}={value}");
 	}
 
 	public static void PrintProdBackup(RemoteBackupPlan plan)
@@ -303,15 +319,19 @@ internal static class DapsmanPlanPrinter
 		Console.WriteLine("Step: validate");
 		Console.WriteLine($"- project: {plan.ProjectName}");
 		Console.WriteLine($"- restore point: {rp.DisplayLabel} (index {rp.Index})");
-		Console.WriteLine($"- sql: _backups/from_prod/{plan.ProjectName}_{rp.Env}_{rp.Timestamp}.sql");
-		Console.WriteLine($"- wp-content: _backups/from_prod/{plan.ProjectName}_{rp.Env}_wp-content_{rp.Timestamp}.tar.gz");
-		Console.WriteLine($"- prod url: {(string.IsNullOrEmpty(plan.ProdUrl) ? "(derived from caddy file)" : plan.ProdUrl)}");
+		Console.WriteLine($"- sql: _backups/{rp.SourceDirectory}/{plan.ProjectName}_{rp.Env}_{rp.Timestamp}.sql");
+		Console.WriteLine($"- wp-content: _backups/{rp.SourceDirectory}/{plan.ProjectName}_{rp.Env}_wp-content_{rp.Timestamp}.tar.gz");
+		// A backup taken from the local instance already holds dev URLs, so the script skips the
+		// replacement — see restore-local.toolkit.sh.
+		if (rp.ReplacesUrls)
+			Console.WriteLine($"- prod url: {(string.IsNullOrEmpty(plan.ProdUrl) ? "(derived from caddy file)" : plan.ProdUrl)}");
 		Console.WriteLine($"- toolkit container: {plan.ToolkitContainerName}");
 		Console.WriteLine();
 		Console.WriteLine("Step: restore");
 		Console.WriteLine("- import SQL into local database");
 		Console.WriteLine("- extract wp-content archive");
-		Console.WriteLine("- wp search-replace prod-url -> dev-url");
+		if (rp.ReplacesUrls)
+			Console.WriteLine("- wp search-replace prod-url -> dev-url");
 		Console.WriteLine("- wp cache flush");
 		foreach (var (key, value) in plan.EnvVars)
 			Console.WriteLine($"  {key}={value}");
@@ -393,4 +413,181 @@ internal static class DapsmanPlanPrinter
 		Console.WriteLine($"- delete SSH key files: {plan.SshKeyToolkitPath}");
 		Console.WriteLine($"- delete instance vars file: {plan.InstanceVarsFilePath}");
 	}
+
+	public static void PrintSystemStatusPlan(SystemStatusPlan plan)
+	{
+		Console.WriteLine("Step: validate");
+		Console.WriteLine("- prerequisites ok");
+		Console.WriteLine($"- provider: {plan.ProviderName}");
+		Console.WriteLine($"- remote: {plan.RemoteUser}@{plan.RemoteHost}");
+		Console.WriteLine($"- ssh key: {plan.SshKeyName}");
+		Console.WriteLine($"- toolkit container: {plan.ToolkitContainerName}");
+		Console.WriteLine();
+		Console.WriteLine("Step: read-system-status");
+		Console.WriteLine($"- send '{plan.StatusScriptHostPath}' to the remote over ssh and read its output");
+		Console.WriteLine($"- docker command: {plan.DockerCommandPrefix}");
+		Console.WriteLine($"- detail: {(plan.Verbose ? $"verbose (containers, projects under {plan.RemoteProjectsRoot}, uptime)" : "summary only")}");
+		Console.WriteLine("- nothing is written to the remote host");
+	}
+
+	public static void PrintSystemStatusReport(SystemStatus status, SystemStatusPlan plan)
+	{
+		var host = status.Hostname is null ? plan.RemoteHost : $"{status.Hostname}";
+
+		Console.WriteLine($"System: {plan.ProviderName} ({host})");
+		Console.WriteLine($"- Architecture: {FormatArchitecture(status)}");
+		Console.WriteLine($"- CPU: {FormatCpu(status)}");
+		Console.WriteLine($"- RAM: {FormatMemory(status)}");
+		Console.WriteLine($"- Disk: {FormatDisk(status)}");
+		Console.WriteLine($"- Reboot required: {FormatRebootRequired(status)}");
+
+		if (!plan.Verbose)
+			return;
+
+		Console.WriteLine($"- Uptime: {FormatUptime(status.UptimeSeconds)}");
+
+		Console.WriteLine();
+		Console.WriteLine("Containers:");
+		if (status.Containers.Count == 0)
+		{
+			Console.WriteLine("- none reported");
+		}
+		else
+		{
+			var width = status.Containers.Max(c => c.Name.Length);
+			foreach (var container in status.Containers)
+			{
+				var cpu = container.CpuPercent is null ? "  --  " : $"{container.CpuPercent.Value,5:0.0}%";
+				Console.WriteLine($"- {container.Name.PadRight(width)}   CPU {cpu}   RAM {FormatBytes(container.MemoryBytes)}");
+			}
+		}
+
+		Console.WriteLine();
+		Console.WriteLine("Project disk usage:");
+		if (status.Projects.Count == 0)
+		{
+			Console.WriteLine($"- none found under {plan.RemoteProjectsRoot}");
+		}
+		else
+		{
+			var width = status.Projects.Max(p => p.Name.Length);
+			foreach (var project in status.Projects.OrderByDescending(p => p.Bytes))
+				Console.WriteLine($"- {project.Name.PadRight(width)}   {FormatBytes(project.Bytes)}");
+		}
+
+		if (status.DockerDisk.Count > 0)
+		{
+			var total = SumOrNull(status.DockerDisk.Select(d => d.SizeBytes));
+			var reclaimable = SumOrNull(status.DockerDisk.Select(d => d.ReclaimableBytes));
+			Console.WriteLine($"- Docker images/volumes/build cache: {FormatBytes(total)} ({FormatBytes(reclaimable)} reclaimable)");
+		}
+	}
+
+	/// <summary>
+	/// Shows the kernel architecture, plus the Docker platform when verbose collected it. The two
+	/// are printed together rather than separately because the pair is what matters when an image
+	/// will not run: the docker platform is the value a build must target.
+	/// </summary>
+	private static string FormatArchitecture(SystemStatus status)
+	{
+		if (status.KernelArchitecture is null && status.DockerPlatform is null)
+			return "unavailable";
+
+		if (status.DockerPlatform is null)
+			return status.KernelArchitecture!;
+
+		if (status.KernelArchitecture is null)
+			return $"docker {status.DockerPlatform}";
+
+		return $"{status.KernelArchitecture} (docker {status.DockerPlatform})";
+	}
+
+	private static string FormatCpu(SystemStatus status)
+	{
+		if (status.Load1 is null)
+			return "unavailable";
+
+		var cores = status.CpuCores is null ? "unknown cores" : $"{status.CpuCores} core{(status.CpuCores == 1 ? "" : "s")}";
+		var load = $"load {status.Load1:0.00} / {status.Load5:0.00} / {status.Load15:0.00}";
+		var percent = status.CpuLoadPercent is null ? "" : $" ({status.CpuLoadPercent.Value:0}% of capacity)";
+
+		return $"{cores}, {load}{percent}";
+	}
+
+	private static string FormatMemory(SystemStatus status)
+	{
+		if (status.MemoryUsedBytes is null || status.MemoryTotalBytes is null)
+			return "unavailable";
+
+		var used = $"{FormatBytes(status.MemoryUsedBytes)} used of {FormatBytes(status.MemoryTotalBytes)} ({Percent(status.MemoryUsedBytes, status.MemoryTotalBytes)})";
+
+		// A host with no swap configured reports a zero total; saying "0 GB of 0 GB" reads as a
+		// fault rather than a normal configuration, so the clause is dropped entirely.
+		if (status.SwapTotalBytes is null or 0)
+			return used;
+
+		return $"{used}, swap {FormatBytes(status.SwapUsedBytes)} of {FormatBytes(status.SwapTotalBytes)}";
+	}
+
+	private static string FormatDisk(SystemStatus status)
+	{
+		if (status.DiskUsedBytes is null || status.DiskTotalBytes is null)
+			return "unavailable";
+
+		return $"{FormatBytes(status.DiskUsedBytes)} used of {FormatBytes(status.DiskTotalBytes)} " +
+			   $"({Percent(status.DiskUsedBytes, status.DiskTotalBytes)}) — {FormatBytes(status.DiskFreeBytes)} free";
+	}
+
+	/// <summary>
+	/// There is no Dapsman command to run here. `prod provision` configures unattended-upgrades
+	/// with Automatic-Reboot at 04:00, so a pending reboot normally clears itself overnight, and
+	/// the only manual route is the hosting provider's own control panel. If a `prod reboot`
+	/// workflow is ever added, this is the only string that needs to change.
+	/// </summary>
+	private static string FormatRebootRequired(SystemStatus status) => status.RebootRequired switch
+	{
+		null => "unavailable",
+		false => "no",
+		true => "yes — the host reboots itself automatically at 04:00 to finish installing" +
+				Environment.NewLine +
+				"  updates, so this normally clears overnight. If it is still showing after" +
+				Environment.NewLine +
+				"  that, reboot the VM from your hosting provider's control panel.",
+	};
+
+	private static string FormatUptime(double? seconds)
+	{
+		if (seconds is null)
+			return "unavailable";
+
+		var span = TimeSpan.FromSeconds(seconds.Value);
+		if (span.TotalDays >= 1)
+			return $"{(int)span.TotalDays} day{((int)span.TotalDays == 1 ? "" : "s")}, {span.Hours} hour{(span.Hours == 1 ? "" : "s")}";
+		if (span.TotalHours >= 1)
+			return $"{(int)span.TotalHours} hour{((int)span.TotalHours == 1 ? "" : "s")}, {span.Minutes} minute{(span.Minutes == 1 ? "" : "s")}";
+
+		return $"{(int)span.TotalMinutes} minute{((int)span.TotalMinutes == 1 ? "" : "s")}";
+	}
+
+	private static long? SumOrNull(IEnumerable<long?> values)
+	{
+		var known = values.Where(v => v is not null).Select(v => v!.Value).ToList();
+		return known.Count == 0 ? null : known.Sum();
+	}
+
+	private static string Percent(long? part, long? whole) =>
+		whole is null or 0 || part is null ? "unavailable" : $"{part.Value * 100.0 / whole.Value:0}%";
+
+	/// <summary>
+	/// Decimal units, not binary: a user comparing this against their hosting plan is reading
+	/// "40 GB" off a pricing page, which is 40 billion bytes, not 40 GiB.
+	/// </summary>
+	private static string FormatBytes(long? bytes) => bytes switch
+	{
+		null => "unavailable",
+		>= 1_000_000_000L => $"{bytes.Value / 1_000_000_000.0:0.0} GB",
+		>= 1_000_000L => $"{bytes.Value / 1_000_000.0:0} MB",
+		>= 1_000L => $"{bytes.Value / 1_000.0:0} kB",
+		_ => $"{bytes.Value} B",
+	};
 }

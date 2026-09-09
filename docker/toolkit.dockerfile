@@ -28,7 +28,7 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Add root shell config that loads per-project bashrc files.
+# Root shell config: the toolkit's login banner and starting directory.
 COPY docker/toolkit.bashrc /root/.bashrc
 
 # Convenience link so root can quickly reach mounted daps and projects.

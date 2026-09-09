@@ -141,4 +141,9 @@ public static class ConfigUtils
 
 		return Path.GetFullPath(Path.IsPathRooted(path) ? path : Path.Combine(root, path));
 	}
+
+	public static string GetDockerCommandPrefix(string username)
+	{
+		return string.Equals(username, "root", StringComparison.OrdinalIgnoreCase) ? "docker" : "sudo docker";
+	}
 }

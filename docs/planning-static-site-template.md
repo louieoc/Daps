@@ -49,7 +49,6 @@ templates/static/
     compose_mystaticsite.prod.yaml      # bind-mount /srv/projects/mystaticsite/public:/usr/share/nginx/html:ro
     compose_daps_mystaticsite.dev.yaml  # toolkit mount: ../../mystaticsite:/srv/projects/mystaticsite
   _scripts/
-    init-template.toolkit.sh            # replaces mystaticsite with project name
     post-remote-deploy.toolkit.sh       # rsyncs public/ to remote after prod deploy
     sync-local-to-remote.toolkit.sh     # content-only update: rsyncs public/ without full redeploy
   public/

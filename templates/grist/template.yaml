@@ -1,0 +1,1 @@
+exclude-from-transform: [.git, _secrets, _backups, persist]

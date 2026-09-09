@@ -51,7 +51,7 @@ public sealed class RemoteOfflineStatusPlanBuilder : IOfflineStatusPlanBuilder
 		var provider = _hostingResolver.Resolve(_providerName ?? options.ProviderName, project.Definition.Provider);
 		var toolkitDef = _toolkitResolver.Resolve();
 		var caddySiteContent = _offline ? BuildOfflineContent(projectCaddyDef, prodCaddySitePath) : File.ReadAllText(prodCaddySitePath);
-		var dockerPrefix = string.Equals(provider.RemoteUser, "root", StringComparison.OrdinalIgnoreCase) ? "docker" : "sudo docker";
+		var dockerPrefix = ConfigUtils.GetDockerCommandPrefix(provider.RemoteUser);
 
 		return PlanResult<OfflineStatusPlan>.Supported(new OfflineStatusPlan
 		{

@@ -13,4 +13,5 @@ public sealed class LocalBuildPlan
 	public required IReadOnlyList<LocalProjectComposePlan> ProjectComposePlans { get; init; }
 	public required IReadOnlyList<string> Warnings { get; init; }
 	public required bool HasProjectsConfigured { get; init; }
+	public required string DapsComposeCommand { get; init; }
 }

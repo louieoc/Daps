@@ -1,31 +1,10 @@
 using System.Diagnostics;
-using System.Text;
 using Dapsman.Application;
 
 namespace Dapsman.Infrastructure;
 
-public sealed class WorkstationDockerComposeExecutor : IDockerComposeExecutor
+public sealed class WorkstationDockerExecutor : IDockerExecutor
 {
-	public void RunComposeUp(IReadOnlyList<string> composeFiles, bool buildImages, string workingDirectory)
-	{
-		if (composeFiles.Count == 0)
-		{
-			throw new ArgumentException("At least one compose file is required.", nameof(composeFiles));
-		}
-
-		RunDocker(BuildDockerComposeCommand(composeFiles, buildImages), workingDirectory);
-	}
-
-	public void RunComposeDown(IReadOnlyList<string> composeFiles, bool removeVolumes, string workingDirectory)
-	{
-		if (composeFiles.Count == 0)
-		{
-			throw new ArgumentException("At least one compose file is required.", nameof(composeFiles));
-		}
-
-		RunDocker(BuildDockerComposeDownCommand(composeFiles, removeVolumes), workingDirectory);
-	}
-
 	public void EnsureNetworkExists(string networkName, string workingDirectory)
 	{
 		// A non-zero exit from 'network inspect' means the network does not exist, which is an
@@ -38,7 +17,7 @@ public sealed class WorkstationDockerComposeExecutor : IDockerComposeExecutor
 		RunDocker($"network create {networkName}", workingDirectory);
 	}
 
-	private static void RunDocker(string arguments, string workingDirectory)
+	public void RunDocker(string arguments, string workingDirectory)
 	{
 		var result = RunDockerProcess(arguments, workingDirectory);
 		if (result.ExitCode == 0)
@@ -88,44 +67,4 @@ public sealed class WorkstationDockerComposeExecutor : IDockerComposeExecutor
 	}
 
 	private readonly record struct DockerProcessResult(int ExitCode, string StandardOutput, string StandardError);
-
-	public static string BuildDockerComposeCommand(IReadOnlyList<string> composeFiles, bool buildImages)
-	{
-		var argsBuilder = BuildComposeFileArgs(composeFiles);
-
-		argsBuilder.Append(" up -d");
-		if (buildImages)
-		{
-			argsBuilder.Append(" --build --renew-anon-volumes");
-		}
-
-		return argsBuilder.ToString();
-	}
-
-	public static string BuildDockerComposeDownCommand(IReadOnlyList<string> composeFiles, bool removeVolumes)
-	{
-		var argsBuilder = BuildComposeFileArgs(composeFiles);
-
-		argsBuilder.Append(" down");
-		if (removeVolumes)
-		{
-			argsBuilder.Append(" -v");
-		}
-
-		return argsBuilder.ToString();
-	}
-
-	private static StringBuilder BuildComposeFileArgs(IReadOnlyList<string> composeFiles)
-	{
-		var argsBuilder = new StringBuilder("compose");
-		foreach (var file in composeFiles)
-		{
-			argsBuilder.Append(" -f ");
-			argsBuilder.Append('"');
-			argsBuilder.Append(file);
-			argsBuilder.Append('"');
-		}
-
-		return argsBuilder;
-	}
 }

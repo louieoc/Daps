@@ -42,28 +42,41 @@ if [[ ! -f "$TAR_FILE" ]]; then
 fi
 
 # --- Resolve URLs ---
-dev_caddy="${PROJECT_ROOT}/_caddy_sites/${DAPS_PROJECT}.dev.caddy"
-prod_caddy="${PROJECT_ROOT}/_caddy_sites/${DAPS_PROJECT}.prod.caddy"
-
-if [[ ! -f "$dev_caddy" ]]; then
-  echo "Dev caddy file not found: $dev_caddy" >&2; exit 1
+# A backup taken from the local instance already holds dev URLs, so there is nothing to
+# replace — and no prod caddy file is required.
+replace_urls=true
+if [[ "${DAPS_RESTORE_ENV}" == "local" ]]; then
+  replace_urls=false
 fi
 
-dev_domain=$(grep -v '^\s*#' "$dev_caddy" | grep -v '^\s*$' | head -1 | awk '{print $1}')
-dev_url="http://${dev_domain}"
+if [[ "$replace_urls" == "true" ]]; then
+  dev_caddy="${PROJECT_ROOT}/_caddy_sites/${DAPS_PROJECT}.dev.caddy"
+  prod_caddy="${PROJECT_ROOT}/_caddy_sites/${DAPS_PROJECT}.prod.caddy"
 
-if [[ -n "${DAPS_PROD_URL:-}" ]]; then
-  prod_url="$DAPS_PROD_URL"
-else
-  if [[ ! -f "$prod_caddy" ]]; then
-    echo "Prod caddy file not found: $prod_caddy (use --prod-url to specify prod URL manually)" >&2; exit 1
+  if [[ ! -f "$dev_caddy" ]]; then
+    echo "Dev caddy file not found: $dev_caddy" >&2; exit 1
   fi
-  prod_domain=$(grep -v '^\s*#' "$prod_caddy" | grep -v '^\s*$' | head -1 | awk '{print $1}')
-  prod_url="https://${prod_domain}"
+
+  dev_domain=$(grep -v '^\s*#' "$dev_caddy" | grep -v '^\s*$' | head -1 | awk '{print $1}')
+  dev_url="http://${dev_domain}"
+
+  if [[ -n "${DAPS_PROD_URL:-}" ]]; then
+    prod_url="$DAPS_PROD_URL"
+  else
+    if [[ ! -f "$prod_caddy" ]]; then
+      echo "Prod caddy file not found: $prod_caddy (use --prod-url to specify prod URL manually)" >&2; exit 1
+    fi
+    prod_domain=$(grep -v '^\s*#' "$prod_caddy" | grep -v '^\s*$' | head -1 | awk '{print $1}')
+    prod_url="https://${prod_domain}"
+  fi
 fi
 
 echo "Restoring ${DAPS_PROJECT} from backup: ${DAPS_RESTORE_ENV} ${DAPS_RESTORE_TIMESTAMP}"
-echo "Prod URL: ${prod_url} -> Dev URL: ${dev_url}"
+if [[ "$replace_urls" == "true" ]]; then
+  echo "Prod URL: ${prod_url} -> Dev URL: ${dev_url}"
+else
+  echo "Local backup — URLs are already dev URLs, no replacement needed."
+fi
 echo ""
 
 # --- Read local secrets ---
@@ -88,12 +101,19 @@ tar -xzf "${TAR_FILE}" -C "${PROJECT_ROOT}"
 echo "- wp-content restore done"
 
 # --- Step 3: Replace URLs and flush cache ---
-echo "Step 3/3: replacing URLs (${prod_url} -> ${dev_url})..."
-docker exec "${local_wp_container}" wp search-replace "${prod_url}" "${dev_url}" \
-  --allow-root --path=/var/www/html
+# The cache flush is not optional even when no URLs change: Redis caches the options table,
+# so a freshly imported database serves stale values until it is flushed.
+if [[ "$replace_urls" == "true" ]]; then
+  echo "Step 3/3: replacing URLs (${prod_url} -> ${dev_url})..."
+  docker exec "${local_wp_container}" wp search-replace "${prod_url}" "${dev_url}" \
+    --allow-root --path=/var/www/html
+  echo "- URL replacement done"
+else
+  echo "Step 3/3: flushing cache..."
+fi
 docker exec "${local_wp_container}" wp cache flush \
   --allow-root --path=/var/www/html
-echo "- URL replacement done"
+echo "- cache flush done"
 
 echo ""
 echo "Restore complete."

@@ -131,13 +131,21 @@ Configuration file for daps
     - located in project root
     - underscore is to alphabetize it "out of the way" of the project source
     - created automatically when a backup is run; should be gitignored (may contain database dumps, uploaded files, or other sensitive data)
-    - backups from prod are placed in `_backups/from_prod/`
+    - backups from prod are placed in `_backups/from_prod/`; snapshots of the local instance are placed in `_backups/from_local/`
+    - one subfolder per environment a backup can come from; `dapsman local restore` searches all of them
     - the toolkit container accesses this folder via the project's bind mount (same path as other `_` folders)
 - `_scripts/backup-remote.toolkit.sh`
-    - optional; daps skips the backup workflow for projects that don't have this script
+    - optional; daps skips `prod backup` for projects that don't have this script
     - runs inside the toolkit container (never uploaded to the remote)
     - receives env vars: `DAPS_PROJECT`, `DAPS_REMOTE_HOST`, `DAPS_REMOTE_USER`, `DAPS_SSH_KEY`
     - receives args: `--env prod --to <destination-path-in-toolkit>`
+- `_scripts/backup-local.toolkit.sh`
+    - optional; daps skips `local backup` for projects that don't have this script
+    - runs inside the toolkit container, against the local Docker instance — no SSH, so no host/user/key
+    - receives env vars: `DAPS_PROJECT`
+    - receives args: `--env local --to <destination-path-in-toolkit>`
+    - output filenames use `local` as the environment token, e.g. `<project>_local_<timestamp>.sql`, so the same restore-point discovery works for both sources
+    - not provided by the `astro` or `static` templates: those are assumed to be tracked in git, which already gives them history
 
 
 ### OpenStack resources

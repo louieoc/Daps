@@ -1,6 +1,5 @@
 using Dapsman.Application;
 using Dapsman.Domain;
-using Dapsman.Infrastructure;
 
 namespace Dapsman.Infrastructure.Tests;
 
@@ -9,7 +8,7 @@ public sealed class LocalBuildPlanBuilderTests
 	[Fact]
 	public void BuildLocalPlan_NoProjectsConfigured_UsesDapsOnlyAndWarns()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var dockerDir = Path.Combine(root, "docker");
 		Directory.CreateDirectory(dockerDir);
 		File.WriteAllText(Path.Combine(dockerDir, "compose_daps.yaml"), "services: {}\n");
@@ -39,7 +38,7 @@ public sealed class LocalBuildPlanBuilderTests
 	[Fact]
 	public void BuildLocalPlan_ProjectInSplitMode_UsesDevFileForLocal()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var dockerDir = Path.Combine(root, "docker");
 		Directory.CreateDirectory(dockerDir);
 		File.WriteAllText(Path.Combine(dockerDir, "compose_daps.yaml"), "services: {}\n");
@@ -77,7 +76,7 @@ public sealed class LocalBuildPlanBuilderTests
 	[Fact]
 	public void BuildLocalPlan_ProjectInLayeredMode_UsesBaseAndDevForLocal()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var dockerDir = Path.Combine(root, "docker");
 		Directory.CreateDirectory(dockerDir);
 		File.WriteAllText(Path.Combine(dockerDir, "compose_daps.yaml"), "services: {}\n");
@@ -119,7 +118,7 @@ public sealed class LocalBuildPlanBuilderTests
 	[Fact]
 	public void BuildLocalPlan_BaseAndProdOnly_IsValidAndUsesBaseForLocal()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var dockerDir = Path.Combine(root, "docker");
 		Directory.CreateDirectory(dockerDir);
 		File.WriteAllText(Path.Combine(dockerDir, "compose_daps.yaml"), "services: {}\n");
@@ -160,7 +159,7 @@ public sealed class LocalBuildPlanBuilderTests
 	[Fact]
 	public void BuildLocalPlan_DapsLinkedDevOnlyWithoutShared_IsValidForLocalBuild()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var dockerDir = Path.Combine(root, "docker");
 		Directory.CreateDirectory(dockerDir);
 		File.WriteAllText(Path.Combine(dockerDir, "compose_daps.yaml"), "services: {}\n");
@@ -193,10 +192,68 @@ public sealed class LocalBuildPlanBuilderTests
 		Assert.Contains(plan.ProjectComposePlans[0].ComposeFiles, p => p.EndsWith("compose_jshirt.yaml", StringComparison.OrdinalIgnoreCase));
 	}
 
-	private static string CreateTempDirectory()
+	[Fact]
+	public void BuildLocalPlan_RebuildWithoutProjectsOrProjectFilters_ThrowsInvalidOperationException()
 	{
-		var path = Path.Combine(Path.GetTempPath(), "dapsman-tests", Guid.NewGuid().ToString("N"));
-		Directory.CreateDirectory(path);
-		return path;
+		var root = TestHelper.CreateTempDirectory();
+		var builder = CreateBuilderWithOneProject(root);
+		var options = new LocalBuildOptions { Rebuild = true, ProjectFilters = [] };
+
+		var ex = Assert.Throws<InvalidOperationException>(() => builder.BuildLocalPlan(options));
+		Assert.Contains("project filter is required", ex.Message);
+	}
+
+	[Fact]
+	public void BuildLocalPlan_RebuildWithoutProjectFilters_ThrowsInvalidOperationException()
+	{
+		var root = TestHelper.CreateTempDirectory();
+		var builder = CreateBuilderWithOneProject(root);
+		var options = new LocalBuildOptions { Rebuild = true, ProjectFilters = [] };
+
+		var ex = Assert.Throws<InvalidOperationException>(() => builder.BuildLocalPlan(options));
+		Assert.Contains("project filter is required", ex.Message);
+	}
+
+	[Fact]
+	public void BuildLocalPlan_RebuildWithUnmatchedProjectFilter_ThrowsInvalidOperationException()
+	{
+		var root = TestHelper.CreateTempDirectory();
+		var builder = CreateBuilderWithOneProject(root);
+		var options = new LocalBuildOptions { Rebuild = true, ProjectFilters = ["unknown"] };
+
+		var ex = Assert.Throws<InvalidOperationException>(() => builder.BuildLocalPlan(options));
+		Assert.Contains("Cannot rebuild project containers when no projects are selected", ex.Message);
+	}
+
+	private static LocalBuildPlanBuilder CreateBuilderWithOneProject(string root)
+	{
+		var dockerDir = Path.Combine(root, "docker");
+		Directory.CreateDirectory(dockerDir);
+		File.WriteAllText(Path.Combine(dockerDir, "compose_daps.yaml"), "services: {}\n");
+		File.WriteAllText(Path.Combine(dockerDir, "compose_daps.dev.yaml"), "services: {}\n");
+		var projectRoot = Path.Combine(root, "projects", "mywpsite");
+
+		Directory.CreateDirectory(projectRoot);
+		var projectDocker = Path.Combine(projectRoot, "_docker");
+		Directory.CreateDirectory(projectDocker);
+		File.WriteAllText(Path.Combine(projectDocker, "compose_daps_mywpsite.dev.yaml"), "services: {}\n");
+		File.WriteAllText(Path.Combine(projectDocker, "compose_mywpsite.yaml"), "services: {}\n");
+
+		var config = new DapsConfig
+		{
+			DapsRootPath = root,
+			FullYamlPath = Path.Combine(".", "daps.yaml"),
+			Providers = [],
+			Projects = new[]
+			{
+				new ProjectDefinition { Name = "mywpsite", Path = projectRoot },
+			},
+		};
+
+		var dockerResolver = new DockerResolver(config);
+		var projectResolver = new ProjectResolver(config);
+		var caddyResolver = new CaddyResolver(config, new FakeContainerManager(null));
+		var builder = new LocalBuildPlanBuilder(config, dockerResolver, caddyResolver, projectResolver, new FakeHostPortManager());
+		return builder;
 	}
 }

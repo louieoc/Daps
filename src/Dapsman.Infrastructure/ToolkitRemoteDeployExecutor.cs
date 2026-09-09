@@ -13,11 +13,25 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
 		_bashRunner = bashRunner;
 	}
 
-	public void ExecuteBuildImages(IReadOnlyList<BuildImageCommandPlan> commands, string dapsRootPath)
+	/// <summary>Docker's Go template for the daemon's own platform, e.g. "linux/amd64".</summary>
+	private const string DockerServerPlatformFormat = "'{{.Server.Os}}/{{.Server.Arch}}'";
+
+	/// <summary>The same shape read off a loaded image, for comparison against the host's.</summary>
+	private const string DockerImagePlatformFormat = "'{{.Os}}/{{.Architecture}}'";
+
+	public void ExecuteBuildImages(IReadOnlyList<BuildImageCommandPlan> commands, string dapsRootPath, string? targetPlatform)
 	{
+		// Passed as an environment variable rather than a script argument because
+		// build-docker-images.toolkit.sh already exists in every project created before this
+		// change. A script that does not read the variable keeps working exactly as it did;
+		// adding a positional argument would have shifted arguments under those scripts instead.
+		var env = targetPlatform is null
+			? null
+			: new Dictionary<string, string> { ["DAPS_TARGET_PLATFORM"] = targetPlatform };
+
 		foreach (var command in commands)
 		{
-			_bashRunner.RunScript(command.ToolkitScriptPath, dapsRootPath);
+			_bashRunner.RunScript(command.ToolkitScriptPath, dapsRootPath, env: env);
 		}
 	}
 
@@ -244,6 +258,7 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
 		sb.AppendLine("ssh \"${ssh_opts[@]}\" \"$remote\" 'bash -s' <<'REMOTE_DOCKER'");
 		sb.AppendLine("set -euo pipefail");
 		sb.AppendLine($"{docker} network inspect daps_net >/dev/null 2>&1 || {docker} network create daps_net >/dev/null");
+		sb.AppendLine($"host_platform=\"$({docker} version --format {DockerServerPlatformFormat})\"");
 		var dapsRemoteComposeArgs = string.Join(" ", plan.DapsComposeFilesToUpload.Select(f => $"-f /srv/daps/docker/{Path.GetFileName(f)}"));
 		sb.AppendLine($"{docker} compose {dapsRemoteComposeArgs} up -d");
 		foreach (var projectPlan in plan.ProjectPlans)
@@ -255,7 +270,20 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
 
 			sb.AppendLine($"for image_file in /srv/projects/{projectPlan.ProjectName}/_docker/image-exports/*; do");
 			sb.AppendLine("  [ -e \"$image_file\" ] || continue");
-			sb.AppendLine($"  {docker} load -i \"$image_file\"");
+			sb.AppendLine($"  loaded_output=\"$({docker} load -i \"$image_file\")\"");
+			sb.AppendLine("  echo \"$loaded_output\"");
+			// A tarball built on a different architecture loads without complaint and only fails
+			// when the container starts, as "exec format error" -- a message that names neither
+			// architecture nor the image. Comparing here turns it into a deploy-time error that
+			// says what to do. Image names cannot contain spaces, so word splitting is safe.
+			sb.AppendLine("  for image_ref in $(echo \"$loaded_output\" | sed -n 's/^Loaded image: //p'); do");
+			sb.AppendLine($"    image_platform=\"$({docker} image inspect \"$image_ref\" --format {DockerImagePlatformFormat})\"");
+			sb.AppendLine("    if [ \"$image_platform\" != \"$host_platform\" ]; then");
+			sb.AppendLine("      echo \"ERROR: image '$image_ref' was built for $image_platform but this host runs $host_platform.\" >&2");
+			sb.AppendLine("      echo \"Rebuild it for the host with: dapsman prod deploy --build\" >&2");
+			sb.AppendLine("      exit 1");
+			sb.AppendLine("    fi");
+			sb.AppendLine("  done");
 			sb.AppendLine("done");
 			var projectComposeArgs = string.Join(" ", projectPlan.ComposeFileNamesForRemoteRun.Select(f => $"-f /srv/projects/{projectPlan.ProjectName}/_docker/{f}"));
 			sb.AppendLine($"{docker} compose {projectComposeArgs} up -d --force-recreate --renew-anon-volumes");

@@ -17,12 +17,9 @@ public interface ICaddySiteSync
 	void SyncLocalSites(LocalCaddySyncPlan plan);
 }
 
-public interface IDockerComposeExecutor
+public interface IDockerExecutor
 {
-	void RunComposeUp(IReadOnlyList<string> composeFiles, bool buildImages, string workingDirectory);
-	void RunComposeDown(IReadOnlyList<string> composeFiles, bool removeVolumes, string workingDirectory);
-
-	/// <summary>Creates the named Docker network if it does not already exist.</summary>
+	void RunDocker(string arguments, string workingDirectory);
 	void EnsureNetworkExists(string networkName, string workingDirectory);
 }
 
@@ -38,7 +35,11 @@ public interface IRemoteDeployPlanBuilder
 
 public interface IRemoteDeployExecutor
 {
-	void ExecuteBuildImages(IReadOnlyList<BuildImageCommandPlan> commands, string dapsRootPath);
+	/// <param name="targetPlatform">
+	/// Docker platform the built images must target, e.g. "linux/amd64", as reported by the remote
+	/// host. Null leaves the build unpinned, which builds for the workstation's own architecture.
+	/// </param>
+	void ExecuteBuildImages(IReadOnlyList<BuildImageCommandPlan> commands, string dapsRootPath, string? targetPlatform);
 	void Execute(RemoteDeployPlan plan);
 }
 
@@ -71,6 +72,11 @@ public interface IRemoteBackupPlanBuilder
 	PlanResult<RemoteBackupPlan> BuildPlan(DapsConfig config, BackupOptions options);
 }
 
+public interface ILocalBackupPlanBuilder
+{
+	PlanResult<LocalBackupPlan> BuildPlan(DapsProject project, BackupOptions options);
+}
+
 public interface IOfflineStatusPlanBuilder
 {
 	PlanResult<OfflineStatusPlan> BuildPlan(DapsConfig config, OfflineStatusOptions options);
@@ -79,6 +85,16 @@ public interface IOfflineStatusPlanBuilder
 public interface IOfflineStatusExecutor
 {
 	void Execute(OfflineStatusPlan plan);
+}
+
+public interface ISystemStatusPlanBuilder
+{
+	SystemStatusPlan BuildPlan(DapsConfig config, SystemStatusOptions options);
+}
+
+public interface ISystemStatusCollector
+{
+	SystemStatus Collect(SystemStatusPlan plan);
 }
 
 public interface IInitPlanBuilder
@@ -168,7 +184,6 @@ public interface IProjectResolver
 
 public interface IHostingProviderResolver
 {
-	HostingProvider Resolve(string? providerName);
 	HostingProvider Resolve(string? cliProviderName, string? projectProviderName);
 
 	/// <summary>
@@ -204,4 +219,9 @@ public interface IDockerResolver
 {
 	DockerDefinition Resolve();
 	ProjectDockerDefinition ResolveForProject(DapsProject project);
+}
+
+public interface ITemplateConfigLoader
+{
+	TemplateConfig Load(string templateRoot);
 }

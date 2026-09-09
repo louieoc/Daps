@@ -1,8 +1,13 @@
 providers:
-  myprovider: openstack
+  mygenericprovider: generic-vps
+    hostname: myinstancename.vps.provider.com
+    user: ubuntu
+    #disabled: true # note the ability to disable a hosting provider which ignores it, like commenting it out in here
+  myopenstackprovider: openstack
     openrc: ./hosting/myprovider_openrc
 
 projects:
   myproject:
     path: ../myproject
+    provider: mygenericprovider # specifying a provider is optional but useful when more than one provider is defined
     #disabled: true # note the ability to disable a project which ignores it, like commenting it out in here

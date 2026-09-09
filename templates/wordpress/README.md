@@ -184,6 +184,14 @@ dapsman prod backup --project mywpsite --provider <name>
 
 This runs `_scripts/backup-remote.toolkit.sh` from inside the toolkit container. Backups are saved to `_backups/from_prod/` inside the project folder. See the script for what is backed up (database dump and `wp-content/uploads` by default).
 
+To snapshot the local site instead — before a major upgrade, say, or a change you might want to undo:
+
+```bash
+dapsman local backup --project mywpsite
+```
+
+This runs `_scripts/backup-local.toolkit.sh` and saves a timestamped database dump and `wp-content` archive to `_backups/from_local/`. The site must be running. Restore any snapshot, from either folder, with `dapsman local restore --project mywpsite --list-restore-points`.
+
 ---
 
 ## Project structure
@@ -201,9 +209,12 @@ mywpsite/
 ├── _scripts/                            # Utility scripts
 │   ├── prerequisites.sh                 # Secret generation (run automatically by dapsman)
 │   ├── prerequisites.dev.sh             # Dev-only setup: secrets + hosts entry (run automatically by dapsman)
-│   └── backup-remote.toolkit.sh        # Backup script run from toolkit container
+│   ├── backup-remote.toolkit.sh        # Pulls a backup down from prod (run from toolkit container)
+│   └── backup-local.toolkit.sh         # Snapshots the local site (run from toolkit container)
 ├── _secrets/                            # Generated secrets — gitignored, never commit
-├── _backups/                            # Local backup archive — gitignored
+├── _backups/                            # Backup archive — gitignored
+│   ├── from_prod/                       # Pulled down by `dapsman prod backup`
+│   └── from_local/                      # Snapshots taken by `dapsman local backup`
 ├── wp-content/                          # WordPress content
 │   ├── themes/                          # Tracked in git — customise your theme here
 │   ├── uploads/                         # Gitignored — managed on server, backed up separately

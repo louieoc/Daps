@@ -7,7 +7,7 @@ public sealed class ToolkitRemoteProvisionExecutorTests
 	[Fact]
 	public void Execute_StagesScriptsWithLfEndings_AndRunsStagedProvisionScript()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var scripts = Path.Combine(root, "scripts");
 		Directory.CreateDirectory(scripts);
 
@@ -43,7 +43,7 @@ public sealed class ToolkitRemoteProvisionExecutorTests
 	[Fact]
 	public void Execute_RemovesStagingDirectoryAfterwards()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var scripts = Path.Combine(root, "scripts");
 		Directory.CreateDirectory(scripts);
 		var script = Path.Combine(scripts, "configure-host.sh");
@@ -104,12 +104,5 @@ public sealed class ToolkitRemoteProvisionExecutorTests
 
 		public string CaptureScript(string scriptPath, string workingDirectory, IReadOnlyDictionary<string, string>? env = null)
 			=> "";
-	}
-
-	private static string CreateTempDirectory()
-	{
-		var path = Path.Combine(Path.GetTempPath(), "dapsman-tests", Guid.NewGuid().ToString("N"));
-		Directory.CreateDirectory(path);
-		return path;
 	}
 }

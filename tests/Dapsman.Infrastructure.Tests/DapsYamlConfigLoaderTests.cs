@@ -7,7 +7,7 @@ public sealed class DapsYamlConfigLoaderTests
     [Fact]
     public void Load_ReadsProjectsAndResolvesPaths()
     {
-        var root = CreateTempDirectory();
+        var root = TestHelper.CreateTempDirectory();
 
         var yaml = """
 providers:
@@ -37,7 +37,7 @@ projects:
     [Fact]
     public void Load_DisabledProject_SetsDisabledTrue()
     {
-        var root = CreateTempDirectory();
+        var root = TestHelper.CreateTempDirectory();
 
         var yaml = """
 providers:
@@ -62,7 +62,7 @@ projects:
     [Fact]
     public void Load_DisabledBeforePath_SetsDisabledTrue()
     {
-        var root = CreateTempDirectory();
+        var root = TestHelper.CreateTempDirectory();
 
         var yaml = """
 providers:
@@ -84,7 +84,7 @@ projects:
     [Fact]
     public void Load_ParsesProviderOnProject()
     {
-        var root = CreateTempDirectory();
+        var root = TestHelper.CreateTempDirectory();
 
         var yaml = """
 providers:
@@ -107,7 +107,7 @@ projects:
     [Fact]
     public void Load_ProjectWithNoProvider_HasNullProvider()
     {
-        var root = CreateTempDirectory();
+        var root = TestHelper.CreateTempDirectory();
 
         var yaml = """
 providers:
@@ -127,7 +127,7 @@ projects:
     [Fact]
     public void Load_ParsesDisabledOnProvider()
     {
-        var root = CreateTempDirectory();
+        var root = TestHelper.CreateTempDirectory();
 
         var yaml = """
 providers:
@@ -152,7 +152,7 @@ projects:
     [Fact]
     public void Load_ProviderDisabledBeforeOpenrc_SetsDisabledTrue()
     {
-        var root = CreateTempDirectory();
+        var root = TestHelper.CreateTempDirectory();
 
         var yaml = """
 providers:
@@ -174,7 +174,7 @@ projects:
     [Fact]
     public void Load_ParsesGenericVpsProvider()
     {
-        var root = CreateTempDirectory();
+        var root = TestHelper.CreateTempDirectory();
 
         var yaml = """
 providers:
@@ -199,7 +199,7 @@ projects:
     [Fact]
     public void Load_GenericVpsProviderWithoutUser_IsNotAdded()
     {
-        var root = CreateTempDirectory();
+        var root = TestHelper.CreateTempDirectory();
 
         var yaml = """
 providers:
@@ -219,7 +219,7 @@ projects:
     [Fact]
     public void Load_GenericVpsProvider_DisabledBeforeFields_SetsDisabledTrue()
     {
-        var root = CreateTempDirectory();
+        var root = TestHelper.CreateTempDirectory();
 
         var yaml = """
 providers:
@@ -237,12 +237,5 @@ projects:
 
         Assert.Single(config.Providers);
         Assert.True(config.Providers[0].Disabled);
-    }
-
-    private static string CreateTempDirectory()
-    {
-        var path = Path.Combine(Path.GetTempPath(), "dapsman-tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(path);
-        return path;
     }
 }

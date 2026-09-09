@@ -7,7 +7,7 @@ public sealed class LocalCaddySiteSyncTests
 	[Fact]
 	public void SyncDevSites_NoFiles_CreatesPlaceholder()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var runtimeSites = Path.Combine(root, "caddy_sites");
 		var plan = new LocalCaddySyncPlan
 		{
@@ -26,7 +26,7 @@ public sealed class LocalCaddySiteSyncTests
 	[Fact]
 	public void SyncDevSites_WithFiles_CopiesFilesAndSkipsPlaceholder()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var sourceDir = Path.Combine(root, "project", "_caddy_sites");
 		var runtimeSites = Path.Combine(root, "caddy_sites");
 		Directory.CreateDirectory(sourceDir);
@@ -55,12 +55,5 @@ public sealed class LocalCaddySiteSyncTests
 
 		Assert.True(File.Exists(Path.Combine(runtimeSites, "site.dev.caddy")));
 		Assert.False(File.Exists(plan.PlaceholderFilePath));
-	}
-
-	private static string CreateTempDirectory()
-	{
-		var path = Path.Combine(Path.GetTempPath(), "dapsman-tests", Guid.NewGuid().ToString("N"));
-		Directory.CreateDirectory(path);
-		return path;
 	}
 }

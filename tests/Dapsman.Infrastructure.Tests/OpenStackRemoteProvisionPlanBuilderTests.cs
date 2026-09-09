@@ -8,7 +8,7 @@ public sealed class OpenStackRemoteProvisionPlanBuilderTests
 	[Fact]
 	public void BuildRemotePlan_UsesConfiguredScriptsAndMapsToToolkitPaths()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var scripts = Path.Combine(root, "scripts");
 		var hosting = Path.Combine(root, "hosting");
 		Directory.CreateDirectory(scripts);
@@ -71,12 +71,5 @@ public sealed class OpenStackRemoteProvisionPlanBuilderTests
 		Assert.True(createIndex >= 0 && reSourceIndex > createIndex && configureIndex > reSourceIndex);
 		Assert.Contains("${OS_SERVER_USER:-ubuntu}@${OS_SERVER_IP}", plan.ToolkitCommand, StringComparison.Ordinal);
 		Assert.Contains("Waiting for SSH", plan.ToolkitCommand, StringComparison.Ordinal);
-	}
-
-	private static string CreateTempDirectory()
-	{
-		var path = Path.Combine(Path.GetTempPath(), "dapsman-tests", Guid.NewGuid().ToString("N"));
-		Directory.CreateDirectory(path);
-		return path;
 	}
 }

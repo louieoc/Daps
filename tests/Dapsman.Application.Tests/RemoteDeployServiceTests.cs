@@ -33,9 +33,28 @@ public sealed partial class RemoteDeployServiceTests
 				DapsRootPath = ".",
 				FullYamlPath = Path.Combine(".", "daps.yaml"),
 			}, new RemoteDeployOptions());
-		service.ExecuteBuildImageScripts(plan.BuildImageCommands, plan.DapsRootPath);
+		service.ExecuteBuildImageScripts(plan.BuildImageCommands, plan.DapsRootPath, "linux/amd64");
 
 		Assert.True(executor.BuildImagesCalled);
+	}
+
+	[Fact]
+	public void ExecuteBuildImageScripts_PassesTheTargetPlatformThrough()
+	{
+		var loader = new FakeLoader();
+		var planner = new FakePlanner();
+		var executor = new FakeExecutor();
+		var service = new RemoteDeployService(loader, planner, executor);
+
+		var plan = planner.BuildRemoteDeployPlan(
+			new DapsConfig
+			{
+				DapsRootPath = ".",
+				FullYamlPath = Path.Combine(".", "daps.yaml"),
+			}, new RemoteDeployOptions());
+		service.ExecuteBuildImageScripts(plan.BuildImageCommands, plan.DapsRootPath, "linux/arm64");
+
+		Assert.Equal("linux/arm64", executor.BuildImagesPlatform);
 	}
 
 	private sealed class FakeLoader : IDapsConfigLoader
@@ -60,16 +79,7 @@ public sealed partial class RemoteDeployServiceTests
 		public RemoteDeployPlan BuildRemoteDeployPlan(DapsConfig config, RemoteDeployOptions options)
 		{
 			Called = true;
-			return new RemoteDeployPlan
-			{
-				DapsRootPath = ".",
-				ProviderName = "ramnode",
-				ToolkitContainerName = "daps-toolkit-1",
-				RemoteHost = "10.0.0.5",
-				RemoteUser = "root",
-				SshKeyName = "daps-key-ramnode",
-				IsRoot = true,
-				BuildImageCommands = new[]
+			var buildImageCommands = new[]
 				{
 					new BuildImageCommandPlan
 					{
@@ -83,7 +93,19 @@ public sealed partial class RemoteDeployServiceTests
 						ToolkitScriptPath = "/srv/projects/b/_scripts/build-docker-images.toolkit.sh",
 						HasExistingExports = true,
 					},
-				},
+				};
+
+			return new RemoteDeployPlan
+			{
+				DapsRootPath = ".",
+				ProviderName = "ramnode",
+				ToolkitContainerName = "daps-toolkit-1",
+				RemoteHost = "10.0.0.5",
+				RemoteUser = "root",
+				SshKeyName = "daps-key-ramnode",
+				IsRoot = true,
+				BuildImageCommands = buildImageCommands,
+				SelectedBuildImageCommands = buildImageCommands,
 				CaddyfileSourcePath = "caddy/Caddyfile",
 				CaddySiteFilesToUpload = Array.Empty<CaddyUploadPlan>(),
 				ExpectedProdCaddyFileNames = Array.Empty<string>(),
@@ -99,7 +121,13 @@ public sealed partial class RemoteDeployServiceTests
 		public bool BuildImagesCalled { get; private set; }
 		public bool Called { get; private set; }
 
-		public void ExecuteBuildImages(IReadOnlyList<BuildImageCommandPlan> commands, string dapsRootPath) => BuildImagesCalled = true;
+		public void ExecuteBuildImages(IReadOnlyList<BuildImageCommandPlan> commands, string dapsRootPath, string? targetPlatform)
+		{
+			BuildImagesCalled = true;
+			BuildImagesPlatform = targetPlatform;
+		}
+
+		public string? BuildImagesPlatform { get; private set; }
 
 		public void Execute(RemoteDeployPlan plan)
 		{

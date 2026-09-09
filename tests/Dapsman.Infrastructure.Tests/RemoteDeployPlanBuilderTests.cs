@@ -8,7 +8,7 @@ public sealed class RemoteDeployPlanBuilderTests
 	[Fact]
 	public void BuildRemoteDeployPlan_UsesDapsOrderAndAllProjectsForStaleCaddyBaseline()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		Directory.CreateDirectory(Path.Combine(root, "hosting"));
 		Directory.CreateDirectory(Path.Combine(root, "caddy"));
 		Directory.CreateDirectory(Path.Combine(root, "docker"));
@@ -71,7 +71,7 @@ export OS_KEY_NAME="daps-key-ramnode"
 	[Fact]
 	public void BuildRemoteDeployPlan_UsesDefaultKeyNameWhenNotSet()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		Directory.CreateDirectory(Path.Combine(root, "hosting"));
 		Directory.CreateDirectory(Path.Combine(root, "caddy"));
 		Directory.CreateDirectory(Path.Combine(root, "docker"));
@@ -117,7 +117,7 @@ export OS_SERVER_IP="10.0.0.20"
 	[Fact]
 	public void BuildRemoteDeployPlan_StripsInlineCommentsFromExportValues()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		Directory.CreateDirectory(Path.Combine(root, "hosting"));
 		Directory.CreateDirectory(Path.Combine(root, "caddy"));
 		Directory.CreateDirectory(Path.Combine(root, "docker"));
@@ -196,12 +196,5 @@ services:
 		}
 
 		return projectRoot;
-	}
-
-	private static string CreateTempDirectory()
-	{
-		var path = Path.Combine(Path.GetTempPath(), "dapsman-tests", Guid.NewGuid().ToString("N"));
-		Directory.CreateDirectory(path);
-		return path;
 	}
 }

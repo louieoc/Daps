@@ -41,6 +41,20 @@ public sealed class LocalBuildPlanBuilder : ILocalBuildPlanBuilder
 			warnings.Add("Project filters did not match configured projects; continuing with Daps-only local build.");
 		}
 
+		// ensure rebuild is only requested when there are projects to rebuild
+		if (options.Rebuild)
+		{
+			if (options.ProjectFilters.Count == 0)
+			{
+				throw new InvalidOperationException("A project filter is required for --rebuild, so that volumes are never destroyed for all projects at once.");
+			}
+
+			if (selectedProjects.Count == 0)
+			{
+				throw new InvalidOperationException("Cannot rebuild project containers when no projects are selected.");
+			}
+		}
+
 		var dockerDefinition = _dockerResolver.Resolve();
 		var dapsComposeFiles = ConfigUtils.RequireFiles(dockerDefinition.LocalDapsComposeFilePaths, "All expected Daps compose files must be present.").ToList();
 
@@ -66,13 +80,18 @@ public sealed class LocalBuildPlanBuilder : ILocalBuildPlanBuilder
 		foreach (var project in selectedProjects)
 		{
 			var projectDocker = _dockerResolver.ResolveForProject(project);
+			var projectComposeBuilder = new WorkstationDockerComposeBuilder(projectDocker.LocalProjectComposeFiles);
+			var upCommand = projectComposeBuilder.BuildDockerComposeUpCommand(options.BuildImages);
+			var downCommand = options.Rebuild ? projectComposeBuilder.BuildDockerComposeDownCommand(removeVolumes: true) : null;
 
 			projectPlans.Add(new LocalProjectComposePlan
 			{
 				ProjectName = project.Definition.Name,
 				ProjectPath = project.Definition.Path,
 				ComposeFiles = projectDocker.LocalProjectComposeFiles,
-				PrerequisiteScripts = project.LocalPrerequisiteScripts
+				PrerequisiteScripts = project.LocalPrerequisiteScripts,
+				ComposeUpCommand = upCommand,
+				ComposeDownCommand = downCommand
 			});
 		}
 
@@ -83,6 +102,9 @@ public sealed class LocalBuildPlanBuilder : ILocalBuildPlanBuilder
 			warnings.Add($"Port {conflict.Port} is used by multiple projects: {projects}");
 		}
 
+		var dapsComposeBuilder = new WorkstationDockerComposeBuilder(dapsComposeFiles);
+		var dapsUpCommand = dapsComposeBuilder.BuildDockerComposeUpCommand(options.BuildImages);
+
 		return new LocalBuildPlan
 		{
 			CaddySync = caddySyncPlan,
@@ -91,6 +113,7 @@ public sealed class LocalBuildPlanBuilder : ILocalBuildPlanBuilder
 			ProjectComposePlans = projectPlans,
 			Warnings = warnings,
 			HasProjectsConfigured = _config.Projects.Count > 0,
+			DapsComposeCommand = dapsUpCommand
 		};
 	}
 

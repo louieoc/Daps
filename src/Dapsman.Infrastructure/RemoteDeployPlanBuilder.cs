@@ -123,6 +123,19 @@ public sealed class RemoteDeployPlanBuilder : IRemoteDeployPlanBuilder
 			});
 		}
 
+		var commandsToRun = SelectBuildCommands(buildImageCommands, options);
+		SystemStatusPlan? statusPlan = null;
+		if (commandsToRun.Count > 0)
+		{
+			statusPlan = RemoteSystemStatusPlanBuilder.BuildPlanForHost(
+				provider.ConfigDefinition.Name,
+				config.DapsRootPath,
+				toolkitDefinition.ContainerName,
+				provider.RemoteHost,
+				provider.RemoteUser,
+				provider.KeyName);
+		}
+
 		var caddyfileSourcePath = ConfigUtils.RequireFile(caddyDefinition.WorkstationCaddyFilePath, "Required Caddyfile not found.");
 		var dapsComposeFiles = dapsDockerDef.RemoteDapsComposeFilePaths;
 		return new RemoteDeployPlan
@@ -135,6 +148,8 @@ public sealed class RemoteDeployPlanBuilder : IRemoteDeployPlanBuilder
 			SshKeyName = provider.KeyName,
 			IsRoot = string.Equals(provider.RemoteUser, "root", StringComparison.OrdinalIgnoreCase),
 			BuildImageCommands = buildImageCommands,
+			SelectedBuildImageCommands = commandsToRun,
+			SystemStatusPlan = statusPlan,
 			CaddyfileSourcePath = caddyfileSourcePath,
 			CaddySiteFilesToUpload = caddySiteFilesToUpload,
 			ExpectedProdCaddyFileNames = expectedProdCaddyFileNames,
@@ -301,6 +316,13 @@ public sealed class RemoteDeployPlanBuilder : IRemoteDeployPlanBuilder
 		}
 
 		return tokens;
+	}
+
+	private static IReadOnlyList<BuildImageCommandPlan> SelectBuildCommands(IReadOnlyList<BuildImageCommandPlan> buildImageCommands, RemoteDeployOptions options)
+	{
+		return buildImageCommands
+			.Where(c => options.BuildImages || !c.HasExistingExports)
+			.ToList();
 	}
 
 	private sealed record ProdComposeSelection(IReadOnlyList<string> UploadFiles);

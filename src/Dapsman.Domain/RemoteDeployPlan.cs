@@ -9,7 +9,9 @@ public sealed class RemoteDeployPlan
 	public required string RemoteUser { get; init; }
 	public required string SshKeyName { get; init; }
 	public required bool IsRoot { get; init; }
+	public SystemStatusPlan? SystemStatusPlan {get; init; }
 	public required IReadOnlyList<BuildImageCommandPlan> BuildImageCommands { get; init; }
+	public required IReadOnlyList<BuildImageCommandPlan> SelectedBuildImageCommands { get; init; }
 	public required string CaddyfileSourcePath { get; init; }
 
 	/// <summary>

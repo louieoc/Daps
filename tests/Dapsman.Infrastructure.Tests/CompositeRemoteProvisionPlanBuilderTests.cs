@@ -8,7 +8,7 @@ public sealed class CompositeRemoteProvisionPlanBuilderTests
 	[Fact]
 	public void BuildRemotePlan_DispatchesToOpenStackBuilder_ForOpenstackProvider()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var hosting = Path.Combine(root, "hosting");
 		var scripts = Path.Combine(root, "scripts");
 		Directory.CreateDirectory(hosting);
@@ -57,7 +57,7 @@ public sealed class CompositeRemoteProvisionPlanBuilderTests
 	[Fact]
 	public void BuildRemotePlan_DispatchesToGenericVpsBuilder_ForGenericVpsProvider()
 	{
-		var root = CreateTempDirectory();
+		var root = TestHelper.CreateTempDirectory();
 		var scripts = Path.Combine(root, "scripts");
 		Directory.CreateDirectory(scripts);
 		File.WriteAllText(Path.Combine(scripts, "provision-generic-vps.sh"), "#!/usr/bin/env bash\n");
@@ -88,12 +88,5 @@ public sealed class CompositeRemoteProvisionPlanBuilderTests
 		var plan = composite.BuildRemotePlan(config, new RemoteProvisionOptions { ProviderName = "ovhcloud1" });
 
 		Assert.Contains("ssh-copy-id", plan.ToolkitCommand, StringComparison.Ordinal);
-	}
-
-	private static string CreateTempDirectory()
-	{
-		var path = Path.Combine(Path.GetTempPath(), "dapsman-tests", Guid.NewGuid().ToString("N"));
-		Directory.CreateDirectory(path);
-		return path;
 	}
 }

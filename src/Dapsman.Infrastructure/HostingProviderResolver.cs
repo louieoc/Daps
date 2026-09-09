@@ -14,12 +14,6 @@ public class HostingProviderResolver : IHostingProviderResolver
 		_config = config;
 	}
 
-	public HostingProvider Resolve(string? providerName)
-	{
-		var definition = FindProviderInConfig(_config, providerName);
-		return ResolveFromDefinition(definition);
-	}
-
 	public HostingProvider Resolve(string? cliProviderName, string? projectProviderName)
 	{
 		var definition = FindProviderInConfig(_config, cliProviderName ?? projectProviderName);
@@ -43,7 +37,7 @@ public class HostingProviderResolver : IHostingProviderResolver
 				$"--provider is required when multiple providers are configured. Available: {names}");
 		}
 
-		return Resolve(providerName);
+		return Resolve(providerName, null);
 	}
 
 	private HostingProvider ResolveFromDefinition(ProviderDefinition provider) => provider switch

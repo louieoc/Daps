@@ -1,11 +1,21 @@
 namespace Dapsman.Infrastructure.Tests;
 
+public sealed class ConfigUtilsTests
+{
+	[Fact]
+	public void GetDockerCommandPrefix_WorksAsExpected()
+	{
+		Assert.Equal("docker", ConfigUtils.GetDockerCommandPrefix("root"));
+		Assert.Equal("sudo docker", ConfigUtils.GetDockerCommandPrefix("ubuntu"));
+		Assert.Equal("sudo docker", ConfigUtils.GetDockerCommandPrefix("blarg"));
+	}
+}
 public sealed class ConfigUtilsCopyFileTests
 {
 	[Fact]
 	public void CopyFileAndReplaceLineEndingsForLinux_RewritesCrlfAsLf()
 	{
-		var dir = CreateTempDirectory();
+		var dir = TestHelper.CreateTempDirectory();
 		var source = Path.Combine(dir, "prerequisites.prod.sh");
 		var destination = Path.Combine(dir, "staged", "prerequisites.prod.sh");
 
@@ -23,7 +33,7 @@ public sealed class ConfigUtilsCopyFileTests
 	[Fact]
 	public void CopyFileAndReplaceLineEndingsForLinux_LeavesLfFileUnchanged()
 	{
-		var dir = CreateTempDirectory();
+		var dir = TestHelper.CreateTempDirectory();
 		var source = Path.Combine(dir, "generate-secrets.sh");
 		var destination = Path.Combine(dir, "staged", "generate-secrets.sh");
 		const string content = "#!/usr/bin/env bash\nset -euo pipefail\n";
@@ -37,7 +47,7 @@ public sealed class ConfigUtilsCopyFileTests
 	[Fact]
 	public void CopyFileAndReplaceLineEndingsForLinux_CreatesDestinationDirectory()
 	{
-		var dir = CreateTempDirectory();
+		var dir = TestHelper.CreateTempDirectory();
 		var source = Path.Combine(dir, "script.sh");
 		var destination = Path.Combine(dir, "a", "b", "script.sh");
 		File.WriteAllText(source, "echo hi\n");
@@ -45,12 +55,5 @@ public sealed class ConfigUtilsCopyFileTests
 		ConfigUtils.CopyFileAndReplaceLineEndingsForLinux(source, destination);
 
 		Assert.True(File.Exists(destination));
-	}
-
-	private static string CreateTempDirectory()
-	{
-		var path = Path.Combine(Path.GetTempPath(), "dapsman-tests", Guid.NewGuid().ToString("N"));
-		Directory.CreateDirectory(path);
-		return path;
 	}
 }

@@ -97,7 +97,6 @@ Examples:
 - `prerequisites.dev.sh` — generates secrets locally before local build
 - `prerequisites.prod.sh` — generates secrets on remote before prod deploy; sources `generate-secrets.sh`
 - `generate-secrets.sh` — shared library sourced by prerequisite scripts; uploaded to remote alongside `prerequisites.prod.sh`
-- `init-template.toolkit.sh` — one-time init script run from toolkit; never uploaded or auto-run
 - `backup-remote.toolkit.sh` — TODO: backup script run from toolkit
 
 Dapsman discovers `prerequisites.sh` (all environments) and `prerequisites.dev.sh` (local only) by name for local build. It uploads all `*.sh` and `*.prod.sh` files (excluding `*.dev.sh` and `*.toolkit.sh`) during prod deploy, and runs `prerequisites.sh` and `prerequisites.prod.sh` if present.
@@ -177,9 +176,9 @@ The workflows, listed here as an index only:
 
 ```
 init
-local build · local caddy restart · local restore · local teardown · local sync-from-prod
+local build · local caddy restart · local backup · local restore · local teardown · local sync-from-prod
 prod provision · prod deploy · prod caddy restart · prod sync-from-local
-prod backup · prod offline · prod online · prod teardown · prod unprovision
+prod backup · prod offline · prod online · prod teardown · prod unprovision · prod system
 ```
 
 Commands use `group action` token pairs (e.g. `local build`, `prod deploy`) except `init` which is a single token. Parsing lives in `CliArguments.Parse`.
@@ -193,13 +192,16 @@ When adding or changing a workflow, update in this order:
 
 ## Init / Template Convention
 
-`dapsman init` copies a template directory and runs `_scripts/init-template.toolkit.sh <project-name>` inside the copy. Dapsman is template-agnostic — all placeholder replacement and file renaming logic lives in `init-template.toolkit.sh`, not in Dapsman. This keeps template-specific logic in the template.
+`dapsman init` copies a template directory and runs transforms to replace placeholder name values, dev port assignments, and prod urls. If an optional `template.yaml` file exists, it may define custom configuration for that template, including:
 
-**`init-template.toolkit.sh` runs on the workstation, not in the toolkit container** — despite the `.toolkit.sh` suffix, `InitService` is wired with `_workstationBashRunner`. It must therefore be portable across Git Bash (GNU userland), macOS (BSD userland), and Linux. Avoid GNU-only flags:
+- a list of directories to be ignored by the transformation steps
+- the template's project placeholder value
 
-- **`sed -i` is not portable.** GNU sed takes no argument; BSD sed requires a backup suffix, so `sed -i "s/a/b/g" file` on macOS treats the expression as the suffix and the *filename* as the script (symptom: `command a expects \ followed by text`). Use the `replace_in_file` helper present in each template's init script.
-- **The init script rewrites itself** — its own source contains the placeholder, so the replacement loop edits the file bash is still reading. `replace_in_file` therefore writes a sibling temp file and `mv`s it into place: a rename leaves the running shell's file descriptor on the original inode. Overwriting the file in place (`cat tmp > file`, or `sed -i ''` on BSD, which edits in place without renaming) shifts every later byte offset and bash resumes reading mid-token — symptoms like `ories: command not found` or a syntax error on a line that is plainly valid. This is why GNU `sed -i` appeared to work: it renames.
-- Also avoid `readlink -f`, `find -printf`, `grep -P`, `sort -V`, `date -d`, and GNU long options on `cp`/`mv`.
+Excluded directories are matched as paths relative to the template root, so write nested entries with forward slashes (`wp-content/uploads`). Dapsman normalizes those to the host separator; a backslash entry would match on Windows and silently fail on macOS and Linux, where `\` is a legal filename character.
+
+If it's not defined in `template.yaml`, Daps will derive the placeholder value from the template's `_docker/compose_daps_<placeholder>.dev.yaml` file. This file is required by Daps projects to make them visible to the Daps Toolkit, so having the placeholder in `template.yaml` can be considered redundant.
+
+Previously dapsman would run a `_scripts/init-template.toolkit.sh <project-name>` script inside the copied `_scripts` directory that would keep template-specific logic in the template, but the differences weren't significant enough to justify the issues we had with that script.
 
 Scripts run only on remote or in the toolkit (`*.prod.sh`, other `*.toolkit.sh`) target Ubuntu and may use GNU extensions freely.
 
@@ -247,10 +249,10 @@ The "Dapsman Workflows" section lives in `docs/readme-cli-commands.md`, not in `
 
 ## Workflow Planning Docs
 
-Each Dapsman workflow may have a planning document in `./docs/planning-<workflow>.md` (e.g. `planning-local-restore.md`, `planning-local-teardown.md`). These capture the design rationale, constraints, and implementation plan for that workflow.
+Each Dapsman workflow may have a descriptor document in `./docs/workflow-<workflow>.md` (e.g. `workflow-local-restore.md`, `workflow-local-teardown.md`). These capture the design rationale, constraints, and implementation plan for that workflow. (`docs/planning-*.md` is the parallel naming for topics that are still in development, e.g. `planning-versioning.md`.)
 
 **When working on a workflow:**
-- Check `./docs/planning-*.md` for an existing planning doc before making changes.
+- Check `./docs/workflow-*.md` or `./docs/planning-*.md`for an existing planning doc before making changes.
 - If one exists, read it for context and update it to reflect any design decisions or changes made during implementation.
 - If one does not exist, create it before or during implementation to capture the why, the approach, and any key constraints or trade-offs discovered.
 
