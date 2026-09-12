@@ -54,7 +54,7 @@ public sealed class LocalBuildService
 	{
 		foreach (var script in projectPlan.PrerequisiteScripts)
 		{
-			_bashRunner.RunScript(script, projectPlan.ProjectPath);
+			_bashRunner.RunScript(script, projectPlan.ProjectPath, env: projectPlan.PrerequisiteScriptEnvVars);
 		}
 	}
 

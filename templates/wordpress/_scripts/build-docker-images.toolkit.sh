@@ -4,6 +4,11 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/.." && pwd)"
 
+# Set by `dapsman prod deploy`. The tag must match the `image:` key in the project's compose
+# files, which dapsman writes as <project>-wordpress at init.
+: "${DAPS_PROJECT:?DAPS_PROJECT is required}"
+image_name="${DAPS_PROJECT}-wordpress"
+
 export_dir="${repo_root}/_docker/image-exports"
 mkdir -p "${export_dir}"
 
@@ -21,5 +26,5 @@ if [ -n "${DAPS_TARGET_PLATFORM:-}" ]; then
 	echo "Building for platform ${DAPS_TARGET_PLATFORM}"
 fi
 
-docker build "${platform_args[@]}" --pull -f "${repo_root}/_docker/wordpress.dockerfile" -t mywpsite-wordpress "${repo_root}"
-docker save -o "${export_dir}/mywpsite-wordpress.tar" mywpsite-wordpress
+docker build "${platform_args[@]}" --pull -f "${repo_root}/_docker/wordpress.dockerfile" -t "${image_name}" "${repo_root}"
+docker save -o "${export_dir}/${image_name}.tar" "${image_name}"

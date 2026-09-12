@@ -90,6 +90,10 @@ public sealed class LocalBuildPlanBuilder : ILocalBuildPlanBuilder
 				ProjectPath = project.Definition.Path,
 				ComposeFiles = projectDocker.LocalProjectComposeFiles,
 				PrerequisiteScripts = project.LocalPrerequisiteScripts,
+				PrerequisiteScriptEnvVars = new Dictionary<string, string>
+				{
+					["DAPS_PROJECT"] = project.Definition.Name
+				},
 				ComposeUpCommand = upCommand,
 				ComposeDownCommand = downCommand
 			});

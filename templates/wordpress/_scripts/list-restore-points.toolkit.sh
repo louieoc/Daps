@@ -7,7 +7,7 @@
 # Run from toolkit via: dapsman local restore --list-restore-points
 #
 # Required env vars (set by dapsman):
-#   DAPS_PROJECT      - project name (e.g. mywpsite)
+#   DAPS_PROJECT      - project name (e.g. myproject)
 #   DAPS_BACKUPS_PATH - absolute path to _backups/from_prod/ inside the toolkit
 #
 # Output format (most-recent-first, 1-based index):

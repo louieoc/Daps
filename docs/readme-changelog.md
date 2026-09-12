@@ -8,7 +8,25 @@ Changes are listed newest first. For history prior to `0.1.0`, see `git log`.
 
 ---
 
-## 0.3.0 - 2026-08-19
+## 0.3.1 - 2026-09-12
+
+### Changed
+
+- **Template `_scripts` are no longer transformed by `dapsman init`.** The folder is copied verbatim for every template, so a new project's scripts are byte-identical to the template's. Scripts that need the project name read it from the `DAPS_PROJECT` environment variable instead of having it substituted into the source at init.
+
+  The point is updatability. A transformed script diverges from its template the moment a project is created, so improvements to a template's scripts never reached the projects already made from it without a hand diff. Now updating a project's scripts is a copy, and `diff -r templates/<template>/_scripts <project>/_scripts` says whether a project is current.
+
+  Exclusion is a framework convention in `TemplateManager`, not a `template.yaml` entry, so it applies to future templates automatically and can't be forgotten. Compose and Caddy files are still transformed — they carry genuinely per-project values (dev ports, prod URL) that must be written at init.
+
+  Affected template scripts: `prerequisites.dev.sh` and `prerequisites.prod.sh` (wordpress and grist) and `build-docker-images.toolkit.sh` (wordpress). Each now guards with `: "${DAPS_PROJECT:?DAPS_PROJECT is required}"`, matching the existing toolkit scripts. The WordPress image tag is derived as `<project>-wordpress`, which is exactly what the transform used to write into the compose `image:` key, so the two still agree.
+
+- Dapsman now sets `DAPS_PROJECT` on the three script paths that previously got no environment: local build prerequisites, remote prerequisites (run over SSH during `prod deploy`), and `build-docker-images.toolkit.sh` (which previously received only `DAPS_TARGET_PLATFORM`). It was already set for backup, restore, sync, and post-deploy scripts.
+
+  **Existing projects are unaffected.** Their scripts have the project name baked in from when they were created and simply ignore the extra variable. No migration is required. To adopt the new scripts, copy them from the template — which is the whole point of the change.
+
+---
+
+## 0.3.0 - 2026-09-10
 
 ### Added
 

@@ -21,16 +21,18 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
 
 	public void ExecuteBuildImages(IReadOnlyList<BuildImageCommandPlan> commands, string dapsRootPath, string? targetPlatform)
 	{
-		// Passed as an environment variable rather than a script argument because
+		// Passed as environment variables rather than script arguments because
 		// build-docker-images.toolkit.sh already exists in every project created before this
-		// change. A script that does not read the variable keeps working exactly as it did;
+		// change. A script that does not read a variable keeps working exactly as it did;
 		// adding a positional argument would have shifted arguments under those scripts instead.
-		var env = targetPlatform is null
-			? null
-			: new Dictionary<string, string> { ["DAPS_TARGET_PLATFORM"] = targetPlatform };
-
 		foreach (var command in commands)
 		{
+			var env = new Dictionary<string, string> { ["DAPS_PROJECT"] = command.ProjectName };
+			if (targetPlatform is not null)
+			{
+				env["DAPS_TARGET_PLATFORM"] = targetPlatform;
+			}
+
 			_bashRunner.RunScript(command.ToolkitScriptPath, dapsRootPath, env: env);
 		}
 	}
@@ -265,7 +267,10 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
 		{
 			foreach (var prereqName in projectPlan.RemotePrerequisiteScriptNames)
 			{
-				sb.AppendLine($"bash /srv/projects/{EscapeBash(projectPlan.ProjectName)}/_scripts/{EscapeBash(prereqName)}");
+				// Template prerequisite scripts read the project name from DAPS_PROJECT instead of
+				// having it baked in at init. This runs inside a quoted heredoc, so the assignment
+				// is emitted literally and evaluated on the remote host.
+				sb.AppendLine($"DAPS_PROJECT='{EscapeBash(projectPlan.ProjectName)}' bash /srv/projects/{EscapeBash(projectPlan.ProjectName)}/_scripts/{EscapeBash(prereqName)}");
 			}
 
 			sb.AppendLine($"for image_file in /srv/projects/{projectPlan.ProjectName}/_docker/image-exports/*; do");

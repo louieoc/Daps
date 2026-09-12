@@ -13,7 +13,7 @@
 # restarted afterwards (including on failure).
 #
 # Required env vars (set by dapsman):
-#   DAPS_PROJECT      - project name (e.g. mygrist)
+#   DAPS_PROJECT      - project name (e.g. myproject)
 #
 # Optional args (set by dapsman, override defaults here if running manually):
 #   --env <env>       - environment name, used in output filenames (default: local)

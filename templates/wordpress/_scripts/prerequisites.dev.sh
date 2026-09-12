@@ -10,18 +10,24 @@ set -euo pipefail
 FORCE=0
 if [[ "${1:-}" == "--force" ]]; then FORCE=1; fi
 
+# Set by `dapsman local build` when it runs this script.
+: "${DAPS_PROJECT:?DAPS_PROJECT is required}"
+
 SECRETS_DIR="$(cd "$(dirname "$0")/.." && pwd)/_secrets"
 
 # shellcheck source=generate-secrets.sh
 source "$(dirname "$0")/generate-secrets.sh"
 
 # --- hosts file entry ---
-# Adds "127.0.0.1 mywpsite.localhost" so the dev site is reachable by name.
+# Adds "127.0.0.1 <project>.localhost" so the dev site is reachable by name.
 # Note: Chrome and Firefox resolve *.localhost automatically without a hosts entry.
 # This entry is needed for curl, wp-cli, and other tools that rely on system DNS.
+# The hostname is derived from the project name, matching the convention in
+# _caddy_sites/*.dev.caddy. If you change the hostname there by hand, add the
+# matching hosts entry yourself -- this script will not know about it.
 
 _add_hosts_entry() {
-  local entry="127.0.0.1 mywpsite.localhost"
+  local entry="127.0.0.1 ${DAPS_PROJECT}.localhost"
   local os
   os="$(uname -s)"
 

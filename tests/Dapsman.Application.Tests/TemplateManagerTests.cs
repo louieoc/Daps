@@ -105,6 +105,29 @@ services:
 	}
 
 	[Fact]
+	public void CreateProjectFromTemplate_CopiesScriptsVerbatimWithoutTemplateYamlSayingSo()
+	{
+		var templateDir = TestHelper.CreateTempDirectory();
+		var destDir = NewDestinationPath();
+		var scriptsDir = Path.Combine(templateDir, "_scripts");
+		var dockerDir = Path.Combine(templateDir, "_docker");
+		Directory.CreateDirectory(scriptsDir);
+		Directory.CreateDirectory(dockerDir);
+		File.WriteAllText(Path.Combine(scriptsDir, "prerequisites.dev.sh"), "SECRETS=/srv/projects/mywpsite\n");
+		File.WriteAllText(Path.Combine(dockerDir, "compose.yaml"), "image: mywpsite-wordpress\n");
+
+		// Note: no excluded directories are configured -- excluding _scripts is a framework convention.
+		new TemplateManager(CreatePlan(templateDir, destDir), new FakeDapsYamlEditor()).CreateProjectFromTemplate();
+
+		Assert.Equal(
+			"SECRETS=/srv/projects/mywpsite\n",
+			File.ReadAllText(Path.Combine(destDir, "_scripts", "prerequisites.dev.sh")));
+		Assert.Equal(
+			"image: mysite-wordpress\n",
+			File.ReadAllText(Path.Combine(destDir, "_docker", "compose.yaml")));
+	}
+
+	[Fact]
 	public void CreateProjectFromTemplate_CopiesBinaryFilesByteForByte()
 	{
 		var templateDir = TestHelper.CreateTempDirectory();
