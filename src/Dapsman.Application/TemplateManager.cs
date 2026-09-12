@@ -10,8 +10,16 @@ public sealed class TemplateManager
 	private readonly string[] _filesToSkipCopying = new []{ "template.yaml" };
 	private readonly string[] _dirsToSkipCopying = new []{ "_secrets" };
 
+	/// <summary>
+	/// Copied verbatim, never transformed, for every template — not opt-in via template.yaml.
+	/// Scripts take the project name from the DAPS_PROJECT environment variable, so a project's
+	/// _scripts stay byte-identical to the template's and can be updated by copying them forward.
+	/// </summary>
+	private readonly string[] _dirsNeverTransformed = new []{ "_scripts" };
+
 	private string[] _excludedSourceDirs;
 	private string[] _dirsToSkipCopyingFull;
+	private string[] _dirsNeverTransformedFull;
 
 	public TemplateManager(InitPlan plan, IDapsYamlEditor yamlEditor)
 	{
@@ -20,6 +28,7 @@ public sealed class TemplateManager
 
 		_excludedSourceDirs = _plan.ExcludedFromTemplateTransform.Select(d => Path.Combine(_plan.TemplatePath, d)).ToArray();
 		_dirsToSkipCopyingFull = _dirsToSkipCopying.Select(d => Path.Combine(_plan.TemplatePath, d)).ToArray();
+		_dirsNeverTransformedFull = _dirsNeverTransformed.Select(d => Path.Combine(_plan.TemplatePath, d)).ToArray();
 	}
 
 	public void CreateProjectFromTemplate()
@@ -116,7 +125,7 @@ public sealed class TemplateManager
 	{
 		if (file.DirectoryName is null) return false;
 
-		return _excludedSourceDirs.Any(d => IsUnder(file.DirectoryName, d));
+		return _excludedSourceDirs.Concat(_dirsNeverTransformedFull).Any(d => IsUnder(file.DirectoryName, d));
 	}
 
 	public static string ReplacePlaceholderInFilename(string filePath, string? placeholder, string projectName)

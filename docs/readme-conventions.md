@@ -80,6 +80,8 @@ Configuration file for daps
 ### Project scripts
 - Project scripts for use with daps appear in a folder `_scripts` (the underscore alphabetizes them away from the main project files)
 - `build-docker-images.toolkit.sh` daps will look for this file for instructions for building container images for the project.
+- **Template scripts must not contain the project placeholder.** as of v0.3.1, `dapsman init` copies `_scripts` verbatim and never runs the placeholder transform over it, so a project's scripts stay byte-identical to the template's and can be updated by copying the template's forward. Scripts that need the project name read `DAPS_PROJECT` from the environment, guarded with `: "${DAPS_PROJECT:?DAPS_PROJECT is required}"`.
+- Dapsman sets `DAPS_PROJECT` wherever it runs a project script: prerequisites (local and remote), `build-docker-images.toolkit.sh`, backup, restore, sync, and post-deploy. Values other than the project name follow the same pattern — new inputs are added as `DAPS_*` env vars rather than positional arguments, so scripts written before the variable existed keep working unchanged.
 
 
 ### Caddy files

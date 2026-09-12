@@ -10,7 +10,7 @@
 # not captured in a backup will be lost.
 #
 # Required env vars (set by dapsman):
-#   DAPS_PROJECT           - project name (e.g. mywpsite)
+#   DAPS_PROJECT           - project name (e.g. myproject)
 #   DAPS_RESTORE_ENV       - environment the backup came from (e.g. prod)
 #   DAPS_RESTORE_TIMESTAMP - timestamp string from backup filenames (e.g. 20260420_202738)
 #   DAPS_BACKUPS_PATH      - absolute path to _backups/from_prod/ inside the toolkit

@@ -97,6 +97,33 @@ public sealed class LocalBuildServiceTests
 		Assert.Equal(projectPlan.ComposeDownCommand, compose.LastArguments);
 	}
 
+	[Fact]
+	public void ExecutePrerequisites_PassesProjectNameAsEnvVar()
+	{
+		var loader = new FakeLoader();
+		var builder = new FakeBuilder();
+		var caddySync = new FakeCaddySync();
+		var compose = new FakeDockerExecutor();
+		var runner = new FakeBashRunner();
+		var service = new LocalBuildService(loader, builder, caddySync, compose, runner);
+
+		var projectPlan = new LocalProjectComposePlan
+		{
+			ProjectName = "myproject",
+			ProjectPath = "..\\myproject",
+			ComposeFiles = new[] { Path.Combine("_docker", "compose_myproject.yaml") },
+			PrerequisiteScripts = new[] { Path.Combine("_scripts", "prerequisites.dev.sh") },
+			PrerequisiteScriptEnvVars = new Dictionary<string, string> { ["DAPS_PROJECT"] = "myproject" },
+			ComposeUpCommand = "I'm the up command"
+		};
+
+		service.ExecutePrerequisites(projectPlan);
+
+		var call = Assert.Single(runner.ScriptCalls);
+		Assert.NotNull(call.Env);
+		Assert.Equal("myproject", call.Env!["DAPS_PROJECT"]);
+	}
+
 	private sealed class FakeLoader : IDapsConfigLoader
 	{
 		public bool Called { get; private set; }

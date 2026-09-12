@@ -71,6 +71,10 @@ public sealed class LocalBuildPlanBuilderTests
 		Assert.Single(plan.ProjectComposePlans);
 		Assert.Contains("compose_daps_jshirt.dev.yaml", plan.DapsComposeFiles[^1], StringComparison.OrdinalIgnoreCase);
 		Assert.Contains("compose_jshirt.dev.yaml", plan.ProjectComposePlans[0].ComposeFiles[0], StringComparison.OrdinalIgnoreCase);
+
+		// Template prerequisite scripts read the project name from the environment rather than
+		// having it baked in by the init transform.
+		Assert.Equal("j-shirt", plan.ProjectComposePlans[0].PrerequisiteScriptEnvVars["DAPS_PROJECT"]);
 	}
 
 	[Fact]

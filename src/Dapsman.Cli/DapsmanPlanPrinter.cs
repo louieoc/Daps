@@ -240,7 +240,7 @@ internal static class DapsmanPlanPrinter
 		foreach (var projectPlan in plan.ProjectPlans)
 		{
 			foreach (var prereqName in projectPlan.RemotePrerequisiteScriptNames)
-				Console.WriteLine($"- {projectPlan.ProjectName}: run {prereqName} on remote");
+				Console.WriteLine($"- {projectPlan.ProjectName}: run {prereqName} on remote (DAPS_PROJECT={projectPlan.ProjectName})");
 			Console.WriteLine($"- {projectPlan.ProjectName}: docker load each file in /srv/projects/{projectPlan.ProjectName}/_docker/image-exports");
 			Console.WriteLine($"- {projectPlan.ProjectName}: verify each loaded image matches the host platform (deploy fails if not)");
 			Console.WriteLine($"- {projectPlan.ProjectName}: compose up project (prod/shared files)");

@@ -30,6 +30,16 @@ exclude-from-transform: [wp-content, _secrets, _backup]
 
 Note that `template.yaml` is still optional. If no folders need to be excluded then you don't need it. Daps will attempt to derive the placeholder value from the Docker compose file that should exist for all Daps projects: `compose_daps_placeholder.dev.yaml`, which is what makes the project visible to the Daps Toolkit container.
 
+### `_scripts` is never transformed
+
+`_scripts` is excluded from the placeholder transform for every template, whether or not the template has a `template.yaml`. This is a framework convention hardcoded in `TemplateManager`, not something a template opts into — template authors get it for free, and can't forget it.
+
+The files are still copied; only the placeholder substitution is skipped. Scripts that need the project name read it from the `DAPS_PROJECT` environment variable, which Dapsman sets on every path that runs a project script.
+
+**Why.** A transformed script diverges from its template the moment the project is created, so improving a template's scripts does nothing for the projects already made from it — the only way forward was a hand diff per project. Untransformed, a project's `_scripts` are byte-identical to the template's, so updating them is a copy, and `diff -r templates/<template>/_scripts <project>/_scripts` is a meaningful check of whether a project is current.
+
+This is why placeholders belong in as few template files as possible. Compose and Caddy files still carry them — they contain per-project values (ports, prod URL) that have to be written at init — but the scripts no longer need to.
+
 ---
 
 ## Project Name: `--name` vs `--project`

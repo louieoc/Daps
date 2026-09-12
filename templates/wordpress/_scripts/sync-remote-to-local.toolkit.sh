@@ -7,7 +7,7 @@
 # you have a backup of local dev work you want to keep before running.
 #
 # Required env vars (set by dapsman):
-#   DAPS_PROJECT      - project name (e.g. mywpsite)
+#   DAPS_PROJECT      - project name (e.g. myproject)
 #   DAPS_REMOTE_HOST  - remote server IP or hostname
 #   DAPS_REMOTE_USER  - SSH user on the remote server
 #   DAPS_SSH_KEY      - absolute path to SSH private key inside toolkit (e.g. /root/.ssh/daps-key-ramnode)
