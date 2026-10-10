@@ -34,7 +34,7 @@ public sealed class ToolkitRemoteTeardownExecutor : IRemoteTeardownExecutor
 		Directory.CreateDirectory(hostPath);
 
 		string? caddySiteToolkitPath = null;
-		if (plan.CaddySiteFileName is not null && plan.RemovedCaddyContent is not null)
+		if (plan.RemovedCaddyContent is not null)
 		{
 			File.WriteAllText(
 				Path.Combine(hostPath, plan.CaddySiteFileName),
@@ -56,7 +56,8 @@ public sealed class ToolkitRemoteTeardownExecutor : IRemoteTeardownExecutor
 	{
 		var keyName = EscapeBash(plan.SshKeyName);
 		var remote = $"{EscapeBash(plan.RemoteUser)}@{EscapeBash(plan.RemoteHost)}";
-		var dockerPrefix = EscapeBash(plan.DockerCommandPrefix);
+		var dockerPrefix = plan.IsRoot ? "docker" : "sudo docker";
+		var sudo = plan.IsRoot ? "" : "sudo ";
 		var projectName = EscapeBash(plan.ProjectName);
 		var remoteProjectPath = EscapeBash(plan.RemoteProjectPath);
 
@@ -70,14 +71,25 @@ public sealed class ToolkitRemoteTeardownExecutor : IRemoteTeardownExecutor
 			"",
 		};
 
-		if (staging.CaddySiteToolkitPath is not null && plan.CaddySiteFileName is not null)
+		var remoteCaddySitePath = $"/srv/daps/caddy_sites/{EscapeBash(plan.CaddySiteFileName)}";
+		if (staging.CaddySiteToolkitPath is not null)
 		{
-			var remoteCaddySitePath = $"/srv/daps/caddy_sites/{EscapeBash(plan.CaddySiteFileName)}";
 			lines.Add("# Step 1: replace caddy site file with removed page and reload");
 			lines.Add($"scp \"${{ssh_opts[@]}}\" \"{staging.CaddySiteToolkitPath}\" \"$remote:{remoteCaddySitePath}\"");
-			lines.Add($"ssh \"${{ssh_opts[@]}}\" \"$remote\" \"{dockerPrefix} exec daps-caddy-1 caddy reload --config /etc/caddy/Caddyfile\"");
-			lines.Add("");
 		}
+		else
+		{
+			// No domain to render a removed page with. Deleting stops the retired host claiming
+			// the domain and renewing a certificate for it. rm -f is a no-op when it is absent.
+			lines.Add("# Step 1: delete caddy site file and reload");
+			lines.Add($"ssh \"${{ssh_opts[@]}}\" \"$remote\" \"{sudo}rm -f '{remoteCaddySitePath}'\"");
+		}
+
+		// A stopped Caddy reads the changed site file when it next starts, so there is nothing to
+		// reload. A running one that fails to reload has a broken config, and that still stops
+		// the teardown.
+		lines.Add($"ssh \"${{ssh_opts[@]}}\" \"$remote\" \"if {dockerPrefix} ps -q -f name=daps-caddy-1 -f status=running | grep -q .; then {dockerPrefix} exec daps-caddy-1 caddy reload --config /etc/caddy/Caddyfile; else echo 'Caddy is not running; skipped reload.'; fi\"");
+		lines.Add("");
 
 		var baseCompose = $"/srv/projects/{projectName}/_docker/compose_{projectName}.yaml";
 		var prodCompose = $"/srv/projects/{projectName}/_docker/compose_{projectName}.prod.yaml";
@@ -86,7 +98,9 @@ public sealed class ToolkitRemoteTeardownExecutor : IRemoteTeardownExecutor
 		lines.Add($"ssh \"${{ssh_opts[@]}}\" \"$remote\" \"if [[ -f '{prodCompose}' ]]; then {dockerPrefix} compose -f '{baseCompose}' -f '{prodCompose}' down -v || true; else {dockerPrefix} compose -f '{baseCompose}' down -v || true; fi\"");
 		lines.Add("");
 		lines.Add("# Step 3: delete remote project folder");
-		lines.Add($"ssh \"${{ssh_opts[@]}}\" \"$remote\" \"rm -rf '{remoteProjectPath}'\"");
+		// Containers write into the project folder as their own users (e.g. www-data), so a
+		// non-root remote user cannot delete it without sudo.
+		lines.Add($"ssh \"${{ssh_opts[@]}}\" \"$remote\" \"{sudo}rm -rf '{remoteProjectPath}'\"");
 
 		return string.Join("\n", lines);
 	}

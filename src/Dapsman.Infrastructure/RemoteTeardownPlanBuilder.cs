@@ -27,38 +27,64 @@ public sealed class RemoteTeardownPlanBuilder : IRemoteTeardownPlanBuilder
 
 	public RemoteTeardownPlan BuildPlan(DapsConfig config, TeardownOptions options)
 	{
-		var project = _projectResolver.Resolve(options.ProjectName);
-		var provider = _hostingResolver.Resolve(_providerName ?? options.ProviderName, project.Definition.Provider);
+		// Teardown targets a remote host by (provider, project name). A daps.yaml entry is an
+		// enhancement — it is what lets us render the "site removed" page — not a precondition:
+		// a project deleted from daps.yaml may still have containers and files on the host, and
+		// this workflow can still remove them.
+		var requestedName = ConfigUtils.RequireSafeProjectName(options.ProjectName);
+		var cliProviderName = _providerName ?? options.ProviderName;
+		var project = _projectResolver.TryResolve(requestedName);
+
+		// The lookup ignores case but remote paths do not, so a registered project's own spelling
+		// wins. Taking the typed one would miss its files and upload a second site file claiming
+		// the same domain, which Caddy refuses to load.
+		var projectName = project?.Definition.Name ?? requestedName;
+
+		// With no project entry there is no configured provider to fall back on, and guessing is
+		// the worst possible failure for a destructive workflow: Resolve(null, null) would take
+		// the first non-disabled provider in file order and tear down a host nobody named.
+		// ResolveExplicit takes the sole active provider, or demands --provider.
+		var provider = project is not null
+			? _hostingResolver.Resolve(cliProviderName, project.Definition.Provider)
+			: _hostingResolver.ResolveExplicit(cliProviderName);
+
 		var toolkitDef = _toolkitResolver.Resolve();
-		var dockerPrefix = ConfigUtils.GetDockerCommandPrefix(provider.RemoteUser);
-
-		string? caddySiteFileName = null;
-		string? removedContent = null;
-
-		var projectCaddyDef = _caddyResolver.ResolveForProject(project);
-		if (!string.IsNullOrEmpty(projectCaddyDef.WorkstationProdSiteFile))
-		{
-			var prodCaddyPath = Path.Combine(projectCaddyDef.ProjectSitesPath, projectCaddyDef.WorkstationProdSiteFile);
-			if (File.Exists(prodCaddyPath))
-			{
-				caddySiteFileName = projectCaddyDef.WorkstationProdSiteFile;
-				removedContent = GenerateRemovedResponse(ReadFirstDomain(prodCaddyPath));
-			}
-		}
 
 		return new RemoteTeardownPlan
 		{
-			ProjectName = project.Definition.Name,
+			ProjectName = projectName,
 			DapsRootPath = config.DapsRootPath,
+			ProviderName = provider.ConfigDefinition.Name,
 			ToolkitContainerName = toolkitDef.ContainerName,
 			RemoteHost = provider.RemoteHost,
 			RemoteUser = provider.RemoteUser,
 			SshKeyName = provider.KeyName,
-			DockerCommandPrefix = dockerPrefix,
-			CaddySiteFileName = caddySiteFileName,
-			RemovedCaddyContent = removedContent,
-			RemoteProjectPath = $"/srv/projects/{project.Definition.Name}",
+			IsRoot = string.Equals(provider.RemoteUser, "root", StringComparison.OrdinalIgnoreCase),
+			CaddySiteFileName = $"{projectName}.prod.caddy",
+			RemovedCaddyContent = TryGenerateRemovedResponse(project),
+			RemoteProjectPath = $"/srv/projects/{projectName}",
 		};
+	}
+
+	/// <summary>
+	/// The 410 page names the domain, which is only readable from the project's local prod caddy
+	/// file. Returns null when there is no such file, which tells the executor to delete the
+	/// remote site file rather than overwrite it.
+	/// </summary>
+	private string? TryGenerateRemovedResponse(DapsProject? project)
+	{
+		if (project is null)
+			return null;
+
+		var projectCaddyDef = _caddyResolver.ResolveForProject(project);
+		if (string.IsNullOrEmpty(projectCaddyDef.WorkstationProdSiteFile))
+			return null;
+
+		var prodCaddyPath = Path.Combine(projectCaddyDef.ProjectSitesPath, projectCaddyDef.WorkstationProdSiteFile);
+		if (!File.Exists(prodCaddyPath))
+			return null;
+
+		return GenerateRemovedResponse(ReadFirstDomain(prodCaddyPath));
 	}
 
 	private static string ReadFirstDomain(string prodCaddyPath)

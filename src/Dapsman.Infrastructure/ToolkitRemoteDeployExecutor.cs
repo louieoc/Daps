@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Dapsman.Application;
 using Dapsman.Domain;
 
@@ -107,7 +107,7 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
 				CopyFile(composeFile, Path.Combine(projectDockerPath, Path.GetFileName(composeFile)));
 			}
 
-			foreach (var exportFile in projectPlan.ImageExportFilesToUpload)
+			foreach (var exportFile in CurrentImageExports(projectPlan))
 			{
 				CopyFile(exportFile, Path.Combine(exportsPath, Path.GetFileName(exportFile)));
 			}
@@ -127,6 +127,22 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
 			ScriptHostPath = Path.Combine(hostPath, "deploy.sh"),
 			ScriptToolkitPath = $"/srv/daps/.dapsman/deploy/{id}/deploy.sh",
 		};
+	}
+
+	/// <summary>
+	/// The tarballs in the project's image-exports folder as of now, not as of planning.
+	/// The plan is built before the build-images step runs, so on a project's first deploy
+	/// its ImageExportFilesToUpload is empty: the tar the build has just saved would be left
+	/// behind and the remote compose up would try to pull the image from a registry instead.
+	/// </summary>
+	private static IReadOnlyList<string> CurrentImageExports(RemoteProjectDeployPlan projectPlan)
+	{
+		if (!Directory.Exists(projectPlan.ImageExportsSourcePath))
+			return projectPlan.ImageExportFilesToUpload;
+
+		return Directory.EnumerateFiles(projectPlan.ImageExportsSourcePath)
+			.OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+			.ToList();
 	}
 
 	/// <summary>
@@ -216,7 +232,10 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
 		foreach (var projectPlan in plan.ProjectPlans)
 		{
 			var projectDir = $"/srv/projects/{EscapeBash(projectPlan.ProjectName)}";
-			var mkdirProject = $"{sudo}mkdir -p {projectDir}/_docker {projectDir}/_docker/image-exports";
+			// _scripts is listed here, before the chown, so the recursive chown covers it.
+			// Creating it later with sudo would leave it root-owned and the unprivileged
+			// scp of the prerequisite scripts would fail with "Permission denied".
+			var mkdirProject = $"{sudo}mkdir -p {projectDir}/_docker {projectDir}/_docker/image-exports {projectDir}/_scripts";
 			if (!string.IsNullOrEmpty(sudo))
 				mkdirProject += $" && {sudo}chown -R \"$(id -un)\" {projectDir}";
 			sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" '{mkdirProject}'");
@@ -225,7 +244,7 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
 				sb.AppendLine($"scp \"${{ssh_opts[@]}}\" \"{EscapeBash(stagingToolkitPath)}/projects/{EscapeBash(projectPlan.ProjectName)}/_docker/{EscapeBash(Path.GetFileName(composeFile))}\" \"$remote:/srv/projects/{EscapeBash(projectPlan.ProjectName)}/_docker/{EscapeBash(Path.GetFileName(composeFile))}\"");
 			}
 
-			foreach (var exportFile in projectPlan.ImageExportFilesToUpload)
+			foreach (var exportFile in CurrentImageExports(projectPlan))
 			{
 				sb.AppendLine($"scp \"${{ssh_opts[@]}}\" \"{EscapeBash(stagingToolkitPath)}/projects/{EscapeBash(projectPlan.ProjectName)}/_docker/image-exports/{EscapeBash(Path.GetFileName(exportFile))}\" \"$remote:/srv/projects/{EscapeBash(projectPlan.ProjectName)}/_docker/image-exports/{EscapeBash(Path.GetFileName(exportFile))}\"");
 			}
@@ -236,17 +255,20 @@ public sealed class ToolkitRemoteDeployExecutor : IRemoteDeployExecutor
 				var stagedName = $"{i:D3}_{Path.GetFileName(upload.SourcePath)}";
 				var remoteDestination = EscapeBash(upload.RemoteDestinationPath);
 				var remoteTempPath = EscapeBash($"/tmp/dapsman-upload-{projectPlan.ProjectName}-{i:D3}");
+				// The destination can be any absolute path, so sudo is scoped to the file itself:
+				// install hands it to the remote user and the directory's owner is left alone.
 				sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" '{sudo}mkdir -p \"$(dirname \"{remoteDestination}\")\"'");
 				sb.AppendLine($"scp \"${{ssh_opts[@]}}\" \"{EscapeBash(stagingToolkitPath)}/projects/{EscapeBash(projectPlan.ProjectName)}/_uploads/{EscapeBash(stagedName)}\" \"$remote:{remoteTempPath}\"");
-				sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" 'if [ -d \"{remoteDestination}\" ]; then rm -rf \"{remoteDestination}\"; fi'");
-				sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" 'rm -f \"{remoteDestination}\" && install -m 600 \"{remoteTempPath}\" \"{remoteDestination}\" && rm -f \"{remoteTempPath}\"'");
+				sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" 'if [ -d \"{remoteDestination}\" ]; then {sudo}rm -rf \"{remoteDestination}\"; fi'");
+				sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" '{sudo}rm -f \"{remoteDestination}\" && {sudo}install -o \"$(id -un)\" -m 600 \"{remoteTempPath}\" \"{remoteDestination}\" && rm -f \"{remoteTempPath}\"'");
 				sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" 'if [ ! -f \"{remoteDestination}\" ]; then echo \"Expected upload destination to be a file: {remoteDestination}\" >&2; exit 1; fi'");
 			}
 
 			if (projectPlan.RemoteScriptFilesToUpload.Count > 0)
 			{
+				// _scripts already exists and is owned by the remote user: it is created with the
+				// project directories above, before the chown.
 				var remoteScriptsDir = $"/srv/projects/{EscapeBash(projectPlan.ProjectName)}/_scripts";
-				sb.AppendLine($"ssh \"${{ssh_opts[@]}}\" \"$remote\" '{sudo}mkdir -p {remoteScriptsDir}'");
 				foreach (var scriptFile in projectPlan.RemoteScriptFilesToUpload)
 				{
 					var fileName = EscapeBash(Path.GetFileName(scriptFile));

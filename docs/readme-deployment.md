@@ -79,7 +79,7 @@ You can log into the toolkit by running this:
 
 After you've created a remote environment by running `dapsman prod provision`, you can log into the toolkit and then into the remote VM:
 
-`ssh -i .ssh/daps-key-<providername> <root or ubuntu>@<ip address>`
+`ssh -i .ssh/daps-key-<providername> <root or ubuntu>@<ip address or hostname>`
 
 e.g.
 

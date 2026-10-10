@@ -8,6 +8,42 @@ Changes are listed newest first. For history prior to `0.1.0`, see `git log`.
 
 ---
 
+## 0.3.2 - 2026-10-10
+
+### Changed
+
+- **`prod teardown` no longer requires the project to be in `daps.yaml`.** It targets a remote host by provider and project name; a `daps.yaml` entry is now an enhancement rather than a precondition. Previously a remotely-deployed project removed from `daps.yaml` couldn't be torn down — its containers, volumes and `/srv/projects/<name>` were stranded on the host with no Dapsman route to remove them. `local teardown` produces that state: it deletes the project folder and the `daps.yaml` entry, but touches nothing remote, so running it on a project that had been deployed left the prod copy live and unreachable. Removing the entry by hand, or working from a `daps.yaml` that never listed the project — a second workstation, a fresh clone — has the same effect.
+
+  When the project is unregistered, `--provider` is resolved the same way `prod provision` and `prod unprovision` resolve it: the sole active provider when only one is configured, otherwise `--provider` is required and omitting it is an error. It deliberately does not fall back to "the first non-disabled provider in `daps.yaml`" — for a workflow that ends in `rm -rf`, guessing the host is the worst available failure.
+
+  The caddy step gains a second form. A registered project still has its remote site file replaced with the "Site Removed" 410 page, which needs the domain from the project's local `_caddy_sites/<name>.prod.caddy`. With no such file to read, the remote site file is deleted instead, so the retired host stops claiming the domain and stops renewing a certificate for it. This also covers a case that previously skipped caddy altogether and left the old host serving.
+
+  Project names are now validated against `^[A-Za-z0-9._-]+$` before use. A name from `daps.yaml` is trusted; a free-form `--project` value that reaches the remote host inside `rm -rf` and `docker compose -f` is not.
+
+- **The `prod teardown` plan names the provider.** It printed only `- remote: <user>@<host>`, which for an OpenStack provider is a bare IP identifying nothing — it was possible to run a teardown and not be able to tell from the output which host had been targeted. The plan now prints `- provider: <name>`, matching `prod deploy`, `prod provision` and `prod system`, and the confirmation prompt names the provider and host alongside the project.
+
+  For the record: `--provider` has always taken precedence over a project's configured `provider:` in `daps.yaml` (`HostingProviderResolver.Resolve` takes `cliProviderName ?? projectProviderName`). A suspected bug to the contrary did not reproduce, and there is now a test pinning the precedence so it cannot regress quietly.
+
+### Fixed
+
+- **A project's first `prod deploy` failed with `pull access denied for <name>-wordpress`.** The deploy plan, including its list of image tarballs to upload, is built before the build-images step runs. On a project with no tar yet that list was empty, so the tar the build had just saved was left on the workstation, and the remote `docker compose up` fell back to pulling the custom image from Docker Hub, where it doesn't exist. Re-running the deploy succeeded because the tar was then present at planning time. The upload now reads `_docker/image-exports/` when the deploy runs, and the plan says that build output will be uploaded instead of reporting "no image exports found".
+
+- **Each `init` / `local teardown` cycle left a blank line in `daps.yaml`.** `init` appended its entry with a leading newline to a file that already ended in one, and `local teardown` removed the entry but not the gap. Repeatedly creating and tearing down a scratch project pushed each new entry further below the last, far enough that it looked as though `init` hadn't registered the project at all. `init` now trims trailing whitespace before appending, and `local teardown` trims trailing blank lines after removing an entry.
+
+- **`prod deploy` failed with `scp: /srv/projects/<name>/_scripts/...: Permission denied` on a non-root host.** The project's `_docker` directories were created and then `chown`ed to the remote user, but `_scripts` was created later in the same script with `sudo mkdir`, after that `chown` had already run. It stayed owned by `root`, so the unprivileged `scp` of `prerequisites.prod.sh` was rejected and the deploy aborted partway through.
+
+  `_scripts` is now created alongside `_docker`, before the recursive `chown`, so it is owned by the remote user. Hosts where the deploy already left a root-owned `_scripts` behind are repaired by the recursive `chown` on the next deploy; no manual cleanup is needed.
+
+  Root-user hosts (e.g. RamNode) were never affected, since no `sudo` is used there.
+
+- **`prod deploy` could not place `deploy-prod-uploads` files into a directory it had to create on a non-root host.** The directory was created with `sudo`, but the `install` into it ran unprivileged and was refused. Uploads are now written with `sudo install -o <remote user>`: the file still ends up owned by the remote user, and the directory's ownership is left alone. Upload destinations can be any absolute path, so the alternative — handing the directory to the remote user — could have given away something like `/etc`.
+
+- **`prod teardown` could not delete the project folder on a non-root host.** `rm -rf /srv/projects/<name>` ran without `sudo`, but containers write into that folder as their own users (WordPress uploads are owned by `www-data`), so the removal failed partway. It now uses `sudo` on non-root hosts, as the caddy site file deletion does.
+
+- **`prod teardown` no longer stops when Caddy isn't running on the host.** The reload is skipped with a message instead; a stopped Caddy picks up the changed site file when it next starts. A reload that fails on a *running* Caddy still stops the teardown, since that means the config is broken.
+
+---
+
 ## 0.3.1 - 2026-09-12
 
 ### Changed

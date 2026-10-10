@@ -22,6 +22,8 @@ The list below is deliberately concrete rather than generated: each invocation n
 
 It covers one flag as well as the workflows: `local build --rebuild`, which prints an extra `rebuild-teardown` step that nothing else exercises. Unlike `local teardown` it is safe to list, because losing its `--dry-run` would not destroy anything unattended — a real `--rebuild` prompts for a typed `yes`, and with stdin detached that read returns nothing and the run cancels.
 
+`prod teardown` is listed twice. The second run names a project that is not in `daps.yaml`, which takes a different path through the planner: it resolves the provider explicitly and plans to delete the remote caddy site file rather than replace it.
+
 Note that the `--version` workflow doesn't have a dry-run mode, as it's always safe to run.
 
 **3. Run each workflow in dry-run mode**
@@ -47,6 +49,7 @@ dotnet run --project src/Dapsman.Cli -- prod sync-from-local --project dapster-w
 dotnet run --project src/Dapsman.Cli -- local sync-from-prod --project dapster-wp --dry-run --provider ramnode
 dotnet run --project src/Dapsman.Cli -- local restore --project dapster-wp --list-restore-points
 dotnet run --project src/Dapsman.Cli -- prod teardown --project dapster-wp --dry-run --provider ramnode
+dotnet run --project src/Dapsman.Cli -- prod teardown --project no-such-project --dry-run --provider ramnode
 dotnet run --project src/Dapsman.Cli -- prod unprovision --dry-run --provider ramnode
 dotnet run --project src/Dapsman.Cli -- prod system --dry-run --provider ramnode
 ```
@@ -73,6 +76,7 @@ Print a summary table, adding a row marked UNCOVERED for any workflow found in s
 | local sync-from-prod | PASS / FAIL |
 | local restore (list) | PASS / FAIL |
 | prod teardown | PASS / FAIL |
+| prod teardown (unregistered) | PASS / FAIL |
 | prod unprovision | PASS / FAIL |
 | prod system | PASS / FAIL |
 

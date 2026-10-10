@@ -209,7 +209,12 @@ internal static class DapsmanPlanPrinter
 			foreach (var composeFile in projectPlan.ComposeFilesToUpload)
 				Console.WriteLine($"- {projectPlan.ProjectName}: \"{composeFile}\" -> /srv/projects/{projectPlan.ProjectName}/_docker/{Path.GetFileName(composeFile)}");
 
-			if (!string.IsNullOrWhiteSpace(projectPlan.ImageExportsSourcePath) && projectPlan.ImageExportFilesToUpload.Count == 0)
+			var willBuild = plan.SelectedBuildImageCommands.Any(c => c.ProjectName == projectPlan.ProjectName);
+			if (willBuild)
+			{
+				Console.WriteLine($"- {projectPlan.ProjectName}: image exports saved by build-images under \"{projectPlan.ImageExportsSourcePath}\" -> /srv/projects/{projectPlan.ProjectName}/_docker/image-exports/");
+			}
+			else if (!string.IsNullOrWhiteSpace(projectPlan.ImageExportsSourcePath) && projectPlan.ImageExportFilesToUpload.Count == 0)
 			{
 				Console.WriteLine($"- {projectPlan.ProjectName}: no image exports found under \"{projectPlan.ImageExportsSourcePath}\"");
 			}
@@ -384,15 +389,16 @@ internal static class DapsmanPlanPrinter
 		Console.WriteLine("Step: validate");
 		Console.WriteLine("- prerequisites ok");
 		Console.WriteLine($"- project: {plan.ProjectName}");
+		Console.WriteLine($"- provider: {plan.ProviderName}");
 		Console.WriteLine($"- toolkit container: {plan.ToolkitContainerName}");
 		Console.WriteLine($"- remote: {plan.RemoteUser}@{plan.RemoteHost}");
 		Console.WriteLine($"- ssh key: {plan.SshKeyName}");
 		Console.WriteLine();
 		Console.WriteLine("Step: teardown");
-		if (plan.CaddySiteFileName is not null)
+		if (plan.RemovedCaddyContent is not null)
 			Console.WriteLine($"- replace caddy site '{plan.CaddySiteFileName}' with removed page and reload");
 		else
-			Console.WriteLine("- no prod caddy file found; caddy step skipped");
+			Console.WriteLine($"- delete remote caddy site '{plan.CaddySiteFileName}' and reload");
 		Console.WriteLine($"- docker compose down -v for project containers");
 		Console.WriteLine($"- delete {plan.RemoteProjectPath}");
 	}

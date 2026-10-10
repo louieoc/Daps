@@ -34,6 +34,28 @@ public sealed class DapsYamlEditorTests
 	}
 
 	[Fact]
+	public void AddProject_DoesNotInsertBlankLineBeforeEntry()
+	{
+		var path = TempYaml("projects:\n  existing:\n    path: ../existing\n");
+		new DapsYamlEditor().AddProject(path, "newsite", "../newsite");
+		Assert.Equal("projects:\n  existing:\n    path: ../existing\n  newsite:\n    path: ../newsite\n", File.ReadAllText(path));
+	}
+
+	[Fact]
+	public void AddThenRemoveProject_RepeatedCycles_LeaveFileUnchanged()
+	{
+		const string original = "projects:\r\n  existing:\r\n    path: ../existing\r\n";
+		var path = TempYaml(original);
+		var editor = new DapsYamlEditor();
+		for (var i = 0; i < 3; i++)
+		{
+			editor.AddProject(path, "scratch", "../scratch");
+			editor.RemoveProject(path, "scratch");
+		}
+		Assert.Equal(original.Replace("\r\n", Environment.NewLine), File.ReadAllText(path));
+	}
+
+	[Fact]
     public void AddProject_CreatesProjectsSectionIfMissing()
     {
         var path = TempYaml("providers:\n  ramnode: openstack\n");

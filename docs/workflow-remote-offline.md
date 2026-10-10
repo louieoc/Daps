@@ -1,4 +1,4 @@
-# Planning: `dapsman prod offline` / `dapsman prod online`
+# Workflow: `dapsman prod offline` / `dapsman prod online`
 
 Design notes for the offline/online pair. See `readme-cli-commands.md` for user-facing documentation.
 

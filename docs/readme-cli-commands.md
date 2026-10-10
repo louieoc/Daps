@@ -149,9 +149,15 @@ dapsman prod teardown --project <name> [--dry-run] [--provider <name>] [--config
 ```
 Deletes a project from the remote deployment. Requires specifying a project. Requires confirmation ("are you sure?") before executing the teardown. Tearing down a project does the following:
 
-- updates the caddy site file to return a "site has been removed" message (and restarts Caddy)
+- updates the caddy site file to return a "site has been removed" message, or deletes it (see below), and reloads Caddy
 - deletes all of the site's containers using `docker compose -f ... down -v` using the project's remote compose files
 - deletes the remote project folder
+
+The target is a host, identified by provider and project name. The project does **not** have to be in `daps.yaml` -- `local teardown` removes the entry along with the project folder while leaving any prod deployment untouched, so a project can still have containers and files on a host that only this workflow can remove. Project names are validated against `^[A-Za-z0-9._-]+$`.
+
+When the project is not in `daps.yaml`, `--provider` is optional only when a single provider is configured. With more than one it is required, and omitting it is an error rather than a default — the same rule as `prod provision`. When the project *is* in `daps.yaml`, `--provider` overrides its configured `provider:`, and omitting it falls back to that value.
+
+The caddy step takes one of two forms. The "site has been removed" page names the site's domain, which is read from the project's local `_caddy_sites/<name>.prod.caddy`. With no such file — the project is unregistered, or simply has no prod caddy file — the remote site file is deleted instead, so the retired host stops claiming the domain and stops renewing a certificate for it. The plan says which one will run.
 
 ### `dapsman prod unprovision`
 ```

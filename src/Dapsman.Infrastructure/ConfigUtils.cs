@@ -1,7 +1,32 @@
-﻿namespace Dapsman.Infrastructure;
+﻿using System.Text.RegularExpressions;
+
+namespace Dapsman.Infrastructure;
 
 public static class ConfigUtils
 {
+	private static readonly Regex SafeProjectName = new("^[A-Za-z0-9._-]+$", RegexOptions.Compiled);
+
+	/// <summary>
+	/// Project names reach the remote host inside `rm -rf` and `docker compose -f`. A name read
+	/// from daps.yaml is trusted, but prod teardown also accepts one that is not in daps.yaml at
+	/// all, so the shape is enforced rather than assumed.
+	/// </summary>
+	public static string RequireSafeProjectName(string? name)
+	{
+		if (string.IsNullOrWhiteSpace(name))
+			throw new ArgumentException("Project name is required.");
+
+		// Excluded separately: both match the character class but are path traversal, not names.
+		if (name is "." or "..")
+			throw new ArgumentException($"Invalid project name '{name}'.");
+
+		if (!SafeProjectName.IsMatch(name))
+			throw new ArgumentException(
+				$"Invalid project name '{name}'. Use only letters, digits, '.', '_' and '-'.");
+
+		return name;
+	}
+
 	public static bool TryParseKeyValue(string line, out string key, out string value)
 	{
 		var split = line.Split(':', 2, StringSplitOptions.TrimEntries);

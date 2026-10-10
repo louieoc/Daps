@@ -888,7 +888,7 @@ internal sealed class DapsmanRunner
 		if (!_parsed.DryRun)
 		{
 			Console.WriteLine();
-			Console.Write($"Are you sure you want to teardown '{plan.ProjectName}'? This will delete all containers, volumes, and remote project files. Type 'yes' to confirm: ");
+			Console.Write($"Are you sure you want to teardown '{plan.ProjectName}' from {plan.ProviderName} ({plan.RemoteUser}@{plan.RemoteHost})? This will delete all containers, volumes, and remote project files. Type 'yes' to confirm: ");
 			var confirm = Console.ReadLine()?.Trim();
 			if (!string.Equals(confirm, "yes", StringComparison.OrdinalIgnoreCase))
 			{

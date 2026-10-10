@@ -46,6 +46,15 @@ The `caddy-reload` step is included in the dry-run plan output (shows the reload
 
 The old `--skip-build-images` flag was removed; the lazy default makes it redundant.
 
+### Tarballs are listed at execution, not planning
+
+The plan is built before build-images runs, so the tarballs it lists are whatever existed at
+planning time. On a first deploy that is nothing, and uploading from the plan's list left the
+freshly built tar on the workstation; the remote `compose up` then tried to pull the custom image
+from Docker Hub and failed with `pull access denied`. `ToolkitRemoteDeployExecutor` therefore
+re-reads `_docker/image-exports/` when it stages the upload. The plan's list is kept for the
+printed plan, which says the build output will be uploaded when a build is scheduled.
+
 ### Target platform
 
 Image tarballs carry the architecture of the machine that built them. A Windows or Intel-Mac

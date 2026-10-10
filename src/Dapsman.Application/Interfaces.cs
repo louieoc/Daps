@@ -180,6 +180,13 @@ public interface IProjectResolver
 	/// <param name="projectNames"></param>
 	/// <returns></returns>
 	IReadOnlyList<DapsProject> Resolve(IReadOnlyList<string>? projectNames);
+
+	/// <summary>
+	/// Resolves a project that daps.yaml lists and whose local folder is present, and returns
+	/// null otherwise. For workflows that can work from remote state alone — a project deleted
+	/// from daps.yaml still has containers and files on the host that must be removable.
+	/// </summary>
+	DapsProject? TryResolve(string projectName);
 }
 
 public interface IHostingProviderResolver

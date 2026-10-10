@@ -1,0 +1,8 @@
+root = true
+
+# Markdown is synced into the dapster docs site; a BOM sits in front of the front matter.
+[*.md]
+charset = utf-8
+
+[*.cs]
+indent_style = tab

@@ -22,6 +22,21 @@ public class ProjectResolver : IProjectResolver
 		return GetDapsProject(projectDefinition);
 	}
 
+	public DapsProject? TryResolve(string projectName)
+	{
+		var definition = _config.Projects
+			.FirstOrDefault(p => string.Equals(p.Name, projectName, StringComparison.OrdinalIgnoreCase));
+
+		// Both absences are checked without catching exceptions for control flow: a project is
+		// either something this workstation still knows about, or it is not. A definition whose
+		// folder is present but malformed still throws out of GetDapsProject — that is a broken
+		// project rather than an absent one, and hiding it would be the wrong kind of quiet.
+		if (definition is null || !Directory.Exists(definition.Path))
+			return null;
+
+		return GetDapsProject(definition);
+	}
+
 	public IReadOnlyList<DapsProject> Resolve(IReadOnlyList<string>? projectNames)
 	{
 		var projectDefinitions = SelectProjects(_config.Projects, projectNames);
